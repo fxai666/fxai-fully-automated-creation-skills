@@ -1,0 +1,18 @@
+{
+  "brand_cn": "<品牌中文名>",
+  "brand_en": "<BRAND  ·  CATEGORY LINE>",
+  "slogan": "<一句话主张>",
+  "spec_line": "<参数行：规格 · 规格 · 效果>",
+  "tail_line": "<信息行：门店 · 质保 · 电话>",
+  "accent": "#B98A5E",
+  "bg_top": "#191B1E",
+  "bg_bottom": "#262A2F",
+  "size": [1280, 768],
+  "motif_png": "",
+  "font": {
+    "title": "得意黑",
+    "bold": "微软雅黑",
+    "body": "Noto Sans SC"
+  },
+  "_note": "全片品牌信息只在本文件维护；带尖括号的值为占位，客户给真值后改此处并重出片尾与贴片。motif_png 填右侧装饰图路径，留空则只排版文字。"
+}

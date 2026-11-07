@@ -1,0 +1,17 @@
+/*
+中国红 · 深色样式
+深红底 + 金橙强调：节庆 / 政务 / 国风 / 非遗 / 年货 / 家国主题
+*/
+:root{
+  --bg1:#5c0d14; --bg2:#3a070c; --bg3:#1e0306;
+  --ink:#fff2ef; --ink2:#e0a8a0; --ink3:#c98078;
+  --ac:#ffd24a; --ac2:#ff8a3d; --acsoft:#ffe08a;
+  --ac3:#7fe0a0; --ac4:#ffb3b3; --ac5:#ff7ea8; --ac6:#e8c07a; --ac3soft:#2c4a35;
+  --onac:#3a070c; --bad:#ff6b6b;
+  --panel:#8c1622; --panelrgb:160,40,45; --panel2rgb:60,10,16;
+  --onpanel:#ffffff; --onpanel2:#f0c8c4;
+  --card:#4a0c12; --cardink:#fff2ef;
+  --linergb:255,180,120; --chiprgb:255,255,255; --shadowrgb:0,0,0;
+  --bubble:#fff5f3; --bubbleink:#3a070c;
+  --acrgb:255,210,74; --ac2rgb:255,138,61; --ac3rgb:127,224,160; --badrgb:255,107,107;
+}

@@ -1,0 +1,17 @@
+/*
+商务蓝 · 浅色样式
+浅蓝白底 + 宝蓝强调：金融 / 财经 / 企业服务 / B端产品 / 职场方法论
+*/
+:root{
+  --bg1:#f5f8fd; --bg2:#e8eef8; --bg3:#dae3f2;
+  --ink:#10243d; --ink2:#4a6183; --ink3:#7d90ad;
+  --ac:#1a5fd0; --ac2:#0f8fd8; --acsoft:#4a8ae8;
+  --ac3:#12956a; --ac4:#0f8fd8; --ac5:#7a5cf0; --ac6:#d9822b; --ac3soft:#e6f4ee;
+  --onac:#ffffff; --bad:#d33a34;
+  --panel:#10243d; --panelrgb:255,255,255; --panel2rgb:232,238,248;
+  --onpanel:#ffffff; --onpanel2:#b9c8de;
+  --card:#ffffff; --cardink:#10243d;
+  --linergb:26,95,208; --chiprgb:16,36,61; --shadowrgb:20,40,70;
+  --bubble:#f2f5fa; --bubbleink:#10243d;
+  --acrgb:26,95,208; --ac2rgb:15,143,216; --ac3rgb:18,149,106; --badrgb:211,58,52;
+}

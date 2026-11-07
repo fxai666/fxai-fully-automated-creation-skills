@@ -1,0 +1,99 @@
+{
+  "_说明": "扁平模型清单：key = **相对 models 的实际存储路径**（如 diffusion_models/xxx.safetensors）。加模型直接往这个文件里加一行即可（key + url + size + save 四样就够）。key 用完整相对路径：与模型目录实际结构一一对应，只有文件名看不出落哪个目录。\n字段 url=下载地址 | size=真实字节 | save=相对 models 的目录 | status=空/未下 · partial/半截 · downloading/正在下 · done/已下完 | got=当前已下字节（由 otai_progress.py 回填） | _id=内部编号。",
+  "qwen_image_2.1_bf16.safetensors": {
+    "url": "https://www.modelscope.cn/models/Comfy-Org/Qwen-Image-2.1/resolve/master/diffusion_models/qwen_image_2.1_bf16.safetensors",
+    "size": 14230280616,
+    "save": "diffusion_models",
+    "status": "downloading",
+    "got": 0,
+    "_id": "qwen21_unet"
+  },
+  "qwen3vl_8b_int8_convrot.safetensors": {
+    "url": "https://www.modelscope.cn/models/Comfy-Org/Qwen-Image-2.1/resolve/master/text_encoders/qwen3vl_8b_int8_convrot.safetensors",
+    "size": 9350798360,
+    "save": "text_encoders",
+    "status": "downloading",
+    "got": 0,
+    "_id": "qwen21_clip"
+  },
+  "qwen_image_2.1_vae_bf16.safetensors": {
+    "url": "https://www.modelscope.cn/models/Comfy-Org/Qwen-Image-2.1/resolve/master/vae/qwen_image_2.1_vae_bf16.safetensors",
+    "size": 675509688,
+    "save": "vae",
+    "status": "",
+    "got": 0,
+    "_id": "qwen21_vae"
+  },
+  "yue2_3b_bf16.safetensors": {
+    "url": "https://www.modelscope.cn/models/Comfy-Org/YuE2/resolve/master/checkpoints/yue2_3b_bf16.safetensors",
+    "size": 7799983228,
+    "save": "checkpoints",
+    "status": "downloading",
+    "got": 0,
+    "_id": "yue2_ckpt"
+  },
+  "sheetsage2_bf16.safetensors": {
+    "url": "https://www.modelscope.cn/models/Comfy-Org/YuE2/resolve/master/audio_encoders/sheetsage2_bf16.safetensors",
+    "size": 1386868122,
+    "save": "audio_encoders",
+    "status": "downloading",
+    "got": 0,
+    "_id": "yue2_sheetsage"
+  },
+  "MelBandRoformer_fp32.safetensors": {
+    "url": "https://www.modelscope.cn/models/Kijai/MelBandRoFormer_comfy/resolve/master/MelBandRoformer_fp32.safetensors",
+    "size": 912885656,
+    "save": "diffusion_models",
+    "status": "downloading",
+    "got": 0,
+    "_id": "melband_fp32"
+  },
+  "minimax_h3_singularity_ref2va_int8.safetensors": {
+    "url": "https://www.modelscope.cn/models/WarmBloodAban/Minimax-h3_Singularity/resolve/master/Minimax-h3_Singularity_ref2va_v1.3_int8.safetensors",
+    "size": 34004507622,
+    "save": "diffusion_models",
+    "status": "downloading",
+    "got": 0,
+    "_id": "h3_singularity"
+  },
+  "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors": {
+    "url": "https://www.modelscope.cn/models/Comfy-Org/MiniMax-H3/resolve/master/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+    "size": 15687142551,
+    "save": "text_encoders",
+    "status": "downloading",
+    "got": 0,
+    "_id": "h3_text_encoder"
+  },
+  "minimax_h3_video_vae_fp16.safetensors": {
+    "url": "https://www.modelscope.cn/models/Comfy-Org/MiniMax-H3/resolve/master/vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496,
+    "save": "vae",
+    "status": "downloading",
+    "got": 0,
+    "_id": "h3_video_vae"
+  },
+  "minimax_h3_audio_vae_fp32.safetensors": {
+    "url": "https://www.modelscope.cn/models/Comfy-Org/MiniMax-H3/resolve/master/vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808,
+    "save": "vae",
+    "status": "downloading",
+    "got": 0,
+    "_id": "h3_audio_vae"
+  },
+  "minimax_h3_ref2v_turbo_8step_768p_bf16.safetensors": {
+    "url": "https://www.modelscope.cn/models/lightx2v/Minimax-h3-Turbo/resolve/master/minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
+    "size": 1956193000,
+    "save": "loras",
+    "status": "downloading",
+    "got": 0,
+    "_id": "h3_turbo_lora"
+  },
+  "minimax_h3_bf16_conservative.safetensors": {
+    "url": "https://huggingface.co/Asirus/Minimax-H3-Latent-Upscaler-BF16-MAXQUALITY/resolve/main/minimax_h3_bf16_CONSERVATIVE_v5.safetensors",
+    "size": 690593160,
+    "save": "latent_upscale_models",
+    "status": "downloading",
+    "got": 0,
+    "_id": "h3_latent_upscaler"
+  }
+}

@@ -1,0 +1,27 @@
+subject_definitions:
+<Subject 1> 是 <Picture 1> 中的人物，脸、发型、发色、肤色、体型、服装与配饰全部来自 <Picture 1>。
+<Subject 2> 是 <Video 1> 这个参考视频片段中的场景，包括场景位置、背景、构图、光照方向、透视与环境陈设。
+<Subject 3> 是 <Video 1> 这个参考视频片段中主角的表演，包括逐帧的姿态、动作节奏、手腿动作、面部表情、头部转动、视线和口型。
+<Video 1> 是参考视频的片段，作为本次视频编辑的源视频与时间结构来源。
+<Audio 1> 是 <Video 1> 的同步音轨，作为 <Subject 1> (S1) 的音色参考，并在目标视频中完整复用。
+
+summary:
+[video editing + audio reuse] 目标视频是 <Video 1> 的编辑版本。把 <Video 1> 中唯一的主角替换成 <Picture 1> 里的人物 <Subject 1>。<Picture 1> 作为人物外观参考，<Video 1> 作为场景、表演与镜头结构的来源，<Audio 1> 作为原声音频。保持参考人物的脸、头发和服装；跟随源视频表演的姿态、视线、表情和动作；保留场景、其他人物和原始音频时序。
+
+retention_analysis:
+<Subject 1> (appears in [Shot 1]): fully_preserved - 保留参考人物的脸、头发、服装、肤色与配饰。
+<Subject 2> (appears in [Shot 1]): fully_preserved - 保留原场景、背景、构图、光照与透视。
+<Subject 3> (appears in [Shot 1]): fully_preserved - 保留原主角的姿态、动作、表情、视线与口型。
+<Video 1> (cut and pacing structure): fully_preserved - 保留原片的镜头运动、镜头时长与剪辑节奏。
+<Audio 1>: fully_copy - <Audio 1> 作为目标视频的完整最终音轨 1:1 复用。
+
+detailed_description:
+目标视频为写实风格，自然光，保留源片的色彩平衡、景深与画质质感。
+[Shot 1] 从第一帧到最后一帧，<Subject 1> (S1) 完全取代原片中的人物，处在相同的屏幕坐标、大小、纵深和朝向。保持参考人物的脸、头发和服装：面部身份、比例、发型、皮肤外观、服装设计、颜色、面料和配饰，全部与 <Picture 1> 一致。跟随 <Subject 3> 的姿态、视线、表情和动作，在时间节奏、手势、落脚位置、运动轨迹和口型上保持一致。保留 <Subject 2> 的场景几何、背景物体、其他人物、光照与色彩平衡，保留 <Video 1> 的镜头运动与镜头时长。当人物侧身、行走、旋转或被部分遮挡时，保持同一身份、同一服装和解剖上的连贯性。
+不要从 <Video 1> 借用原人物的身份、脸、头发或服装。不要出现原人物的脸、不要人脸混合、不要第二个人物、不要人物重复、不要新增物体、不要参考图背景、不要灰色或单色背景、不要文字叠加、不要突然切换镜头、不要闪烁、不要手部扭曲、不要多余肢体、不要服装变化、不要循环或跳帧。
+
+overall_soundscape:
+来自 <Audio 1> 的复制环境声音与对白贯穿全程，不新增任何音效。
+
+non_diegetic_music:
+无

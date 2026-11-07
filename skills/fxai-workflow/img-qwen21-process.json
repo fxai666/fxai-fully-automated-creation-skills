@@ -1,0 +1,151 @@
+{
+  "2": {
+    "inputs": {
+      "seed": "fxai_seed",
+      "steps": 25,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "24",
+        0
+      ],
+      "positive": [
+        "152",
+        0
+      ],
+      "negative": [
+        "152",
+        1
+      ],
+      "latent_image": [
+        "152",
+        2
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "5": {
+    "inputs": {
+      "samples": [
+        "2",
+        0
+      ],
+      "vae": [
+        "75",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "18": {
+    "inputs": {
+      "clip_name": "qwen3vl_8b_int8_convrot.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "24": {
+    "inputs": {
+      "unet_name": "qwen_image_2.1_bf16.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "75": {
+    "inputs": {
+      "vae_name": "qwen_image_2.1_vae_bf16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "117": {
+    "inputs": {
+      "目录": "fxai_outputdir",
+      "启用文件名覆盖": true,
+      "image_ui": "",
+      "图片": [
+        "5",
+        0
+      ],
+      "文件名序号": "fxai_filename_index"
+    },
+    "class_type": "FxAiImageManagerV2",
+    "_meta": {
+      "title": "凤希AI - 图像管理器V2"
+    }
+  },
+  "141": {
+    "inputs": {
+      "图片列表": "fxai_imageinput",
+      "preview_wrapper": ""
+    },
+    "class_type": "FxAiCharacterImageSelector",
+    "_meta": {
+      "title": "凤希AI - 角色资源图片选择器"
+    }
+  },
+  "149": {
+    "inputs": {
+      "value": "fxai_prompt"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "自定义提示词"
+    }
+  },
+  "152": {
+    "inputs": {
+      "宽度": "fxai_width",
+      "高度": "fxai_height",
+      "clip": [
+        "18",
+        0
+      ],
+      "vae": [
+        "75",
+        0
+      ],
+      "正向提示词": [
+        "149",
+        0
+      ],
+      "图片列表": [
+        "141",
+        0
+      ]
+    },
+    "class_type": "FxAiQwenImage21Edit",
+    "_meta": {
+      "title": "凤希AI - 千问2.1图片编辑"
+    }
+  },
+  "79": {
+    "inputs": {
+      "images": [
+        "117",
+        2
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览（输出触发器）"
+    }
+  }
+}

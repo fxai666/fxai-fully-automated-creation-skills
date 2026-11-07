@@ -1,0 +1,297 @@
+{
+ "5": {
+  "inputs": {
+   "视频序号": [
+    "109",
+    2
+   ],
+   "保存目录": "fxai_outputdir",
+   "帧率FPS": [
+    "108",
+    3
+   ],
+   "图片序列": [
+    "123",
+    0
+   ],
+   "音频": [
+    "113",
+    1
+   ]
+  },
+  "class_type": "FxAiVideoSaveV1",
+  "_meta": {
+   "title": "④ 保存成片（通用 · 音频可选）",
+   "cnr_id": "fxai-toolkit",
+   "ver": "3944422c4d443f30504922a72b986ae812d3ddf5"
+  }
+ },
+ "104": {
+  "inputs": {
+   "图片列表": "fxai_imageinput",
+   "preview_wrapper": ""
+  },
+  "class_type": "FxAiCharacterImageSelector",
+  "_meta": {
+   "title": "凤希AI - 角色资源图片选择器",
+   "cnr_id": "fxai-toolkit",
+   "ver": "269827a81a78bad385e5484fb96c2e16919baf40"
+  }
+ },
+ "108": {
+  "inputs": {
+   "视频文件": "fxai_videoinput",
+   "关键帧JSON": "fxai_segment_data",
+   "跳过初始段": "fxai_skip_initial",
+   "包含尾部段": "fxai_include_tail",
+   "是否平均分段": "fxai_average_segment",
+   "平均分段时长": "fxai_duration",
+   "目标模型": "MiniMax"
+  },
+  "class_type": "FxAiVideoSegmenterV1",
+  "_meta": {
+   "title": "凤希AI - 视频分段器V1",
+   "cnr_id": "fxai-toolkit",
+   "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
+  }
+ },
+ "109": {
+  "inputs": {
+   "total": [
+    "111",
+    2
+   ],
+   "initial_value1": [
+    "111",
+    1
+   ],
+   "start_index": 0
+  },
+  "class_type": "FxAiForLoopStart",
+  "_meta": {
+   "title": "凤希AI - 循环开始（计数）",
+   "cnr_id": "fxai-toolkit",
+   "ver": "4ff5a44b62884b50445cc76aa4d7a55950b37fd7"
+  }
+ },
+ "110": {
+  "inputs": {
+   "flow": [
+    "109",
+    0
+   ],
+   "initial_value1": [
+    "117",
+    0
+   ],
+   "initial_value2": [
+    "5",
+    2
+   ]
+  },
+  "class_type": "FxAiForLoopEnd",
+  "_meta": {
+   "title": "凤希AI - 循环结束（计数）",
+   "cnr_id": "fxai-toolkit",
+   "ver": "4ff5a44b62884b50445cc76aa4d7a55950b37fd7"
+  }
+ },
+ "111": {
+  "inputs": {
+   "启用场景分段": true,
+   "开始索引": "fxai_start_index",
+   "结束索引": "fxai_end_index",
+   "帧率": 24,
+   "宽度": "fxai_width",
+   "高度": "fxai_height",
+   "长宽对齐基数": 32,
+   "过渡帧数": 1,
+   "采样次数": 1,
+   "自动关机": "fxai_auto_shutdown",
+   "场景分段时长": [
+    "108",
+    1
+   ]
+  },
+  "class_type": "FxAIGeneratorController",
+  "_meta": {
+   "title": "凤希AI - 生成控制器",
+   "cnr_id": "fxai-toolkit",
+   "aux_id": "fxai666/fxai-toolkit",
+   "ver": "0060d25fbfa66968a27ed8ab2f1d56472b20ccf8"
+  }
+ },
+ "113": {
+  "inputs": {
+   "视频路径": [
+    "108",
+    0
+   ],
+   "当前索引": [
+    "109",
+    2
+   ],
+   "起始帧": [
+    "108",
+    6
+   ],
+   "分段时长列表": [
+    "111",
+    0
+   ]
+  },
+  "class_type": "FxAiVideoSegmentLoad",
+  "_meta": {
+   "title": "凤希AI - 视频分段加载",
+   "cnr_id": "fxai-toolkit",
+   "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
+  }
+ },
+ "114": {
+  "inputs": {
+   "源视频文件夹路径": [
+    "110",
+    1
+   ],
+   "文件数量": [
+    "111",
+    6
+   ],
+   "名称前缀": "fxai",
+   "音频": [
+    "108",
+    5
+   ]
+  },
+  "class_type": "FxAiVideoMerger",
+  "_meta": {
+   "title": "凤希AI - 视频合并",
+   "cnr_id": "fxai-toolkit",
+   "ver": "d82d27971005419a2a39bbbe49cd45f3edeedb68"
+  }
+ },
+ "117": {
+  "inputs": {
+   "a": [
+    "109",
+    2
+   ],
+   "b": 1,
+   "operation": "add"
+  },
+  "class_type": "FxAiMathInt",
+  "_meta": {
+   "title": "下一次索引",
+   "cnr_id": "fxai-toolkit",
+   "ver": "4ff5a44b62884b50445cc76aa4d7a55950b37fd7"
+  }
+ },
+ "123": {
+  "inputs": {
+   "处理脸宽上限": 120,
+   "裁切框边长": 0,
+   "超分倍数": 4,
+   "超分引擎": "自研超分 (VOSR2)",
+   "遮罩比例": 0.7,
+   "羽化半径": 0.045,
+   "身份相似度阈值": 0.1,
+   "默认人物": 1,
+   "换脸脸宽上限": 120,
+   "换脸强度": 1,
+   "肤色回拉": 0.6,
+   "纹理保留": 0.9,
+   "随机种子": "fxai_seed",
+   "批大小": 4,
+   "显卡编号": 0,
+   "输入帧": [
+    "124",
+    0
+   ],
+   "参考图": [
+    "104",
+    0
+   ],
+   "放大倍数": [
+    "125",
+    1
+   ]
+  },
+  "class_type": "FxAiFaceRestoreLiteV2",
+  "_meta": {
+   "title": "③ 人脸精修 · 轻量链 V2（全脸）",
+   "cnr_id": "fxai-toolkit",
+   "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
+  }
+ },
+ "124": {
+  "inputs": {
+   "放大倍数": [
+    "125",
+    1
+   ],
+   "分块边长": 0,
+   "分块重叠": 64,
+   "色彩校正": true,
+   "帧数对齐": true,
+   "随机种子": 0,
+   "精度": "bf16",
+   "稀疏注意力": true,
+   "卸载模型": false,
+   "图片序列": [
+    "113",
+    0
+   ]
+  },
+  "class_type": "FxAiVideoUpscale",
+  "_meta": {
+   "title": "② 视频超分（凤希AI 自研 · 1.2 倍）",
+   "cnr_id": "fxai-toolkit",
+   "ver": "4ff5a44b62884b50445cc76aa4d7a55950b37fd7"
+  }
+ },
+ "125": {
+  "inputs": {
+   "value": "fxai_scale"
+  },
+  "class_type": "FxAiSimpleMath",
+  "_meta": {
+   "title": "放大倍数（跟上面超分节点填同一个数）",
+   "cnr_id": "fxai-toolkit",
+   "ver": "4ff5a44b62884b50445cc76aa4d7a55950b37fd7"
+  }
+ },
+ "126": {
+  "inputs": {
+   "等待秒数": 60,
+   "启用关机": [
+    "111",
+    10
+   ],
+   "触发输入": [
+    "114",
+    0
+   ]
+  },
+  "class_type": "FxAiAutoShutdown",
+  "_meta": {
+   "title": "凤希AI - 自动关机(GameOver)",
+   "cnr_id": "fxai-toolkit",
+   "aux_id": "fxai666/fxai-toolkit",
+   "ver": "69ebff1e60b2a71d1bea716c578375e9f9ec86ed"
+  }
+ },
+ "127": {
+  "inputs": {
+   "anything": [
+    "110",
+    0
+   ]
+  },
+  "class_type": "FxAiCleanGpu",
+  "_meta": {
+   "title": "凤希AI - 清理显存",
+   "cnr_id": "fxai-toolkit",
+   "ver": "4ff5a44b62884b50445cc76aa4d7a55950b37fd7"
+  }
+ }
+}

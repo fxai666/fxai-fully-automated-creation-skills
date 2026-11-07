@@ -1,0 +1,281 @@
+{
+ "2": {
+  "inputs": {
+   "seed": "fxai_seed",
+   "steps": 25,
+   "cfg": 1,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "denoise": 1,
+   "model": [
+    "24",
+    0
+   ],
+   "positive": [
+    "205",
+    0
+   ],
+   "negative": [
+    "205",
+    1
+   ],
+   "latent_image": [
+    "205",
+    2
+   ]
+  },
+  "class_type": "KSampler",
+  "_meta": {
+   "title": "K采样器"
+  }
+ },
+ "5": {
+  "inputs": {
+   "samples": [
+    "2",
+    0
+   ],
+   "vae": [
+    "75",
+    0
+   ]
+  },
+  "class_type": "VAEDecode",
+  "_meta": {
+   "title": "VAE解码"
+  }
+ },
+ "18": {
+  "inputs": {
+   "clip_name": "qwen3vl_8b_int8_convrot.safetensors",
+   "type": "qwen_image",
+   "device": "default"
+  },
+  "class_type": "CLIPLoader",
+  "_meta": {
+   "title": "加载CLIP"
+  }
+ },
+ "24": {
+  "inputs": {
+   "unet_name": "qwen_image_2.1_bf16.safetensors",
+   "weight_dtype": "default"
+  },
+  "class_type": "UNETLoader",
+  "_meta": {
+   "title": "UNet加载器"
+  }
+ },
+ "75": {
+  "inputs": {
+   "vae_name": "qwen_image_2.1_vae_bf16.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "加载VAE"
+  }
+ },
+ "79": {
+  "inputs": {
+   "anything": [
+    "117",
+    2
+   ]
+  },
+  "class_type": "FxAiCleanGpu",
+  "_meta": {
+   "title": "清理显存占用"
+  }
+ },
+ "117": {
+  "inputs": {
+   "目录": "fxai_outputdir",
+   "启用文件名覆盖": true,
+   "文件名序号": "fxai_filename_index",
+   "image_ui": "",
+   "图片": [
+    "197",
+    0
+   ]
+  },
+  "class_type": "FxAiImageManagerV2",
+  "_meta": {
+   "title": "凤希AI - 图像管理器V2"
+  }
+ },
+ "147": {
+  "inputs": {
+   "图片列表": "fxai_imageinput",
+   "preview_wrapper": ""
+  },
+  "class_type": "FxAiCharacterImageSelector",
+  "_meta": {
+   "title": "凤希AI - 角色资源图片选择器"
+  }
+ },
+ "170": {
+  "inputs": {
+   "value": "fxai_prompt"
+  },
+  "class_type": "PrimitiveStringMultiline",
+  "_meta": {
+   "title": "提示词"
+  }
+ },
+ "192": {
+  "inputs": {
+   "seed": "fxai_seed",
+   "steps": 25,
+   "cfg": 1,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "denoise": 1,
+   "model": [
+    "24",
+    0
+   ],
+   "positive": [
+    "210",
+    0
+   ],
+   "negative": [
+    "210",
+    1
+   ],
+   "latent_image": [
+    "210",
+    2
+   ]
+  },
+  "class_type": "KSampler",
+  "_meta": {
+   "title": "K采样器"
+  }
+ },
+ "193": {
+  "inputs": {
+   "samples": [
+    "192",
+    0
+   ],
+   "vae": [
+    "75",
+    0
+   ]
+  },
+  "class_type": "VAEDecode",
+  "_meta": {
+   "title": "VAE解码"
+  }
+ },
+ "197": {
+  "inputs": {
+   "direction": "right",
+   "match_image_size": true,
+   "spacing_width": 0,
+   "spacing_color": "white",
+   "image1": [
+    "193",
+    0
+   ],
+   "image2": [
+    "5",
+    0
+   ]
+  },
+  "class_type": "ImageStitch",
+  "_meta": {
+   "title": "图像拼接"
+  }
+ },
+ "199": {
+  "inputs": {
+   "预设": "竖屏 1080×1920",
+   "宽度": 1280,
+   "高度": 1080,
+   "反转": false
+  },
+  "class_type": "FxAiPhotoSizeConfigV2",
+  "_meta": {
+   "title": "凤希AI - 宽高设置"
+  }
+ },
+ "204": {
+  "inputs": {
+   "a": [
+    "199",
+    0
+   ],
+   "b": 2,
+   "operation": "divide"
+  },
+  "class_type": "FxAiMathInt",
+  "_meta": {
+   "title": "特写半宽"
+  }
+ },
+ "205": {
+  "inputs": {
+   "宽度": [
+    "199",
+    0
+   ],
+   "高度": [
+    "199",
+    1
+   ],
+   "clip": [
+    "18",
+    0
+   ],
+   "vae": [
+    "75",
+    0
+   ],
+   "正向提示词": [
+    "170",
+    0
+   ],
+   "图片列表": [
+    "147",
+    0
+   ]
+  },
+  "class_type": "FxAiQwenImage21ThreeView",
+  "_meta": {
+   "title": "凤希AI - 千问2.1三视图生成器"
+  }
+ },
+ "210": {
+  "inputs": {
+   "宽度": [
+    "204",
+    0
+   ],
+   "高度": [
+    "199",
+    0
+   ],
+   "clip": [
+    "18",
+    0
+   ],
+   "vae": [
+    "75",
+    0
+   ],
+   "人物图片": [
+    "5",
+    0
+   ],
+   "参考头像": [
+    "147",
+    0
+   ]
+  },
+  "class_type": "FxAiQwenFaceFeature",
+  "_meta": {
+   "title": "凤希AI - 人物面部特征图"
+  }
+ }
+}

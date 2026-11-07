@@ -1,0 +1,678 @@
+{
+ "698": {
+  "inputs": {
+   "a": [
+    "743",
+    2
+   ],
+   "b": 1,
+   "operation": "add"
+  },
+  "class_type": "FxAiMathInt",
+  "_meta": {
+   "title": "下一次索引"
+  }
+ },
+ "743": {
+  "inputs": {
+   "total": [
+    "925",
+    2
+   ],
+   "initial_value1": [
+    "925",
+    1
+   ],
+   "start_index": 0
+  },
+  "class_type": "FxAiForLoopStart",
+  "_meta": {
+   "title": "For循环-开始"
+  }
+ },
+ "744": {
+  "inputs": {
+   "flow": [
+    "743",
+    0
+   ],
+   "initial_value1": [
+    "698",
+    0
+   ],
+   "initial_value2": [
+    "1038",
+    0
+   ]
+  },
+  "class_type": "FxAiForLoopEnd",
+  "_meta": {
+   "title": "For循环-结束"
+  }
+ },
+ "758": {
+  "inputs": {
+   "图片文件夹路径": [
+    "990",
+    0
+   ],
+   "图片索引": 0
+  },
+  "class_type": "FxAiLoadImageByIndex",
+  "_meta": {
+   "title": "凤希AI - 图像管理器 - 图片加载"
+  }
+ },
+ "768": {
+  "inputs": {
+   "最大边长": "fxai_width",
+   "对齐基数": 32,
+   "图片": [
+    "758",
+    0
+   ]
+  },
+  "class_type": "FxAiImageSizeConfig",
+  "_meta": {
+   "title": "凤希AI - 宽高-最大边长"
+  }
+ },
+ "889": {
+  "inputs": {
+   "文件夹路径": [
+    "990",
+    0
+   ],
+   "首帧索引": [
+    "743",
+    2
+   ],
+   "尾帧索引": [
+    "698",
+    0
+   ],
+   "启用转场": true,
+   "输出宽度": [
+    "925",
+    4
+   ],
+   "输出高度": [
+    "925",
+    5
+   ],
+   "过渡帧数": 0,
+   "图片序列": [
+    "743",
+    3
+   ]
+  },
+  "class_type": "FxAiFrameGeneratorV2",
+  "_meta": {
+   "title": "凤希AI - 首尾帧生成器V2"
+  }
+ },
+ "925": {
+  "inputs": {
+   "启用场景分段": false,
+   "开始索引": "fxai_start_index",
+   "结束索引": "fxai_end_index",
+   "帧率": 30,
+   "宽度": [
+    "768",
+    1
+   ],
+   "高度": [
+    "768",
+    2
+   ],
+   "长宽对齐基数": [
+    "768",
+    3
+   ],
+   "过渡帧数": 9,
+   "采样次数": 2,
+   "自动关机": "fxai_auto_shutdown",
+   "音频分段时长": [
+    "989",
+    1
+   ]
+  },
+  "class_type": "FxAIGeneratorController",
+  "_meta": {
+   "title": "凤希AI - 生成控制器"
+  }
+ },
+ "953": {
+  "inputs": {
+   "等待秒数": 60,
+   "启用关机": [
+    "925",
+    10
+   ],
+   "触发输入": [
+    "988",
+    0
+   ]
+  },
+  "class_type": "FxAiAutoShutdown",
+  "_meta": {
+   "title": "凤希AI - 自动关机(GameOver)"
+  }
+ },
+ "980": {
+  "inputs": {
+   "卸载所有模型": true,
+   "清空CUDA显存": true,
+   "输入": [
+    "744",
+    1
+   ]
+  },
+  "class_type": "FxAiReleaseResources",
+  "_meta": {
+   "title": "凤希AI - 释放资源"
+  }
+ },
+ "982": {
+  "inputs": {
+   "anything": [
+    "743",
+    2
+   ]
+  },
+  "class_type": "FxAiClearCache",
+  "_meta": {
+   "title": "清除全部缓存"
+  }
+ },
+ "983": {
+  "inputs": {
+   "anything": [
+    "743",
+    2
+   ]
+  },
+  "class_type": "FxAiCleanGpu",
+  "_meta": {
+   "title": "清理显存占用"
+  }
+ },
+ "988": {
+  "inputs": {
+   "源视频文件夹路径": [
+    "1038",
+    2
+   ],
+   "文件数量": [
+    "925",
+    6
+   ],
+   "名称前缀": "fxai",
+   "刷新标记": [
+    "744",
+    1
+   ],
+   "音频": [
+    "989",
+    0
+   ]
+  },
+  "class_type": "FxAiVideoMerger",
+  "_meta": {
+   "title": "凤希AI - 视频合并"
+  }
+ },
+ "989": {
+  "inputs": {
+   "音频文件": "fxai_audioinput",
+   "关键帧JSON": "fxai_segment_data",
+   "跳过初始段": "fxai_skip_initial",
+   "包含尾部段": "fxai_include_tail",
+   "是否平均分段": "fxai_average_segment",
+   "平均分段时长": "fxai_duration",
+   "目标模型": "MiniMax"
+  },
+  "class_type": "FxAiAudioSegmenterV2",
+  "_meta": {
+   "title": "凤希AI - 音频分段器V2"
+  }
+ },
+ "990": {
+  "inputs": {
+   "目录": "fxai_imageinput",
+   "启用文件名覆盖": false,
+   "image_ui": ""
+  },
+  "class_type": "FxAiImageManagerV2",
+  "_meta": {
+   "title": "凤希AI - 图像管理器V2"
+  }
+ },
+ "991": {
+  "inputs": {
+   "lora_data": "[{\"lora_name\":\"minimax_h3_ref2v_turbo_8step_768p_bf16.safetensors\",\"model_strength\":1.0,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1.0,\"fade_end\":1.0},{\"lora_name\":\"h3-人脸去油.safetensors\",\"model_strength\":0.7,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1.0,\"fade_end\":1.0},{\"lora_name\":\"Motion_Repair.safetensors\",\"model_strength\":0.45,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1.0,\"fade_end\":1.0}]",
+   "lora_wrap": "",
+   "model": [
+    "1003",
+    0
+   ],
+   "提示词": [
+    "1030",
+    0
+   ]
+  },
+  "class_type": "FxAiLoraLoader",
+  "_meta": {
+   "title": "凤希AI - LoRa加载器"
+  }
+ },
+ "992": {
+  "inputs": {
+   "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "class_type": "CLIPLoader",
+  "_meta": {
+   "title": "加载CLIP"
+  }
+ },
+ "993": {
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "加载VAE"
+  }
+ },
+ "995": {
+  "inputs": {
+   "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "加载VAE"
+  }
+ },
+ "998": {
+  "inputs": {
+   "unet_name": "minimax_h3_singularity_ref2va_int8.safetensors",
+   "weight_dtype": "default"
+  },
+  "class_type": "UNETLoader",
+  "_meta": {
+   "title": "UNet加载器"
+  }
+ },
+ "1003": {
+  "inputs": {
+   "速度档位": "不加速",
+   "采样步数": 8,
+   "模型": [
+    "998",
+    0
+   ]
+  },
+  "class_type": "FxAiMiniMaxBlockCache",
+  "_meta": {
+   "title": "凤希AI - MiniMax块缓存加速"
+  }
+ },
+ "1004": {
+  "inputs": {
+   "当前索引": [
+    "743",
+    2
+   ],
+   "过渡帧数": "0",
+   "分段时长列表": [
+    "925",
+    0
+   ],
+   "原始音频": [
+    "989",
+    0
+   ]
+  },
+  "class_type": "FxAiMiniMaxAudioSegmentLoad",
+  "_meta": {
+   "title": "凤希AI - MiniMax音频分段加载"
+  }
+ },
+ "1010": {
+  "inputs": {
+   "scheduler": "simple",
+   "steps": [
+    "1003",
+    1
+   ],
+   "denoise": 1,
+   "model": [
+    "1049",
+    0
+   ]
+  },
+  "class_type": "BasicScheduler",
+  "_meta": {
+   "title": "基本调度器"
+  }
+ },
+ "1013": {
+  "inputs": {
+   "model": [
+    "1049",
+    0
+   ],
+   "conditioning": [
+    "1036",
+    0
+   ]
+  },
+  "class_type": "BasicGuider",
+  "_meta": {
+   "title": "基本引导器"
+  }
+ },
+ "1018": {
+  "inputs": {
+   "noise_seed": "fxai_seed"
+  },
+  "class_type": "RandomNoise",
+  "_meta": {
+   "title": "随机噪波"
+  }
+ },
+ "1019": {
+  "inputs": {
+   "noise": [
+    "1018",
+    0
+   ],
+   "guider": [
+    "1013",
+    0
+   ],
+   "sampler": [
+    "1020",
+    0
+   ],
+   "sigmas": [
+    "1010",
+    0
+   ],
+   "latent_image": [
+    "1036",
+    1
+   ]
+  },
+  "class_type": "SamplerCustomAdvanced",
+  "_meta": {
+   "title": "自定义采样器（高级）"
+  }
+ },
+ "1020": {
+  "inputs": {
+   "sampler_name": "euler_ancestral"
+  },
+  "class_type": "KSamplerSelect",
+  "_meta": {
+   "title": "K采样器选择"
+  }
+ },
+ "1030": {
+  "inputs": {
+   "lines_data": "fxai_prompt",
+   "lines_container": "",
+   "➕ 添加行": null,
+   "📋 批量输入": null,
+   "当前索引": [
+    "743",
+    2
+   ]
+  },
+  "class_type": "FxAiMultiLinePrompt",
+  "_meta": {
+   "title": "凤希AI - 多行提示词"
+  }
+ },
+ "1036": {
+  "inputs": {
+   "宽度": [
+    "925",
+    8
+   ],
+   "高度": [
+    "925",
+    9
+   ],
+   "帧数": [
+    "1004",
+    1
+   ],
+   "音频模式": "原音频",
+   "提示词": [
+    "991",
+    2
+   ],
+   "CLIP模型": [
+    "992",
+    0
+   ],
+   "视频VAE": [
+    "993",
+    0
+   ],
+   "音频VAE": [
+    "995",
+    0
+   ],
+   "首帧图片": [
+    "889",
+    0
+   ],
+   "尾帧图片": [
+    "889",
+    2
+   ],
+   "外置音频": [
+    "1004",
+    0
+   ]
+  },
+  "class_type": "FxAiMiniMaxImageToVideoV2",
+  "_meta": {
+   "title": "凤希AI - MiniMax图生视频V2"
+  }
+ },
+ "1038": {
+  "inputs": {
+   "视频序号": [
+    "743",
+    2
+   ],
+   "保存目录": "fxai_outputdir",
+   "图片序列": [
+    "1046",
+    0
+   ],
+   "音频": [
+    "1004",
+    0
+   ]
+  },
+  "class_type": "FxAiMiniMaxVideoSaveV2",
+  "_meta": {
+   "title": "凤希AI - MiniMax视频保存V2"
+  }
+ },
+ "1039": {
+  "inputs": {
+   "av_latent": [
+    "1019",
+    1
+   ]
+  },
+  "class_type": "LTXVSeparateAVLatent",
+  "_meta": {
+   "title": "分离 AV 潜空间"
+  }
+ },
+ "1040": {
+  "inputs": {
+   "模型": "minimax_h3_bf16_conservative.safetensors",
+   "放大倍数": 2,
+   "时间分块": "bf16",
+   "释放显存": "fp32",
+   "latent": [
+    "1039",
+    0
+   ]
+  },
+  "class_type": "FxAiMiniMaxUpscaler",
+  "_meta": {
+   "title": "凤希AI - MiniMax放大器"
+  }
+ },
+ "1041": {
+  "inputs": {
+   "video_latent": [
+    "1040",
+    0
+   ],
+   "audio_latent": [
+    "1039",
+    1
+   ]
+  },
+  "class_type": "LTXVConcatAVLatent",
+  "_meta": {
+   "title": "拼接 AV 潜空间"
+  }
+ },
+ "1042": {
+  "inputs": {
+   "sigmas": "0.9035, 0.6316, 0.3158, 0.0000"
+  },
+  "class_type": "ManualSigmas",
+  "_meta": {
+   "title": "3 step Sigmas"
+  }
+ },
+ "1043": {
+  "inputs": {
+   "正向条件": [
+    "1036",
+    0
+   ],
+   "视频VAE": [
+    "993",
+    0
+   ],
+   "AV潜变量": [
+    "1040",
+    0
+   ]
+  },
+  "class_type": "FxAiMiniMaxResampleCond",
+  "_meta": {
+   "title": "凤希AI - MiniMax二采正向条件"
+  }
+ },
+ "1044": {
+  "inputs": {
+   "noise": [
+    "1018",
+    0
+   ],
+   "guider": [
+    "1045",
+    0
+   ],
+   "sampler": [
+    "1047",
+    0
+   ],
+   "sigmas": [
+    "1042",
+    0
+   ],
+   "latent_image": [
+    "1041",
+    0
+   ]
+  },
+  "class_type": "SamplerCustomAdvanced",
+  "_meta": {
+   "title": "自定义采样器（高级）"
+  }
+ },
+ "1045": {
+  "inputs": {
+   "model": [
+    "1049",
+    0
+   ],
+   "conditioning": [
+    "1043",
+    0
+   ]
+  },
+  "class_type": "BasicGuider",
+  "_meta": {
+   "title": "基本引导器"
+  }
+ },
+ "1046": {
+  "inputs": {
+   "samples": [
+    "1044",
+    1
+   ],
+   "vae": [
+    "993",
+    0
+   ]
+  },
+  "class_type": "VAEDecode",
+  "_meta": {
+   "title": "VAE解码"
+  }
+ },
+ "1047": {
+  "inputs": {
+   "sampler_name": "euler_ancestral"
+  },
+  "class_type": "KSamplerSelect",
+  "_meta": {
+   "title": "K采样器选择"
+  }
+ },
+ "1048": {
+  "inputs": {
+   "shift_video": 12,
+   "shift_audio": 3,
+   "model": [
+    "991",
+    0
+   ]
+  },
+  "class_type": "MiniMaxH3SigmaShift",
+  "_meta": {
+   "title": "MiniMax H3 Sigma Shift"
+  }
+ },
+ "1049": {
+  "inputs": {
+   "attention": "comfy kitchen attention",
+   "model": [
+    "1048",
+    0
+   ]
+  },
+  "class_type": "ModelAttentionBackend",
+  "_meta": {
+   "title": "ModelAttentionBackend"
+  }
+ }
+}

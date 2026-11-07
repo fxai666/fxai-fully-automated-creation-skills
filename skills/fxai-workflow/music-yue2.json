@@ -1,0 +1,204 @@
+{
+  "41": {
+    "inputs": {
+      "ckpt_name": "yue2_3b_bf16.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Checkpoint加载器（简易）"
+    }
+  },
+  "42": {
+    "inputs": {
+      "style": [
+        "53",
+        0
+      ],
+      "lyrics": [
+        "54",
+        0
+      ],
+      "seed": [
+        "52",
+        0
+      ],
+      "mode": "full",
+      "max_abc_tokens": 8192,
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "top_k": 30,
+      "repetition_penalty": 1.005,
+      "penalty_window": 100,
+      "clip": [
+        "41",
+        1
+      ]
+    },
+    "class_type": "YuE2GenerateABC",
+    "_meta": {
+      "title": "YuE2 Generate ABC"
+    }
+  },
+  "45": {
+    "inputs": {
+      "style": [
+        "53",
+        0
+      ],
+      "lyrics": [
+        "54",
+        0
+      ],
+      "abc": [
+        "42",
+        0
+      ],
+      "seed": [
+        "52",
+        0
+      ],
+      "mode": "full",
+      "max_duration": 360,
+      "temperature": 1,
+      "top_p": 0.95,
+      "top_k": 100,
+      "repetition_penalty": 1.2,
+      "cfg_scale": 1,
+      "clip": [
+        "41",
+        1
+      ]
+    },
+    "class_type": "YuE2GenerateMusic",
+    "_meta": {
+      "title": "YuE2 Generate Music"
+    }
+  },
+  "47": {
+    "inputs": {
+      "conditioning": [
+        "45",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "条件零化"
+    }
+  },
+  "49": {
+    "inputs": {
+      "seed": [
+        "52",
+        0
+      ],
+      "steps": 32,
+      "cfg": 1,
+      "sampler_name": "dpm_2",
+      "scheduler": "sgm_uniform",
+      "denoise": 1,
+      "model": [
+        "41",
+        0
+      ],
+      "positive": [
+        "45",
+        0
+      ],
+      "negative": [
+        "47",
+        0
+      ],
+      "latent_image": [
+        "50",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "50": {
+    "inputs": {
+      "seconds": [
+        "45",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyYuE2LatentAudio",
+    "_meta": {
+      "title": "Empty YuE2 Latent Audio"
+    }
+  },
+  "51": {
+    "inputs": {
+      "samples": [
+        "49",
+        0
+      ],
+      "vae": [
+        "41",
+        2
+      ]
+    },
+    "class_type": "VAEDecodeAudio",
+    "_meta": {
+      "title": "VAE解码（音频）"
+    }
+  },
+  "52": {
+    "inputs": {
+      "seed": "fxai_seed"
+    },
+    "class_type": "SeedNode",
+    "_meta": {
+      "title": "种子"
+    }
+  },
+  "53": {
+    "inputs": {
+      "value": "fxai_prompt"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Text (Style)"
+    }
+  },
+  "54": {
+    "inputs": {
+      "value": "fxai_lyrics"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Text (Lyrics)"
+    }
+  },
+  "55": {
+    "inputs": {
+      "目录": "音乐生成",
+      "audio_ui": "",
+      "音频": [
+        "51",
+        0
+      ]
+    },
+    "class_type": "FxAiAudioManager",
+    "_meta": {
+      "title": "凤希AI - 音频管理器"
+    }
+  },
+  "58": {
+    "inputs": {
+      "anything": [
+        "55",
+        0
+      ]
+    },
+    "class_type": "FxAiCleanGpu",
+    "_meta": {
+      "title": "清理显存占用"
+    }
+  }
+}

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>企业Agent落地十一大工程框架</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: "PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:#EAF2FC;
+    width:892px;
+    color:#1F2D3D;
+  }
+  .page {
+    background: linear-gradient(180deg,#DCEAFC 0%,#F4F9FF 30%,#EAF2FC 100%);
+    padding:18px 18px 0;
+    position:relative;
+    overflow:hidden;
+  }
+  /* ===== 顶部标题 ===== */
+  .title-wrap { text-align:center; position:relative; padding:6px 0 10px; }
+  .title-wrap .spark { position:absolute; font-size:24px; color:#F5A623; }
+  .title-wrap .spark.l { left:66px; top:0; }
+  .title-wrap .spark.r { right:66px; top:0; }
+  h1 {
+    display:inline-block;
+    font-size:44px; font-weight:900; letter-spacing:2px;
+    background:linear-gradient(90deg,#0B3D91 10%,#1E63D0 45%,#3B82F6 70%,#0B3D91 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .subtitle-row { text-align:center; }
+  .subtitle {
+    display:inline-block;
+    background:linear-gradient(90deg,#0B3D91,#1E63D0);
+    color:#fff; font-size:14px; font-weight:600; letter-spacing:1px;
+    padding:7px 28px; border-radius:999px;
+    box-shadow:0 4px 10px rgba(30,99,208,.3);
+  }
+
+  /* ===== 栏目头 ===== */
+  .section-heads { display:flex; justify-content:space-between; margin:14px 2px 8px; }
+  .sec-head { font-size:16px; font-weight:800; padding:7px 18px; border-radius:999px; }
+  .sec-head.left { background:linear-gradient(90deg,#1E63D0,#3B82F6); color:#fff; box-shadow:0 3px 8px rgba(30,99,208,.3); }
+  .sec-head.right { background:#fff; color:#D97A1A; border:2px solid #F5A623; }
+  .sec-head .chev { font-weight:900; margin:0 4px; }
+
+  /* ===== 主区域 ===== */
+  .main { display:flex; gap:12px; align-items:stretch; }
+  .col { width:320px; display:flex; flex-direction:column; gap:8px; }
+  .center { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+
+  .card {
+    background:#fff; border-radius:12px; padding:9px 10px;
+    box-shadow:0 2px 8px rgba(31,68,131,.10);
+    display:flex; gap:8px; align-items:flex-start;
+    border-left:4px solid var(--c);
+  }
+  .badge {
+    width:34px; height:34px; border-radius:50%; flex:none;
+    background:var(--c); color:#fff; font-size:17px; font-weight:900;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.18);
+  }
+  .card .body { flex:1; }
+  .card .en { font-size:14px; font-weight:800; color:var(--c); line-height:1.2; }
+  .card .cn { font-size:13px; font-weight:700; color:#1F2D3D; margin-top:1px; }
+  .card .tag {
+    display:inline-block; margin-left:4px; font-size:10.5px; color:#fff;
+    background:var(--c); border-radius:4px; padding:1px 8px; font-weight:600;
+    vertical-align:1px;
+  }
+  .card ul { list-style:none; margin-top:4px; }
+  .card li { font-size:11px; color:#42526B; line-height:1.55; padding-left:10px; position:relative; }
+  .card li::before { content:""; position:absolute; left:0; top:7px; width:5px; height:5px; border-radius:50%; background:var(--c); }
+  .iconbox {
+    width:42px; height:42px; flex:none; align-self:center; border-radius:10px;
+    color:var(--c); background:color-mix(in srgb, var(--c) 12%, #fff);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .iconbox svg { width:26px; height:26px; }
+
+  .up-arrow { text-align:center; color:#1E63D0; font-size:13px; line-height:1; font-weight:900; }
+
+  /* 中央机器人 */
+  .robot-stage { position:relative; width:200px; height:200px; display:flex; align-items:center; justify-content:center; }
+  .orbit {
+    position:absolute; inset:0; border:2px dashed #8FB6EE; border-radius:50%;
+  }
+  .orbit::before,.orbit::after {
+    content:""; position:absolute; width:9px; height:9px; border-radius:50%;
+  }
+  .orbit::before { top:-5px; left:50%; background:#1E63D0; }
+  .orbit::after { bottom:6px; right:14px; background:#F5A623; }
+  .robot-circle {
+    width:150px; height:150px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #5EA9F7, #1E63D0 75%);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 8px 22px rgba(30,99,208,.4), inset 0 0 0 6px rgba(255,255,255,.35);
+  }
+  .robot-circle svg { width:78px; height:78px; color:#fff; }
+  .center-label {
+    margin-top:-14px; z-index:3;
+    background:#0B3D91; color:#fff; text-align:center;
+    border-radius:10px; padding:7px 16px; box-shadow:0 4px 10px rgba(11,61,145,.35);
+    white-space:nowrap;
+  }
+  .center-label .t1 { font-size:17px; font-weight:900; color:#FFD966; }
+  .center-label .t2 { font-size:10.5px; color:#DCEAFC; margin-top:2px; }
+  .center-checks { display:flex; gap:8px; margin-top:10px; }
+  .center-checks span { font-size:11px; font-weight:700; color:#1E7A46; background:#E9F7EF; border:1px solid #9BD7B4; border-radius:999px; padding:2px 9px; white-space:nowrap; }
+
+  /* ===== 核心价值条 ===== */
+  .strip { margin-top:14px; background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 2px 8px rgba(31,68,131,.10); }
+  .strip-head {
+    background:linear-gradient(90deg,#0B3D91,#1E63D0); color:#fff;
+    text-align:center; font-size:16px; font-weight:800; padding:8px; letter-spacing:2px;
+  }
+  .strip-grid { display:flex; }
+  .cell { flex:1; text-align:center; padding:8px 2px 10px; border-right:1px dashed #D7E4F7; }
+  .cell:last-child { border-right:none; }
+  .cell .num {
+    width:20px; height:20px; margin:0 auto 3px; border-radius:50%;
+    color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center;
+  }
+  .cell .nm { font-size:11px; font-weight:800; color:#1F2D3D; }
+  .cell .tg { font-size:9px; color:#6B7A90; margin:1px 0 4px; }
+  .cell .ic { display:flex; justify-content:center; }
+  .cell .ic svg { width:24px; height:24px; }
+
+  /* ===== 底部区域 ===== */
+  .bottom { display:flex; gap:10px; margin-top:12px; }
+  .panel { background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 2px 8px rgba(31,68,131,.10); }
+  .panel-head {
+    background:linear-gradient(90deg,#1E63D0,#3B82F6); color:#fff; text-align:center;
+    font-size:14px; font-weight:800; padding:7px; letter-spacing:1px;
+  }
+  .panel.table-panel { width:512px; }
+  .panel.why-panel { flex:1; }
+  table { width:100%; border-collapse:collapse; }
+  th { background:#E8F1FD; color:#0B3D91; font-size:10px; padding:4px 3px; font-weight:800; }
+  td { font-size:9.5px; color:#33475E; padding:3.5px 3px; border-bottom:1px solid #EEF3FA; text-align:center; line-height:1.35; }
+  tr:nth-child(even) td { background:#F7FAFE; }
+  td.en { font-weight:700; color:#1E63D0; text-align:left; padding-left:6px; }
+  td.q { text-align:left; }
+  td.v { font-weight:700; }
+
+  .why-body { padding:10px; }
+  .why-box { border-radius:10px; padding:9px 11px; margin-bottom:9px; }
+  .why-box.chain { background:#EAF3FE; border:1px solid #BBD5F6; }
+  .why-box.cross { background:#F3EEFE; border:1px solid #D3C5F5; margin-bottom:0; }
+  .why-box .h { font-size:12.5px; font-weight:800; margin-bottom:6px; }
+  .why-box.chain .h { color:#0B3D91; }
+  .why-box.cross .h { color:#5B3DB8; }
+  .flow { display:flex; align-items:center; flex-wrap:wrap; gap:3px; }
+  .flow .node { background:#1E63D0; color:#fff; font-size:10.5px; font-weight:700; border-radius:6px; padding:3px 8px; }
+  .flow .arr { color:#1E63D0; font-weight:900; font-size:12px; }
+  .why-box .ans { font-size:10px; color:#42526B; margin-top:7px; line-height:1.5; }
+  .flow.crossflow .node { background:#7C5CFC; }
+  .flow.crossflow .arr { color:#7C5CFC; }
+
+  /* ===== 页脚 ===== */
+  .footer {
+    margin-top:12px; background:linear-gradient(90deg,#0B3D91,#1E63D0 60%,#3B82F6);
+    color:#fff; text-align:center; font-size:16px; font-weight:800; letter-spacing:1px;
+    padding:12px 10px; border-radius:14px 14px 0 0;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- 标题 -->
+  <div class="title-wrap">
+    <span class="spark l">✦</span><span class="spark r">✦</span>
+    <h1>企业Agent落地十一大工程框架</h1>
+  </div>
+  <div class="subtitle-row">
+    <div class="subtitle">六大纵向工程 + 五大横切工程，构建可信、可用、可持续进化的企业级 Agent 系统</div>
+  </div>
+
+  <!-- 栏目头 -->
+  <div class="section-heads">
+    <div class="sec-head left">纵向主链：Agent 能力建设路径 <span class="chev">»»</span></div>
+    <div class="sec-head right"><span class="chev">««</span> 横切支撑：企业级系统五大基石</div>
+  </div>
+
+  <!-- 主区域 -->
+  <div class="main">
+    <!-- 左列：6→1 -->
+    <div class="col">
+      <div class="card" style="--c:#8B5CF6">
+        <div class="badge">6</div>
+        <div class="body">
+          <div class="en">Loop Engineering</div>
+          <div class="cn">循环 / 闭环工程<span class="tag">让系统进化</span></div>
+          <ul><li>反馈 → 评估 → 诊断</li><li>优化 → 发布 → 再反馈</li><li>持续学习与迭代</li></ul>
+        </div>
+        <div class="iconbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><polyline points="21 3 21 8 16 8"/></svg></div>
+      </div>
+      <div class="up-arrow">▲</div>
+      <div class="card" style="--c:#2C5BA9">
+        <div class="badge">5</div>
+        <div class="body">
+          <div class="en">Harness Engineering</div>
+          <div class="cn">驾驭 / 编排工程<span class="tag">让系统上线</span></div>
+          <ul><li>系统编排与集成</li><li>监控、日志、成本管理</li><li>权限与流程控制</li></ul>
+        </div>
+        <div class="iconbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="20" y2="20"/><rect x="5" y="12" width="3.5" height="8" fill="currentColor" stroke="none"/><rect x="10.5" y="7" width="3.5" height="13" fill="currentColor" stroke="none"/><rect x="16" y="3" width="3.5" height="17" fill="currentColor" stroke="none"/></svg></div>
+      </div>
+      <div class="up-arrow">▲</div>
+      <div class="card" style="--c:#22B07D">
+        <div class="badge">4</div>
+        <div class="body">
+          <div class="en">Agent Engineering</div>
+          <div class="cn">智能体工程<span class="tag">让系统行动</span></div>
+          <ul><li>任务规划与决策</li><li>技能与工具调用</li><li>状态管理与多 Agent 协作</li></ul>
+        </div>
+        <div class="iconbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="3"/><line x1="12" y1="8" x2="12" y2="5"/><circle cx="12" cy="4" r="1.2"/><circle cx="9" cy="13" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="1.1" fill="currentColor" stroke="none"/><path d="M9.5 16.5h5"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg></div>
+      </div>
+      <div class="up-arrow">▲</div>
+      <div class="card" style="--c:#FF8A3D">
+        <div class="badge">3</div>
+        <div class="body">
+          <div class="en">Skill Engineering</div>
+          <div class="cn">技能工程<span class="tag">让能力复用</span></div>
+          <ul><li>技能识别与封装</li><li>技能组合与注册</li><li>技能评估与治理</li></ul>
+        </div>
+        <div class="iconbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="3" y1="13" x2="21" y2="13"/><line x1="12" y1="12" x2="12" y2="14"/></svg></div>
+      </div>
+      <div class="up-arrow">▲</div>
+      <div class="card" style="--c:#2E7CF6">
+        <div class="badge">2</div>
+        <div class="body">
+          <div class="en">Context Engineering</div>
+          <div class="cn">上下文工程<span class="tag">让模型知道</span></div>
+          <ul><li>检索与上下文构建</li><li>记忆管理与知识注入</li><li>信息压缩与状态维护</li></ul>
+        </div>
+        <div class="iconbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg></div>
+      </div>
+      <div class="up-arrow">▲</div>
+      <div class="card" style="--c:#7C5CFC">
+        <div class="badge">1</div>
+        <div class="body">
+          <div class="en">Prompt Engineering</div>
+          <div class="cn">提示词工程<span class="tag">让模型听懂</span></div>
+          <ul><li>指令、角色、任务</li><li>约束、格式、示例</li><li>推理引导与输出要求</li></ul>
+        </div>
+        <div class="iconbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.6 0-3.1-.4-4.3-1.2L3 20l1.2-5.2A8.5 8.5 0 1 1 21 11.5z"/></svg></div>
+      </div>
+    </div>
+
+    <!-- 中央 -->
+    <div class="center">
+      <div class="robot-stage">
+        <div class="orbit"></div>
+        <div class="robot-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="3"/><line x1="12" y1="8" x2="12" y2="5"/><circle cx="12" cy="4" r="1.2"/><circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none"/><path d="M9.5 16.5h5"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>
+        </div>
+      </div>
+      <div class="center-label">
+        <div class="t1">Agent 能力</div>
+        <div class="t2">从"会答"到"会做事"，再到"会进化"</div>
+      </div>
+      <div class="center-checks"><span>✔ 会复用</span><span>✔ 会做事</span><span>✔ 会进化</span></div>
+    </div>
+
+    <!-- 右列：7→11 -->
+    <div class="col">
+      <div class="card" style="--c:#16A34A">
+        <div class="badge">7</div>
+        <div class="body">
+          <div class="en">Data Engineering</div>
+          <div class="cn">数据工程</div>
+          <ul><li>数据采集、清洗、标注</li><li>知识库、数据权限</li><li>数据版本、数据质量</li></ul>
+        </div>
+        <div class="iconbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></div>
+      </div>
+      <div class="card" style="--c:#2563EB">
+        <div class="badge">8</div>
+        <div class="body">
+          <div class="en">Ontology Engineering</div>
+          <div class="cn">本体工程</div>
+          <ul><li>业务概念、实体、关系</li><li>属性、规则、约束</li><li>语义模型、知识图谱</li></ul>
+        </div>
+        <div class="iconbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="2.5"/><circle cx="18.5" cy="5" r="2.5"/><circle cx="18.5" cy="19" r="2.5"/><line x1="7.8" y1="10.8" x2="16.2" y2="6.2"/><line x1="7.8" y1="13.2" x2="16.2" y2="17.8"/></svg></div>
+      </div>
+      <div class="card" style="--c:#F59E0B">
+        <div class="badge">9</div>
+        <div class="body">
+          <div class="en">Evaluation Engineering</div>
+          <div class="cn">评估工程</div>
+          <ul><li>指标体系、测试集</li><li>自动评测、人工评测</li><li>线上评估、A/B 测试</li></ul>
+        </div>
+        <div class="iconbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 13l2 2 4-4"/></svg></div>
+      </div>
+      <div class="card" style="--c:#7C3AED">
+        <div class="badge">10</div>
+        <div class="body">
+          <div class="en">Safety / Governance</div>
+          <div class="cn">安全与治理工程</div>
+          <ul><li>权限控制、合规管理</li><li>隐私保护、安全边界</li><li>审计追踪、风险预警</li></ul>
+        </div>
+        <div class="iconbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/><path d="M9.5 11.5l2 2 3.5-3.5"/></svg></div>
+      </div>
+      <div class="card" style="--c:#0D9488">
+        <div class="badge">11</div>
+        <div class="body">
+          <div class="en">Product / UX Engineering</div>
+          <div class="cn">产品与体验工程</div>
+          <ul><li>人机协作设计</li><li>交互体验优化</li><li>用户采纳与业务价值</li></ul>
+        </div>
+        <div class="iconbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="13" height="10" rx="1.5"/><line x1="6" y1="18" x2="12" y2="18"/><line x1="9" y1="14" x2="9" y2="18"/><rect x="16.5" y="8" width="5" height="10" rx="1.5"/><line x1="18" y1="16" x2="20.5" y2="16"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 核心价值条 -->
+  <div class="strip">
+    <div class="strip-head">十一大工程核心价值概括</div>
+    <div class="strip-grid">
+      <div class="cell"><div class="num" style="background:#7C5CFC">1</div><div class="nm">Prompt</div><div class="tg">让模型听懂</div><div class="ic" style="color:#7C5CFC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.6 0-3.1-.4-4.3-1.2L3 20l1.2-5.2A8.5 8.5 0 1 1 21 11.5z"/></svg></div></div>
+      <div class="cell"><div class="num" style="background:#2E7CF6">2</div><div class="nm">Context</div><div class="tg">让模型知道</div><div class="ic" style="color:#2E7CF6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg></div></div>
+      <div class="cell"><div class="num" style="background:#FF8A3D">3</div><div class="nm">Skill</div><div class="tg">让能力复用</div><div class="ic" style="color:#FF8A3D"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="3" y1="13" x2="21" y2="13"/><line x1="12" y1="12" x2="12" y2="14"/></svg></div></div>
+      <div class="cell"><div class="num" style="background:#22B07D">4</div><div class="nm">Agent</div><div class="tg">让系统行动</div><div class="ic" style="color:#22B07D"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="3"/><line x1="12" y1="8" x2="12" y2="5"/><circle cx="12" cy="4" r="1.2"/><circle cx="9" cy="13" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="1.1" fill="currentColor" stroke="none"/><path d="M9.5 16.5h5"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg></div></div>
+      <div class="cell"><div class="num" style="background:#2C5BA9">5</div><div class="nm">Harness</div><div class="tg">让系统上线</div><div class="ic" style="color:#2C5BA9"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="20" y2="20"/><rect x="5" y="12" width="3.5" height="8" fill="currentColor" stroke="none"/><rect x="10.5" y="7" width="3.5" height="13" fill="currentColor" stroke="none"/><rect x="16" y="3" width="3.5" height="17" fill="currentColor" stroke="none"/></svg></div></div>
+      <div class="cell"><div class="num" style="background:#8B5CF6">6</div><div class="nm">Loop</div><div class="tg">让系统进化</div><div class="ic" style="color:#8B5CF6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><polyline points="21 3 21 8 16 8"/></svg></div></div>
+      <div class="cell"><div class="num" style="background:#16A34A">7</div><div class="nm">Data</div><div class="tg">让数据可用</div><div class="ic" style="color:#16A34A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></div></div>
+      <div class="cell"><div class="num" style="background:#2563EB">8</div><div class="nm">Ontology</div><div class="tg">让业务语义可理解</div><div class="ic" style="color:#2563EB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="2.5"/><circle cx="18.5" cy="5" r="2.5"/><circle cx="18.5" cy="19" r="2.5"/><line x1="7.8" y1="10.8" x2="16.2" y2="6.2"/><line x1="7.8" y1="13.2" x2="16.2" y2="17.8"/></svg></div></div>
+      <div class="cell"><div class="num" style="background:#F59E0B">9</div><div class="nm">Evaluation</div><div class="tg">让效果可衡量</div><div class="ic" style="color:#F59E0B"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 13l2 2 4-4"/></svg></div></div>
+      <div class="cell"><div class="num" style="background:#7C3AED">10</div><div class="nm">Safety</div><div class="tg">让系统安全合规</div><div class="ic" style="color:#7C3AED"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/><path d="M9.5 11.5l2 2 3.5-3.5"/></svg></div></div>
+      <div class="cell"><div class="num" style="background:#0D9488">11</div><div class="nm">Product / UX</div><div class="tg">让用户愿意使用</div><div class="ic" style="color:#0D9488"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="13" height="10" rx="1.5"/><line x1="6" y1="18" x2="12" y2="18"/><line x1="9" y1="14" x2="9" y2="18"/><rect x="16.5" y="8" width="5" height="10" rx="1.5"/><line x1="18" y1="16" x2="20.5" y2="16"/></svg></div></div>
+    </div>
+  </div>
+
+  <!-- 底部 -->
+  <div class="bottom">
+    <div class="panel table-panel">
+      <div class="panel-head">十一大工程一览表</div>
+      <table>
+        <tr><th>序号</th><th>工程</th><th>类型</th><th>核心问题</th><th>企业落地作用</th></tr>
+        <tr><td>1</td><td class="en">Prompt Engineering</td><td class="v" style="color:#1E63D0">纵向</td><td class="q">如何把任务说清楚？</td><td class="q">让模型稳定理解任务与输出要求</td></tr>
+        <tr><td>2</td><td class="en">Context Engineering</td><td class="v" style="color:#1E63D0">纵向</td><td class="q">给模型什么信息？</td><td class="q">让模型基于企业知识、用户状态和业务规则工作</td></tr>
+        <tr><td>3</td><td class="en">Skill Engineering</td><td class="v" style="color:#1E63D0">纵向</td><td class="q">如何把能力标准化、复用化？</td><td class="q">将 Prompt、上下文、本体、工具规则封装为技能</td></tr>
+        <tr><td>4</td><td class="en">Agent Engineering</td><td class="v" style="color:#1E63D0">纵向</td><td class="q">如何让模型行动？</td><td class="q">让模型规划任务、调用技能和工具、执行流程</td></tr>
+        <tr><td>5</td><td class="en">Harness Engineering</td><td class="v" style="color:#1E63D0">纵向</td><td class="q">如何让系统协同运行？</td><td class="q">把模型、工具、本体、技能、数据整合成系统</td></tr>
+        <tr><td>6</td><td class="en">Loop Engineering</td><td class="v" style="color:#1E63D0">纵向</td><td class="q">如何让系统持续变好？</td><td class="q">用反馈和评估持续优化系统</td></tr>
+        <tr><td>7</td><td class="en">Data Engineering</td><td class="v" style="color:#7C3AED">横切</td><td class="q">数据是否可用、可信、合规？</td><td class="q">支撑知识库、上下文、本体、技能、评估和决策</td></tr>
+        <tr><td>8</td><td class="en">Ontology Engineering</td><td class="v" style="color:#7C3AED">横切</td><td class="q">业务知识如何结构化表达？</td><td class="q">定义业务概念、对象、关系、规则和语义边界</td></tr>
+        <tr><td>9</td><td class="en">Evaluation Engineering</td><td class="v" style="color:#7C3AED">横切</td><td class="q">怎么知道 Agent 做得好不好？</td><td class="q">建立质量标准、测试集、评测体系和上线门槛</td></tr>
+        <tr><td>10</td><td class="en">Safety / Governance</td><td class="v" style="color:#7C3AED">横切</td><td class="q">系统是否安全、合规、可控？</td><td class="q">保障权限、隐私、审计、风险和责任边界</td></tr>
+        <tr><td>11</td><td class="en">Product / UX Engineering</td><td class="v" style="color:#7C3AED">横切</td><td class="q">用户是否会用、愿用、信任？</td><td class="q">设计人机协作体验，提高采纳率和业务价值</td></tr>
+      </table>
+    </div>
+    <div class="panel why-panel">
+      <div class="panel-head">为什么是"六大纵向工程 + 五大横切工程"？</div>
+      <div class="why-body">
+        <div class="why-box chain">
+          <div class="h">能力递进链条（解决"如何变强"）</div>
+          <div class="flow">
+            <span class="node">Prompt</span><span class="arr">→</span>
+            <span class="node">Context</span><span class="arr">→</span>
+            <span class="node">Skill</span><span class="arr">→</span>
+            <span class="node">Agent</span><span class="arr">→</span>
+            <span class="node">Harness</span><span class="arr">→</span>
+            <span class="node">Loop</span>
+          </div>
+          <div class="ans">回答：Agent 能力如何从简单回答，逐步走向任务执行、生产上线和持续进化？</div>
+        </div>
+        <div class="why-box cross">
+          <div class="h">横切支撑体系（解决"如何可信可用"）</div>
+          <div class="flow crossflow">
+            <span class="node">Data</span><span class="arr">→</span>
+            <span class="node">Ontology</span><span class="arr">→</span>
+            <span class="node">Evaluation</span><span class="arr">→</span>
+            <span class="node">Safety</span><span class="arr">→</span>
+            <span class="node">Product / UX</span>
+          </div>
+          <div class="ans">回答：整个 Agent 系统如何做到可信、可懂、可测、可控、可用？</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 页脚 -->
+  <div class="footer">🏆&nbsp;&nbsp;纵向构建能力，横向保障体系，打造可落地、可复制、可进化的企业级 Agent 系统！&nbsp;&nbsp;🚀</div>
+
+</div>
+</body>
+</html>

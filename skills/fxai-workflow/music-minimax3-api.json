@@ -1,0 +1,164 @@
+{
+  "44": {
+    "inputs": {
+      "unet_name": "minimax_music3_dit_fp32.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "45": {
+    "inputs": {
+      "clip_name": "minimax_music3_text_encoder_pruned_int8_convrot.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "46": {
+    "inputs": {
+      "vae_name": "minimax_music3_dav.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "47": {
+    "inputs": {
+      "conditioning": [
+        "54",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "条件零化"
+    }
+  },
+  "48": {
+    "inputs": {
+      "seconds": [
+        "54",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyMiniMaxMusic3LatentAudio",
+    "_meta": {
+      "title": "Empty MiniMax Music3 Latent Audio"
+    }
+  },
+  "49": {
+    "inputs": {
+      "seed": [
+        "51",
+        0
+      ],
+      "steps": 30,
+      "cfg": 1.7,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "44",
+        0
+      ],
+      "positive": [
+        "54",
+        0
+      ],
+      "negative": [
+        "47",
+        0
+      ],
+      "latent_image": [
+        "48",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "51": {
+    "inputs": {
+      "seed": "fxai_seed"
+    },
+    "class_type": "SeedNode",
+    "_meta": {
+      "title": "种子"
+    }
+  },
+  "52": {
+    "inputs": {
+      "tile_size": 1536,
+      "overlap": 64,
+      "samples": [
+        "49",
+        0
+      ],
+      "vae": [
+        "46",
+        0
+      ]
+    },
+    "class_type": "VAEDecodeAudioTiled",
+    "_meta": {
+      "title": "VAE解码音频（分块）"
+    }
+  },
+  "54": {
+    "inputs": {
+      "caption": "fxai_prompt",
+      "lyrics": "fxai_lyrics",
+      "seed": [
+        "51",
+        0
+      ],
+      "max_duration": "fxai_music_duration",
+      "cfg_scale": 1.7,
+      "top_k": 50,
+      "clip": [
+        "45",
+        0
+      ]
+    },
+    "class_type": "MiniMaxMusic3TextEncode",
+    "_meta": {
+      "title": "MiniMax Music3 Text Encode"
+    }
+  },
+  "56": {
+    "inputs": {
+      "目录": "音乐生成",
+      "audio_ui": "",
+      "音频": [
+        "52",
+        0
+      ]
+    },
+    "class_type": "FxAiAudioManager",
+    "_meta": {
+      "title": "凤希AI - 音频管理器"
+    }
+  },
+  "58": {
+    "inputs": {
+      "anything": [
+        "56",
+        2
+      ]
+    },
+    "class_type": "FxAiCleanGpu",
+    "_meta": {
+      "title": "清理显存占用"
+    }
+  }
+}

@@ -1,0 +1,103 @@
+================================================================
+云端语音模型 · 魔搭（ModelScope）下载地址
+================================================================
+
+【已实测】
+  千问两个仓库在魔搭真实存在，直链实测 200 可下载。
+  魔搭在国内，下行速度比 hf-mirror 稳。
+
+【跟 hf-mirror 版的一个差别】
+  魔搭仓库根目录多一个 configuration.json，HF 那边没有。
+  下面清单已按魔搭的实际文件列表给全（共 11 个），别按 HF 的 11 个去套。
+
+【怎么用】
+  1. 每组URL 一条一条复制到控制台 URL 栏
+  2. 每组的"下载路径"单独填，别串组
+  3. 小文件（json / txt）先下，最后下大文件（.safetensors）
+
+================================================================
+第 1 组：千问TTS CustomVoice（11 条，4.3G）默认引擎
+================================================================
+
+下载路径：
+/root/qwen3tts/models/Qwen3-TTS-12Hz-1.7B-CustomVoice
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/master/config.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/master/configuration.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/master/generation_config.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/master/preprocessor_config.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/master/tokenizer_config.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/master/vocab.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/master/merges.txt
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/master/speech_tokenizer/config.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/master/speech_tokenizer/configuration.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/master/speech_tokenizer/preprocessor_config.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/master/speech_tokenizer/model.safetensors
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/master/model.safetensors
+
+
+================================================================
+第 2 组：千问TTS Base（11 条，4.3G）声音克隆，可选
+================================================================
+
+下载路径：
+/root/qwen3tts/models/Qwen3-TTS-12Hz-1.7B-Base
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/master/config.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/master/configuration.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/master/generation_config.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/master/preprocessor_config.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/master/tokenizer_config.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/master/vocab.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/master/merges.txt
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/master/speech_tokenizer/config.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/master/speech_tokenizer/configuration.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/master/speech_tokenizer/preprocessor_config.json
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/master/speech_tokenizer/model.safetensors
+
+https://www.modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/master/model.safetensors
+
+
+================================================================
+Whisper 转写（5 条，1.6G）—— 魔搭上没有，用 hf-mirror
+================================================================
+
+下载路径：
+/root/whisper/models
+
+https://hf-mirror.com/mobiuslabsgmbh/faster-whisper-large-v3-turbo/resolve/main/config.json
+
+https://hf-mirror.com/mobiuslabsgmbh/faster-whisper-large-v3-turbo/resolve/main/preprocessor_config.json
+
+https://hf-mirror.com/mobiuslabsgmbh/faster-whisper-large-v3-turbo/resolve/main/tokenizer.json
+
+https://hf-mirror.com/mobiuslabsgmbh/faster-whisper-large-v3-turbo/resolve/main/vocabulary.json
+
+https://hf-mirror.com/mobiuslabsgmbh/faster-whisper-large-v3-turbo/resolve/main/model.bin
+
+
+================================================================
+CosyVoice3  —— 缺清单，等确认
+================================================================
+用哪个 checkpoint + 服务端代码在哪，都还没定。确认后我再补。

@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "_note": "项目类别唯一事实源。加类别只改这份文件，再跑 scripts/sync_categories.py 生成客户端页面；三个脚本运行时直接读它。",
+  "order": ["drama", "anime", "mv", "music", "image", "voiceover", "ad", "novel", "wechat", "remake", "other"],
+  "items": {
+    "drama": {
+      "name": "短剧",
+      "icon": "bi-film",
+      "color": "#4a6cf7",
+      "words": ["短剧", "剧集"],
+      "stages": ["script", "image", "audio", "video", "publish"],
+      "skill": "fxai-short-drama"
+    },
+    "anime": {
+      "name": "番剧",
+      "icon": "bi-collection-play",
+      "color": "#8b5cf6",
+      "words": ["番剧", "动漫", "动画"],
+      "stages": ["script", "image", "audio", "video", "publish"],
+      "skill": "fxai-short-drama"
+    },
+    "mv": {
+      "name": "MV",
+      "icon": "bi-music-note",
+      "color": "#ec4899",
+      "words": ["mv", "音乐视频"],
+      "stages": ["script", "image", "audio", "video", "publish"],
+      "skill": "fxai-mv-pipeline"
+    },
+    "music": {
+      "name": "音乐",
+      "icon": "bi-music-note-beamed",
+      "color": "#f59e0b",
+      "words": ["音乐", "歌曲", "音频"],
+      "stages": ["script", "audio", "image"],
+      "skill": "fxai-yue2"
+    },
+    "image": {
+      "name": "图片",
+      "icon": "bi-image",
+      "color": "#10b981",
+      "words": ["生图", "图片", "海报", "素材"],
+      "stages": ["image", "publish"],
+      "skill": "fxai-comfyui-image-gen"
+    },
+    "voiceover": {
+      "name": "口播",
+      "icon": "bi-mic",
+      "color": "#0ea5e9",
+      "words": ["口播", "数字人", "讲解"],
+      "stages": ["script", "audio", "video", "publish"],
+      "skill": "fxai-digital-human-video"
+    },
+    "ad": {
+      "name": "广告",
+      "icon": "bi-megaphone",
+      "color": "#f43f5e",
+      "words": ["广告", "广告片", "广告视频", "宣传片", "投放"],
+      "stages": ["script", "image", "audio", "video", "publish"],
+      "comment": "广告：立项/创意 → 画面 → 音频 → 成片 → 投放物料",
+      "skill": "fxai-ad-video"
+    },
+    "novel": {
+      "name": "小说",
+      "icon": "bi-book",
+      "color": "#6366f1",
+      "words": ["小说", "写作", "章节"],
+      "stages": ["script", "publish"],
+      "skill": "fxai-novel-writing"
+    },
+    "wechat": {
+      "name": "公众号",
+      "icon": "bi-chat-square-text",
+      "color": "#07c160",
+      "words": ["公众号", "微信", "推文", "图文"],
+      "stages": ["script", "image", "audio", "video", "publish"],
+      "comment": "公众号：选题/写稿 → 配图 → （口播音频/视频可选）→ 发布",
+      "skill": ""
+    },
+    "remake": {
+      "name": "复刻",
+      "icon": "bi-copy",
+      "color": "#14b8a6",
+      "words": ["复刻", "替换", "换脸", "换装", "角色复刻", "场景复刻", "角色替换"],
+      "stages": ["script", "image", "audio", "video", "publish"],
+      "comment": "复刻：角色复刻 / 整片场景复刻；「替换」「换脸」「角色替换」等旧叫法只作识别别名，磁盘上已有的老目录照样归得进来",
+      "skill": "fxai-face-edit"
+    },
+    "other": {
+      "name": "其他",
+      "icon": "bi-folder2",
+      "color": "#64748b",
+      "words": [],
+      "stages": ["script", "image", "audio", "video"],
+      "skill": ""
+    }
+  }
+}

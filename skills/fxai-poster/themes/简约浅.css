@@ -1,0 +1,15 @@
+/*
+简约浅 · 浅色底 + 深色字 + 单色强调
+适用：知识分享 / 职场 / 财经 / 清单干货 / 横版海报
+*/
+:root{
+  --bg1:#f7f9fc; --bg2:#eef2f8; --bg3:#e3e9f3;
+  --ink:#12203a; --ink2:#4a6183; --ink3:#8494ad;
+  --ac:#1a5fd0; --acsoft:rgba(26,95,208,.10);
+  --hl:#d9822b;
+  --grid:rgba(18,32,58,.05);
+  --panelrgba:rgba(18,32,58,.05);
+  --panelborder:rgba(18,32,58,.16);
+  --rule1:#1a5fd0; --rule2:#d9822b;
+  --font:"Microsoft YaHei","微软雅黑",sans-serif;
+}

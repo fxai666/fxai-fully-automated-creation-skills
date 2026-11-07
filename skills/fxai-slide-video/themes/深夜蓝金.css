@@ -1,0 +1,17 @@
+/*
+深夜蓝金 · 默认样式
+深蓝底 + 金橙强调：科技 / AI / 工具教程 / 知识口播 / 干货盘点（通用首选）
+*/
+:root{
+  --bg1:#0f2740; --bg2:#08172a; --bg3:#040a14;
+  --ink:#eaf1fb; --ink2:#9fb4d4; --ink3:#7fb0e8;
+  --ac:#ffb020; --ac2:#ff6b35; --acsoft:#ffd479;
+  --ac3:#2fe6a0; --ac4:#4aa8ff; --ac5:#ff6b9d; --ac6:#c08cff; --ac3soft:#173a2e;
+  --onac:#0a1626; --bad:#ff6b6b;
+  --panel:#16233b; --panelrgb:30,70,120; --panel2rgb:12,26,48;
+  --onpanel:#ffffff; --onpanel2:#c7d6ee;
+  --card:#ffffff; --cardink:#16233b;
+  --linergb:120,170,230; --chiprgb:255,255,255; --shadowrgb:0,0,0;
+  --bubble:#f2f5fa; --bubbleink:#16233b;
+  --acrgb:255,176,32; --ac2rgb:255,107,53; --ac3rgb:47,230,160; --badrgb:255,107,107;
+}

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "name": "MV 音乐工作区配置（复制为 config.json 后按需填写）",
+  "characters": {
+    "女主": {
+      "id": "ref_woman",
+      "role": "woman",
+      "ref_image": "avatar/000.png",
+      "type": "face",
+      "desc": "面部特征参考图（仅标记，面貌以参考图为准，由图复刻五官）",
+      "enabled": true
+    },
+    "男主": {
+      "id": "ref_man",
+      "role": "man",
+      "ref_image": "avatar/001.png",
+      "type": "face",
+      "desc": "面部特征参考图（仅标记，面貌以参考图为准，由图复刻五官）",
+      "enabled": true
+    }
+  },
+  "defaults": {
+    "landscape_width": 1920,
+    "landscape_height": 1080,
+    "mv_width": 1280,
+    "mv_height": 768,
+    "video_max_edge": 1300,
+    "audio_segment_seconds": 10
+  }
+}

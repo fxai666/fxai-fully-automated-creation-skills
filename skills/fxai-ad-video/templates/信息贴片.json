@@ -1,0 +1,27 @@
+{
+  "infocards": [
+    {
+      "text": "<参数>\n<效果>",
+      "shape": "card",
+      "pos": { "x": 0.23, "y": 0.42 },
+      "anim": "fade",
+      "t": 0,
+      "hold": 2.6,
+      "theme": "mono",
+      "fontsize": 30,
+      "max_w": 360
+    },
+    {
+      "text": "<参数>\n<效果>",
+      "shape": "card",
+      "pos": { "x": 0.23, "y": 0.58 },
+      "anim": "fade",
+      "t": 0,
+      "hold": 2.6,
+      "theme": "mono",
+      "fontsize": 30,
+      "max_w": 360
+    }
+  ],
+  "_note": "字段结构归 fxai-infocard/references/03；本条只记广告侧取值——pos 落在左侧竖列 x≈0.23 或右侧 0.77，避开人脸中心与底部字幕区；每条 ≤2 行、单行 ≤14 字；t 与 hold 按口播段落配，条间留 0.3s"
+}

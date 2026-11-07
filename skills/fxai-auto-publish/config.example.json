@@ -1,0 +1,81 @@
+{
+  "version": 3,
+  "note": "共享规则模板：只放默认值、字段名与归属声明。零站点、零账号、零凭据、零本机绝对路径。实例目录指针写在全局配置文件里，不在本文件。",
+  "ownership": {
+    "L0_skill": "全局实现规范与技术路线（本技能包，跨账号/客户端/项目共享）",
+    "L1_global_config": "实例目录指针（~/.workbuddy/fxai_global.json 的 publish_hub 段）",
+    "L2_hub": "站点条目 + 账号注册表 + 任务队列 + 登录态凭据（实例目录内）",
+    "L3_project": "发布材料清单 + 封面/标题/简介/标签 + 发布信息.md（每个项目自己的目录）"
+  },
+  "global_config": {
+    "path": "~/.workbuddy/fxai_global.json",
+    "section": "publish_hub",
+    "pointer_field": "hub_dir",
+    "note": "只放实例目录指针；站点条目与账号信息都在 hub_dir 内。换账号登录后仍从此处读取。"
+  },
+  "hub_env": "FXAI_PUBLISH_HUB",
+  "hub_env_role": "仅临时覆盖（不落盘、不改全局配置）；默认来源是全局配置",
+  "hub_resolver": "scripts/resolve_hub.py",
+  "hub_initializer": "scripts/init_hub.py",
+  "defaults": {
+    "require_release_sheet": true,
+    "dry_run_by_default": true,
+    "ai_generated_by_default": true,
+    "explicit_account_required": true,
+    "default_account_hint": "默认账号由实例目录 config/accounts.json 决定；本文件不写账号"
+  },
+  "sites_source": "实例目录 config/sites/<站点标识>.json，一站一文件；本文件不预置任何站点条目、域名或选择器",
+  "site_schema_ref": "templates/实例骨架.json 的 site_schema 段",
+  "chrome_runtime": "fxai-standard/scripts/ensure_chrome.py",
+  "browser_viewport": {
+    "width": 1440,
+    "height": 900,
+    "device_scale_factor": 1,
+    "locked": true,
+    "note": "固定视口：截图恒为 1440×900；视口漂移即判站点记录失效"
+  },
+  "entry": {
+    "url_source": "实例目录站点条目的 types.<内容类型>.upload_url（唯一来源；站点 × 类型各一地址）",
+    "timeout_ms": 8000,
+    "reuse": "命中即复用、零分析零写盘；失效才导出 DOM 重新校准",
+    "sheet": "实例目录 config/发布页直达清单.md（只作记录，不参与运行）"
+  },
+  "project_receipt": {
+    "materials_manifest": "发布材料清单.md",
+    "filename": "发布信息.md",
+    "manifest_tool": "fxai_project.py",
+    "stage": "publish",
+    "write_manifest_by_hand": false,
+    "states": [
+      "待确认",
+      "已提交",
+      "审核中",
+      "已发布",
+      "被拒",
+      "发布未验证"
+    ]
+  },
+  "guards": {
+    "no_hardcoded_abs_path": true,
+    "no_credentials_in_skill": true,
+    "no_site_records_in_skill": true,
+    "global_config_only_pointer": true,
+    "shared_in_fxai_packer": true,
+    "reason": "公共可分享技能使用 fxai- 前缀；站点名称、域名、专属接口路径、选择器值、账号别名与凭据一律只落实例目录"
+  },
+  "content_routing": {
+    "types": {
+      "video": "视频（单个视频文件）",
+      "image_text": "图文（多图 + 短文案）",
+      "article": "文章（长正文）"
+    },
+    "select": "站点条目 types 里有该键即算该类型渠道；只为确实支持的类型建键",
+    "fan_out": "add --platform all 展开到所有支持该类型的站点；run --type <类型> 只跑该类型任务",
+    "per_type_entry": "地址 / entry_pre / entry_state 都挂在类型下，一个类型验证通过不影响另一个"
+  },
+  "login_modes": {
+    "qr": "默认：抓二维码图片交用户扫，轮询登录态",
+    "manual": "只有短信验证码 / 图形验证码 / 密码的站点：开有头窗口由用户亲手登，登完自动接管落盘",
+    "boundary": "只开窗不代填：不代填手机号、不代收验证码、不代输密码"
+  }
+}

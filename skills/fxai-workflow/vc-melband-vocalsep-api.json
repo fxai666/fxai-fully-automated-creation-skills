@@ -1,0 +1,62 @@
+{
+  "815": {
+    "inputs": {
+      "音频文件": "fxai_audioinput"
+    },
+    "class_type": "FxAiAudioSelector",
+    "_meta": {
+      "title": "凤希AI - 音频选择器"
+    }
+  },
+  "820": {
+    "inputs": {
+      "模型": [
+        "821",
+        0
+      ],
+      "音频": [
+        "815",
+        0
+      ]
+    },
+    "class_type": "FxAiMelRoformerSampler",
+    "_meta": {
+      "title": "凤希AI - 人声分离"
+    }
+  },
+  "821": {
+    "inputs": {
+      "模型文件": "MelBandRoformer_fp32.safetensors"
+    },
+    "class_type": "FxAiMelRoformerLoader",
+    "_meta": {
+      "title": "凤希AI - 人声分离模型加载"
+    }
+  },
+  "816": {
+    "inputs": {
+      "目录": "fxai_outputdir",
+      "audio_ui": "",
+      "音频": [
+        "820",
+        0
+      ]
+    },
+    "class_type": "FxAiAudioManager",
+    "_meta": {
+      "title": "凤希AI - 音频管理器"
+    }
+  },
+  "819": {
+    "inputs": {
+      "anything": [
+        "816",
+        2
+      ]
+    },
+    "class_type": "FxAiClearCache",
+    "_meta": {
+      "title": "清除全部缓存"
+    }
+  }
+}

@@ -1,0 +1,95 @@
+================================================================
+CosyVoice3 · 下载清单（唯一缺口，8182 服务）
+================================================================
+
+【仓库名】FunAudioLLM/Fun-CosyVoice3-0.5B-2512
+【已实测】魔搭 repo/files 返回 14 项 / 8.15GB，直链cosyvoice3.yaml 拉取 200 正常
+【合计】9.07 GB · 21 个文件 · 正好在单实例 30 条任务上限内
+
+================================================================
+第 1 组：根目录小文件（6 条，<1M）
+================================================================
+
+下载路径：
+/root/cosyvoice/pretrained_models/Fun-CosyVoice3-0.5B
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/configuration.json
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/cosyvoice3.yaml
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/campplus.onnx
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/hift.pt
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/README.md
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/.gitattributes
+
+
+================================================================
+第 2 组：根目录大文件（6 条，8.15G）
+================================================================
+
+下载路径：
+/root/cosyvoice/pretrained_models/Fun-CosyVoice3-0.5B
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/llm.pt
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/llm.rl.pt
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/flow.pt
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/flow.decoder.estimator.fp32.onnx
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/speech_tokenizer_v3.onnx
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/speech_tokenizer_v3.batch.onnx
+
+
+================================================================
+第 3 组：CosyVoice-BlankEN 子目录（6 条，0.92G）★ 别漏子目录
+================================================================
+
+下载路径：
+/root/cosyvoice/pretrained_models/Fun-CosyVoice3-0.5B/CosyVoice-BlankEN
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/CosyVoice-BlankEN/config.json
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/CosyVoice-BlankEN/generation_config.json
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/CosyVoice-BlankEN/tokenizer_config.json
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/CosyVoice-BlankEN/vocab.json
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/CosyVoice-BlankEN/merges.txt
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/CosyVoice-BlankEN/model.safetensors
+
+
+================================================================
+第 4 组：asset 子目录（1 条，可选）
+================================================================
+
+下载路径：
+/root/cosyvoice/pretrained_models/Fun-CosyVoice3-0.5B/asset
+
+https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512/resolve/master/asset/dingding.png
+
+
+================================================================
+下完必须做的验收（别只看体积）
+================================================================
+
+# 1. 逐文件非空校验（平台下载器会把小 json 下成 0 字节，Whisper 就中过招）
+cd /root/cosyvoice/pretrained_models/Fun-CosyVoice3-0.5B
+for f in configuration.json cosyvoice3.yaml campplus.onnx hift.pt llm.pt llm.rl.pt \
+         flow.pt flow.decoder.estimator.fp32.onnx \
+         speech_tokenizer_v3.onnx speech_tokenizer_v3.batch.onnx \
+         CosyVoice-BlankEN/config.json CosyVoice-BlankEN/vocab.json \
+         CosyVoice-BlankEN/merges.txt CosyVoice-BlankEN/model.safetensors; do
+  s=$(stat -c %s "$f" 2>/dev/null || echo 0)
+  [ "$s" -gt 0 ] && echo "OK   $f  $s" || echo "空!  $f"
+done
+
+# 2. 总体积对账：期望约 9.1G
+du -sh /root/cosyvoice/pretrained_models/Fun-CosyVoice3-0.5B

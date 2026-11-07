@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "note": "实例目录站点配置骨架。sites 初始为空，按 references/03 接入站点时逐条填入。本文件不含任何站点名称、域名、选择器值、账号别名与凭据。",
+  "defaults": {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "device_scale_factor": 1,
+    "viewport_lock": true,
+    "entry_timeout_ms": 8000,
+    "form_wait_ms": 120000,
+    "login_check_every_s": 60,
+    "login_force_refresh_s": 240,
+    "login_timeout_s": 900,
+    "qr_enlarge_factor": 4
+  },
+  "sites": {},
+  "site_schema": {
+    "<站点标识>": {
+      "enabled": "bool｜字段齐备且用真实表单页验证后置 true",
+      "label": "str｜日志与发布单里的展示名",
+      "login_url": "str｜登录页入口",
+      "login_mode": "str｜qr（默认，抓码给用户扫）/ manual（开有头窗口由用户亲手登，登完自动接管）",
+      "login_cookies": "list[str]｜判定登录态的 cookie 名",
+      "qr_selectors": "list[str]｜二维码容器候选，按序探测",
+      "qr_refresh_texts": "list[str]｜换码控件可见文案",
+      "qr_expired_texts": "list[str]｜过期提示文案",
+      "video_inputs": "list[str]｜成片上传控件候选，按媒体类型精确匹配优先",
+      "cover_inputs": "list[str]｜封面上传控件候选",
+      "fields": "dict[str, list[str]]｜title / descr / tags / cover 各自候选",
+      "ai_declaration_texts": "list[str]｜AI 生成声明入口可见文案",
+      "submit_texts": "list[str]｜投稿按钮可见文案",
+      "success_hints": "list[str]｜提交成功提示文案",
+      "login_pre": "list[dict]｜登录页入口动作（点登录 / 切扫码），首次登录记录一次",
+      "extra_pre": "list[dict]｜上传前附加动作",
+      "extra_post": "list[dict]｜填表后附加动作",
+      "notes": "str｜人工笔记与校准状态",
+      "types": "dict｜内容类型 → 发布页条目；同一站点的视频页与图文页是不同地址，各记各的。键取 video / image_text / article，只为确实支持的类型建键",
+      "types_schema": {
+        "label": "str｜该类型展示名，如 视频 / 图文 / 文章",
+        "upload_url": "str｜该类型发布页地址；空串=支持但地址未记录，不算失效",
+        "entry_pre": "list[dict]｜进入该类型发布页的入口动作，与地址一起复用",
+        "media_inputs": "list[str]｜该类型上传控件候选，缺省回落到站点级 video_inputs",
+        "entry_state": "dict｜视口指纹 / verified_at / hits / fails / state（unverified / verified / stale）",
+        "path_log": "list[dict]｜该格动作台账：goal / action / method / target / pitfall / check / verified_at；跑通即回写，见 11 册"
+      },
+      "switches": "str｜按需开关：tags_in_desc / title_in_desc / title_last / cover_mode=auto / ai_declaration_actions / limits / common_block=false"
+    }
+  },
+  "accounts_schema": {
+    "version": 1,
+    "note": "只存站点标识、默认账号、账号别名与备注；不存任何凭据",
+    "accounts": {}
+  },
+  "gitignore_entries": [
+    "profiles/",
+    "cookies/",
+    "logs/qr/",
+    "config/accounts.json",
+    "tasks.db",
+    "__pycache__/",
+    "*.pyc"
+  ]
+}

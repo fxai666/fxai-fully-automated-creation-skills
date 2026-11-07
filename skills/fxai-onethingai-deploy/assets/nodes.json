@@ -1,0 +1,23 @@
+{
+  "_comment": "凤希技能包 · ComfyUI 自定义节点清单。工作流里出现的 FxAi* 节点全部来自这里；其余节点（UNETLoader/CLIPLoader/VAELoader/KSampler/ImageStitch/LTXVSeparateAVLatent/LTXVConcatAVLatent/MiniMaxH3SigmaShift/ModelAttentionBackend/YuE2*/SeedNode/EmptyYuE2LatentAudio/VAEDecodeAudio/SamplerCustomAdvanced/ManualSigmas/BasicGuider/BasicScheduler/KSamplerSelect/RandomNoise/ConditioningZeroOut/VAEDecode/FxAiMelRoformerLoader/FxAiMelRoformerSampler/PrimitiveStringMultiline）都是 ComfyUI 内置或 fxai-toolkit 自带，要求 ComfyUI >= 0.30.0（H3 支持）。FxAiMelRoformerLoader / FxAiMelRoformerSampler 由 fxai-toolkit 提供（2026-10-02 确认）。",
+  "comfy_min_version": "0.30.0",
+  "comfy_repo": "https://github.com/comfyanonymous/ComfyUI.git",
+  "nodes": [
+    {
+      "id": "fxai_toolkit",
+      "name": "fxai-toolkit",
+      "repo": "https://github.com/fxai666/fxai-toolkit.git",
+      "required": 1,
+      "provides": "全部 FxAi* 节点（图片/音频/视频管理器、MiniMax H3 图生视频、YuE2、放大器、控制器、/fxai HTTP 接口、/fxai/down/file、/fxai/tasks/result）",
+      "note": "凤希全能节点包，本技能包的心脏；没有它整套工作流跑不起来"
+    },
+    {
+      "id": "manager",
+      "name": "ComfyUI-Manager",
+      "repo": "https://github.com/Comfy-Org/ComfyUI-Manager.git",
+      "required": 0,
+      "provides": "节点管理 / 一键装依赖",
+      "note": "可选，装了省事；不装也能跑"
+    }
+  ]
+}

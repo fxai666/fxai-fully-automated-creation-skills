@@ -1,0 +1,204 @@
+{
+  "41": {
+    "inputs": {
+      "ckpt_name": "yue2_3b_bf16.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Checkpoint加载器（简易）"
+    }
+  },
+  "42": {
+    "inputs": {
+      "style": [
+        "53",
+        0
+      ],
+      "lyrics": [
+        "54",
+        0
+      ],
+      "seed": [
+        "52",
+        0
+      ],
+      "mode": "full",
+      "max_abc_tokens": 8192,
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "top_k": 30,
+      "repetition_penalty": 1.005,
+      "penalty_window": 100,
+      "clip": [
+        "41",
+        1
+      ]
+    },
+    "class_type": "YuE2GenerateABC",
+    "_meta": {
+      "title": "YuE2 Generate ABC"
+    }
+  },
+  "45": {
+    "inputs": {
+      "style": [
+        "53",
+        0
+      ],
+      "lyrics": [
+        "54",
+        0
+      ],
+      "abc": [
+        "42",
+        0
+      ],
+      "seed": [
+        "52",
+        0
+      ],
+      "mode": "full",
+      "max_duration": 360,
+      "temperature": 1,
+      "top_p": 0.95,
+      "top_k": 100,
+      "repetition_penalty": 1.2,
+      "cfg_scale": 1,
+      "clip": [
+        "41",
+        1
+      ]
+    },
+    "class_type": "YuE2GenerateMusic",
+    "_meta": {
+      "title": "YuE2 Generate Music"
+    }
+  },
+  "47": {
+    "inputs": {
+      "conditioning": [
+        "45",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "条件零化"
+    }
+  },
+  "49": {
+    "inputs": {
+      "seed": [
+        "52",
+        0
+      ],
+      "steps": 32,
+      "cfg": 1,
+      "sampler_name": "dpm_2",
+      "scheduler": "sgm_uniform",
+      "denoise": 1,
+      "model": [
+        "41",
+        0
+      ],
+      "positive": [
+        "45",
+        0
+      ],
+      "negative": [
+        "47",
+        0
+      ],
+      "latent_image": [
+        "50",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "50": {
+    "inputs": {
+      "seconds": [
+        "45",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyYuE2LatentAudio",
+    "_meta": {
+      "title": "Empty YuE2 Latent Audio"
+    }
+  },
+  "51": {
+    "inputs": {
+      "samples": [
+        "49",
+        0
+      ],
+      "vae": [
+        "41",
+        2
+      ]
+    },
+    "class_type": "VAEDecodeAudio",
+    "_meta": {
+      "title": "VAE解码（音频）"
+    }
+  },
+  "52": {
+    "inputs": {
+      "seed": 229610013811784
+    },
+    "class_type": "SeedNode",
+    "_meta": {
+      "title": "种子"
+    }
+  },
+  "53": {
+    "inputs": {
+      "value": "中文，内敛女声（温柔略带沧桑），当代流行融合民谣，约 80 BPM，木吉他与钢琴铺底、低调贝斯、轻电子氛围垫底，咬字清晰，氛围安静疏离、温柔中带一点苍凉。"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Text (Style)"
+    }
+  },
+  "54": {
+    "inputs": {
+      "value": "[Verse]\n行李箱轮子碾过多少站台\n半生的漂泊 早就懒得数\n人间冷暖 酸甜苦辣\n都咽下去 当作寻常的汤\n\n[Verse]\n其实心里 没什么节庆的概念\n日历翻到哪页 都不太在意\n只是近来 多了些属于自己的时间\n才偶然抬头 看见月亮还亮着\n\n[Chorus]\n我早就习惯了一个人的日子\n像习惯风 习惯沉默 习惯远方\n中秋不中秋 于我不过是\n又一夜 月光替我守着窗\n\n[Chorus]\n别人团圆 我在异乡的灯下\n不是不羡慕 只是走得太远\n月亮它不问我从哪儿来\n也不催我 什么时候归还\n\n[Bridge]\n酸甜苦辣 都酿成了现在的我\n漂泊半生 倒也自在了几分\n若你也在某处 独自望着天\n那我们 就被同一轮月 轻轻抱着\n\n[Outro]\n晚安 月亮\n不必等谁\n我就这样 一个人 也很好\n"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Text (Lyrics)"
+    }
+  },
+  "55": {
+    "inputs": {
+      "目录": "音乐生成",
+      "audio_ui": "",
+      "音频": [
+        "51",
+        0
+      ]
+    },
+    "class_type": "FxAiAudioManager",
+    "_meta": {
+      "title": "凤希AI - 音频管理器"
+    }
+  },
+  "58": {
+    "inputs": {
+      "anything": [
+        "55",
+        0
+      ]
+    },
+    "class_type": "FxAiCleanGpu",
+    "_meta": {
+      "title": "清理显存占用"
+    }
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "10": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "fxai_imageinput"
+    },
+    "_meta": {"title": "参考图"}
+  },
+  "29": {
+    "class_type": "ImageScaleToTotalPixels",
+    "inputs": {
+      "image": ["10", 0],
+      "upscale_method": "lanczos",
+      "megapixels": 1,
+      "resolution_steps": 16
+    },
+    "_meta": {"title": "参考图缩放到 1MP"}
+  },
+  "30": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "moss_image_sft_bf16.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {"title": "MOSS-Image 底座"}
+  },
+  "31": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": ["30", 0],
+      "lora_name": "moss_image_edit_lora_rank_64_bf16.safetensors",
+      "strength_model": 1
+    },
+    "_meta": {"title": "MOSS-Image 编辑 LoRA"}
+  },
+  "32": {
+    "class_type": "SkipLayerGuidanceDiTSimple",
+    "inputs": {
+      "model": ["31", 0],
+      "double_layers": "",
+      "single_layers": "22",
+      "start_percent": 0,
+      "end_percent": 1
+    },
+    "_meta": {"title": "SkipLayerGuidance"}
+  },
+  "33": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3.5_9b_int8_convrot.safetensors",
+      "type": "moss_image",
+      "device": "default"
+    },
+    "_meta": {"title": "文本编码器"}
+  },
+  "34": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "flux2-vae.safetensors"
+    },
+    "_meta": {"title": "VAE"}
+  },
+  "39": {
+    "class_type": "TextEncodeMOSSImageEdit",
+    "inputs": {
+      "clip": ["33", 0],
+      "prompt": "fxai_prompt",
+      "edit_format": "Moss-Image-Edit",
+      "image_strength": 1,
+      "images.image_0": ["29", 0],
+      "vae": ["34", 0]
+    },
+    "_meta": {"title": "正向提示词"}
+  },
+  "36": {
+    "class_type": "TextEncodeMOSSImageEdit",
+    "inputs": {
+      "clip": ["33", 0],
+      "prompt": "nsfw, worst quality, bad anatomy, watermark, jpeg artifact, blurry, deformed",
+      "edit_format": "Moss-Image-Edit",
+      "image_strength": 1,
+      "images.image_0": ["29", 0],
+      "vae": ["34", 0]
+    },
+    "_meta": {"title": "负向提示词"}
+  },
+  "28": {
+    "class_type": "EmptyFlux2LatentImage",
+    "inputs": {
+      "width": "fxai_width",
+      "height": "fxai_height",
+      "batch_size": 1
+    },
+    "_meta": {"title": "画布"}
+  },
+  "37": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["32", 0],
+      "positive": ["39", 0],
+      "negative": ["36", 0],
+      "latent_image": ["28", 0],
+      "seed": "fxai_seed",
+      "steps": 25,
+      "cfg": 4,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1
+    },
+    "_meta": {"title": "采样"}
+  },
+  "38": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["37", 0],
+      "vae": ["34", 0]
+    },
+    "_meta": {"title": "解码"}
+  },
+  "117": {
+    "class_type": "FxAiImageManagerV2",
+    "inputs": {
+      "目录": "fxai_outputdir",
+      "启用文件名覆盖": true,
+      "文件名序号": "fxai_filename_index",
+      "图片": ["38", 0]
+    },
+    "_meta": {"title": "保存"}
+  },
+  "79": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": ["117", 2]
+    },
+    "_meta": {"title": "预览（输出节点）"}
+  }
+}

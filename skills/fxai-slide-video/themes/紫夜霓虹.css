@@ -1,0 +1,17 @@
+/*
+紫夜霓虹 · 深色样式
+深紫底 + 品红/青霓虹：科技潮玩 / 游戏 / 数码 / 二次元 / 夜生活
+*/
+:root{
+  --bg1:#241048; --bg2:#160a2e; --bg3:#0a0416;
+  --ink:#f0eaff; --ink2:#b6a3e8; --ink3:#8f7ad0;
+  --ac:#ff4fd8; --ac2:#7a5cff; --acsoft:#ff8ae8;
+  --ac3:#3fe8c0; --ac4:#5cc8ff; --ac5:#ffd35c; --ac6:#ff7a5c; --ac3soft:#1a3a44;
+  --onac:#12071f; --bad:#ff5c7a;
+  --panel:#3a1a6e; --panelrgb:90,50,170; --panel2rgb:26,12,54;
+  --onpanel:#ffffff; --onpanel2:#d9c9ff;
+  --card:#1c0e3a; --cardink:#f0eaff;
+  --linergb:160,120,255; --chiprgb:255,255,255; --shadowrgb:0,0,0;
+  --bubble:#efe9ff; --bubbleink:#1c0e3a;
+  --acrgb:255,79,216; --ac2rgb:122,92,255; --ac3rgb:63,232,192; --badrgb:255,92,122;
+}

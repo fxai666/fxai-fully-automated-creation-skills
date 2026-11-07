@@ -1,0 +1,2640 @@
+{
+  "domain": "glossary",
+  "display": "招式术语字典",
+  "match_rule": "术语按训练集频次分三档：高频（≥10，响应最强，优先使用）、中频（3–9，有效，建议配一句完整上下文）、低频（1–2，响应弱，必须配完整上下文）。检索按术语名 / 拼音 / 英文匹配；同一类别可整体取用。",
+  "note": "本域是动作术语字典，只提供词汇及其使用强度，不含任何提示词模板或平台语法；动作设计取词与下游取词都从这里查。",
+  "categories": [
+    {
+      "id": "leg",
+      "name": "腿法",
+      "en": "leg techniques"
+    },
+    {
+      "id": "fist",
+      "name": "拳法",
+      "en": "fist techniques"
+    },
+    {
+      "id": "palm_elbow",
+      "name": "掌法/肘膝/靠法",
+      "en": "palm, elbow, knee, shoulder"
+    },
+    {
+      "id": "throw",
+      "name": "摔法/擒拿",
+      "en": "throws and grappling"
+    },
+    {
+      "id": "guard_footwork",
+      "name": "格挡/身法/攻防衔接",
+      "en": "guard, evasion, transition"
+    },
+    {
+      "id": "sword",
+      "name": "器械-剑术",
+      "en": "sword"
+    },
+    {
+      "id": "spear_staff",
+      "name": "器械-枪棍",
+      "en": "spear and staff"
+    },
+    {
+      "id": "saber",
+      "name": "器械-刀术",
+      "en": "saber"
+    },
+    {
+      "id": "stance",
+      "name": "步法/桩功",
+      "en": "stances and footwork"
+    },
+    {
+      "id": "aerial",
+      "name": "腾空/翻滚/身法",
+      "en": "aerial and body work"
+    },
+    {
+      "id": "power",
+      "name": "发力描述",
+      "en": "power generation"
+    },
+    {
+      "id": "weight_shift",
+      "name": "重心/步法过渡",
+      "en": "weight shift"
+    },
+    {
+      "id": "shot_scene",
+      "name": "镜头/场景/主体（辅助，非招式）",
+      "en": "shot, scene, subject"
+    },
+    {
+      "id": "sfx",
+      "name": "音效（下游取用）",
+      "en": "sound effects"
+    },
+    {
+      "id": "environment",
+      "name": "环境反馈",
+      "en": "environmental feedback"
+    },
+    {
+      "id": "reaction",
+      "name": "细节状态/受击反馈",
+      "en": "fine state & impact feedback"
+    }
+  ],
+  "entries": [
+    {
+      "id": "leg-01",
+      "name": "扫堂腿",
+      "category": "leg",
+      "freq": 47,
+      "tier": "high",
+      "pinyin": "sao tang tui",
+      "en": "horizontal sweep",
+      "summary": "训练集第一腿法，响应最强。",
+      "keywords": [
+        "扫堂腿",
+        "扫腿",
+        "sao tang tui",
+        "horizontal sweep"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（47）。**用法**：放 [Shot 2] 主体位；常与「腾空侧踹」组成连招。**轨迹**：屈膝下潜 → 拧腰带动支撑腿扫出 → 另一手撑地或护身。"
+    },
+    {
+      "id": "leg-02",
+      "name": "腾空侧踹",
+      "category": "leg",
+      "freq": 17,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "常与扫堂腿组成连招。",
+      "keywords": [
+        "腾空侧踹",
+        "侧踹",
+        "腾空踹"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（17）。**用法**：接在「扫堂腿」之后，作为连招的收势腿。**轨迹**：纵跃起身 → 侧身送胯 → 单腿蹬出 → 落地屈膝缓冲。"
+    },
+    {
+      "id": "leg-03",
+      "name": "后旋踢",
+      "category": "leg",
+      "freq": 16,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "腾空后旋踢变体常见。",
+      "keywords": [
+        "后旋踢",
+        "转身后踢",
+        "回旋踢"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（16）。**用法**：适合背对对手或被贴身时反打。**轨迹**：转腰背身 → 重心下沉 → 后腿沿弧线甩出 → 转体回正。"
+    },
+    {
+      "id": "leg-04",
+      "name": "旋风脚",
+      "category": "leg",
+      "freq": 14,
+      "tier": "high",
+      "pinyin": "teng kong xuan feng jiao",
+      "en": "tornado kick",
+      "summary": "转体加腾空的复合腿法。",
+      "keywords": [
+        "旋风脚",
+        "腾空旋风脚",
+        "teng kong xuan feng jiao",
+        "tornado kick"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（14）。**用法**：转体与腾空复合，适合群战扫圈或终结前的高光腿。**轨迹**：蹬地起跳 → 空中转体一周 → 外摆腿横扫 → 落地成步。"
+    },
+    {
+      "id": "leg-05",
+      "name": "鞭腿",
+      "category": "leg",
+      "freq": 7,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "高位弧线腿法。",
+      "keywords": [
+        "鞭腿",
+        "高鞭腿",
+        "转身鞭腿"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（7）。**用法**：走高位弧线打头颈或躯干，需配一句「转腰带动」的上下文。**轨迹**：支撑腿碾地 → 拧腰送胯 → 腿沿弧线抽击 → 收腿回防。"
+    },
+    {
+      "id": "leg-06",
+      "name": "双飞脚",
+      "category": "leg",
+      "freq": 3,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "腾空双腿连续踢击。",
+      "keywords": [
+        "双飞脚",
+        "腾空双飞"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（3）。**用法**：腾空双腿先后踢出，响应中等，需写清起跳与落地。**轨迹**：起跳 → 前腿踢出 → 后腿接力踢出 → 双脚落地。"
+    },
+    {
+      "id": "leg-07",
+      "name": "正蹬",
+      "category": "leg",
+      "freq": 3,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "正面直线蹬腿，用于拉开距离。",
+      "keywords": [
+        "正蹬",
+        "蹬腿"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（3）。**用法**：正面直线蹬出，多用于逼退与拉开距离。**轨迹**：提膝 → 脚掌沿直线蹬出 → 顺势后撤半步。"
+    },
+    {
+      "id": "leg-08",
+      "name": "侧踹",
+      "category": "leg",
+      "freq": 3,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "侧身蹬踹，落点偏向对手腰肋。",
+      "keywords": [
+        "侧踹",
+        "侧蹬"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（3）。**用法**：侧身出腿，落点偏对手腰肋或膝关节。**轨迹**：侧身转胯 → 提膝 → 脚掌蹬出 → 收腿还原。"
+    },
+    {
+      "id": "leg-09",
+      "name": "踢击",
+      "category": "leg",
+      "freq": 10,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "泛用兜底词，无具体招式时用。",
+      "keywords": [
+        "踢击",
+        "踢腿"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（10）。**用法**：泛用兜底词，只在没有具体腿法可写时使用；能写具体招式就勿用它。"
+    },
+    {
+      "id": "fist-01",
+      "name": "直拳",
+      "category": "fist",
+      "freq": 12,
+      "tier": "high",
+      "pinyin": "zhi quan",
+      "en": null,
+      "summary": "右直拳最常见。",
+      "keywords": [
+        "直拳",
+        "右直拳",
+        "zhi quan",
+        "刺拳"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（12）。**用法**：拳法主用词，右直拳最常见。**轨迹**：后脚蹬地 → 转腰送肩 → 拳沿直线打出 → 收拳护面。"
+    },
+    {
+      "id": "fist-02",
+      "name": "拳法连击",
+      "category": "fist",
+      "freq": 5,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "泛用的组合拳表述。",
+      "keywords": [
+        "拳法连击",
+        "组合拳",
+        "连拳"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（5）。**用法**：泛用组合拳表述，宜写明每拳落点，规避笼统。**轨迹**：前手连刺 → 后手重拳 → 脚步持续前压。"
+    },
+    {
+      "id": "fist-03",
+      "name": "崩拳",
+      "category": "fist",
+      "freq": 3,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "形意拳系的直线短打。",
+      "keywords": [
+        "崩拳"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（3）。**用法**：形意拳系的直线短打，贴身发力。**轨迹**：沉肩坠肘 → 前脚进步 → 拳沿中线短促崩出。"
+    },
+    {
+      "id": "fist-04",
+      "name": "贯耳捶",
+      "category": "fist",
+      "freq": 2,
+      "tier": "low",
+      "pinyin": null,
+      "en": null,
+      "summary": "双拳或单拳横击耳侧。",
+      "keywords": [
+        "贯耳捶",
+        "贯耳"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：低频（2）。**用法**：响应弱，必须配完整上下文（写明横击耳侧、对手侧头）。**轨迹**：双拳合拢 → 自两侧横击耳部 → 对手侧头踉跄。"
+    },
+    {
+      "id": "palm_elbow-01",
+      "name": "贴山靠",
+      "category": "palm_elbow",
+      "freq": 12,
+      "tier": "high",
+      "pinyin": "tie shan kao",
+      "en": null,
+      "summary": "肩靠标志性招式，响应强。",
+      "keywords": [
+        "贴山靠",
+        "肩靠",
+        "tie shan kao"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（12）。**用法**：贴身时用肩背整体撞击，破架势的招牌招。**轨迹**：进步贴入 → 沉肩蓄力 → 以肩背整体撞出 → 对手被顶退。"
+    },
+    {
+      "id": "palm_elbow-02",
+      "name": "肘击",
+      "category": "palm_elbow",
+      "freq": 5,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "贴身短打，肘尖发力。",
+      "keywords": [
+        "肘击",
+        "顶肘"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（5）。**用法**：贴身短打，肘尖走直线或斜线。**轨迹**：抬臂收肘 → 转腰送肘 → 肘尖击出 → 收肘护头。"
+    },
+    {
+      "id": "palm_elbow-03",
+      "name": "推掌",
+      "category": "palm_elbow",
+      "freq": 4,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "单掌推出，用于逼退。",
+      "keywords": [
+        "推掌",
+        "单推掌"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（4）。**用法**：单掌前推逼退对手，多作衔接。**轨迹**：屈臂收掌于胸 → 转腰 → 掌根沿直线推出。"
+    },
+    {
+      "id": "palm_elbow-04",
+      "name": "双推掌",
+      "category": "palm_elbow",
+      "freq": 4,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "双掌齐推，破坏对手重心。",
+      "keywords": [
+        "双推掌",
+        "双掌"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（4）。**用法**：双掌齐推破坏重心，适合做终结前的推开。**轨迹**：双掌收于胸前 → 蹬地转腰 → 双掌同时推出 → 对手后仰。"
+    },
+    {
+      "id": "palm_elbow-05",
+      "name": "拍掌",
+      "category": "palm_elbow",
+      "freq": 2,
+      "tier": "low",
+      "pinyin": null,
+      "en": null,
+      "summary": "掌面下拍，偏卸力用途。",
+      "keywords": [
+        "拍掌",
+        "下拍"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：低频（2）。**用法**：响应弱，须配完整上下文。**轨迹**：掌面自上而下拍击对手兵器或手腕 → 借力偏转。"
+    },
+    {
+      "id": "palm_elbow-06",
+      "name": "横掌",
+      "category": "palm_elbow",
+      "freq": 2,
+      "tier": "low",
+      "pinyin": null,
+      "en": null,
+      "summary": "掌缘横向切击。",
+      "keywords": [
+        "横掌",
+        "掌缘"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：低频（2）。**用法**：响应弱，须配完整上下文。**轨迹**：立掌 → 转腰带动 → 掌缘横向切过对手颈侧或手腕。"
+    },
+    {
+      "id": "throw-01",
+      "name": "过肩摔",
+      "category": "throw",
+      "freq": 17,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "高频摔法，双方戏常见。",
+      "keywords": [
+        "过肩摔",
+        "背摔"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（17）。**用法**：双人对招的高光摔技。**轨迹**：抓控对手手腕与衣襟 → 背身钻入其腋下 → 以髋为支点 → 翻过肩线摔出 → 顺势压制。"
+    },
+    {
+      "id": "throw-02",
+      "name": "擒拿",
+      "category": "throw",
+      "freq": 12,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "锁腕、锁肘变体多。",
+      "keywords": [
+        "擒拿",
+        "锁腕",
+        "锁肘",
+        "反关节"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（12）。**用法**：关节控制类统称，需写明锁的是腕还是肘。**轨迹**：搭手抓腕 → 沿关节反方向拧转 → 压肩下沉 → 对手屈身降服。"
+    },
+    {
+      "id": "throw-03",
+      "name": "接腿摔",
+      "category": "throw",
+      "freq": 3,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "接住对手踢腿后顺势摔出。",
+      "keywords": [
+        "接腿摔",
+        "抱腿摔"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（3）。**用法**：防反类摔技，须先有接腿动作。**轨迹**：侧身接住对手踢出的腿 → 抱紧上抬 → 转体绊摔 → 对手倒地。"
+    },
+    {
+      "id": "throw-04",
+      "name": "大背摔",
+      "category": "throw",
+      "freq": 2,
+      "tier": "low",
+      "pinyin": null,
+      "en": null,
+      "summary": "背负式过顶摔，幅度大。",
+      "keywords": [
+        "大背摔"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：低频（2）。**用法**：响应弱，须配完整上下文。**轨迹**：背身贴入 → 双手锁住对手手臂 → 躬身将人从背后过顶摔出。"
+    },
+    {
+      "id": "guard_footwork-01",
+      "name": "格挡卸力",
+      "category": "guard_footwork",
+      "freq": 74,
+      "tier": "high",
+      "pinyin": "ge dang xie li",
+      "en": null,
+      "summary": "全场第一词，影响动作流畅度。",
+      "keywords": [
+        "格挡卸力",
+        "卸力",
+        "格挡",
+        "ge dang xie li"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（74，全场第一）。**用法**：攻防衔接的**首选词**，几乎每个对招镜都该出现。**轨迹**：兵器/手臂迎上接触 → 顺着来力侧向偏转 → 力被引向一侧 → 顺势反打。"
+    },
+    {
+      "id": "guard_footwork-02",
+      "name": "攻防转换",
+      "category": "guard_footwork",
+      "freq": 15,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "由守转攻的衔接词。",
+      "keywords": [
+        "攻防转换",
+        "转攻",
+        "反打"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（15）。**用法**：写在两段动作之间，标记「守转攻」的节点。**轨迹**：格挡或闪避成功 → 重心前移 → 立即转为主攻动作。"
+    },
+    {
+      "id": "guard_footwork-03",
+      "name": "闪身",
+      "category": "guard_footwork",
+      "freq": 14,
+      "tier": "high",
+      "pinyin": "shanshen",
+      "en": null,
+      "summary": "侧向避让的身法。",
+      "keywords": [
+        "闪身",
+        "侧闪",
+        "shanshen"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（14）。**用法**：以最小位移避开攻击，保持反击位置。**轨迹**：上身侧倾 → 脚步横移半步 → 攻击擦身而过 → 就位反击。"
+    },
+    {
+      "id": "guard_footwork-04",
+      "name": "上架格挡",
+      "category": "guard_footwork",
+      "freq": 12,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "兵器上架硬接。",
+      "keywords": [
+        "上架格挡",
+        "上架",
+        "举械格挡"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（12）。**用法**：正面硬接劈砍的架挡，接触点要清楚。**轨迹**：举械过头 → 迎住下劈 → 兵器相交 → 借力或反压。"
+    },
+    {
+      "id": "guard_footwork-05",
+      "name": "借力打力",
+      "category": "guard_footwork",
+      "freq": 8,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "顺着对手来力反送回去。",
+      "keywords": [
+        "借力打力",
+        "借力"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（8）。**用法**：防守后立刻反击的衔接词。**轨迹**：接触来力 → 顺势牵引 → 借对手前冲之势反送 → 对手失衡。"
+    },
+    {
+      "id": "guard_footwork-06",
+      "name": "以攻代守",
+      "category": "guard_footwork",
+      "freq": 8,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "用进攻压制代替防守。",
+      "keywords": [
+        "以攻代守",
+        "抢攻"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（8）。**用法**：抢在对手出手前压制，节奏更快。**轨迹**：抢先进步 → 抢中线出手 → 逼对手由攻转守。"
+    },
+    {
+      "id": "guard_footwork-07",
+      "name": "横扫卸力",
+      "category": "guard_footwork",
+      "freq": 5,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "以横拨方式卸掉来力。",
+      "keywords": [
+        "横扫卸力",
+        "横拨"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（5）。**用法**：横拨类卸力，适合接直线突刺。**轨迹**：兵器横向迎上 → 顺来力方向拨开 → 对手枪/剑偏向一侧。"
+    },
+    {
+      "id": "guard_footwork-08",
+      "name": "连击连招",
+      "category": "guard_footwork",
+      "freq": 5,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "多段连续攻击的衔接词。",
+      "keywords": [
+        "连击",
+        "连招",
+        "连段"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（5）。**用法**：标记多段连续攻击，宜写明每段的落点与节奏。**轨迹**：第一击 → 对手应对 → 立即接第二击 → 第三击收束。"
+    },
+    {
+      "id": "guard_footwork-09",
+      "name": "压迫逼退",
+      "category": "guard_footwork",
+      "freq": 5,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "持续进逼压缩对手空间。",
+      "keywords": [
+        "压迫",
+        "逼退",
+        "压制"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（5）。**用法**：写节奏压制段，配合环境压缩对手空间。**轨迹**：连续进步 → 兵器持续指向对手 → 对手后退至墙/崖/死角。"
+    },
+    {
+      "id": "sword-01",
+      "name": "缠头裹脑",
+      "category": "sword",
+      "freq": 54,
+      "tier": "high",
+      "pinyin": "chan tou guo nao",
+      "en": null,
+      "summary": "剑与刀通用的招牌起手，响应极强。",
+      "keywords": [
+        "缠头裹脑",
+        "缠头",
+        "裹脑",
+        "chan tou guo nao"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（54，剑刀类第一）。**用法**：兵器起手的**首选词**，几乎每段持械戏都可用。**轨迹**：兵器绕头侧划一圈护住头颈 → 转身带动 → 顺势劈出或撩出。"
+    },
+    {
+      "id": "sword-02",
+      "name": "回马枪式反手撩",
+      "category": "sword",
+      "freq": 10,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "剑枪通用，佯退回身的反手撩击。",
+      "keywords": [
+        "回马枪式反手撩",
+        "反手撩",
+        "回马撩",
+        "回身撩"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（10）。**用法**：剑与枪通用，适合「佯退 → 回身反打」的转折。**轨迹**：向前佯退 → 突然回身 → 反手握械自下而上撩出 → 对手措手不及。"
+    },
+    {
+      "id": "sword-03",
+      "name": "劈剑",
+      "category": "sword",
+      "freq": 9,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "自上而下的直线剑击。",
+      "keywords": [
+        "劈剑",
+        "剑劈",
+        "下劈"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（9）。**用法**：剑术主攻动作，落点对准持械手或肩线。**轨迹**：举剑过顶 → 转腰带动 → 自肩线斜下劈出 → 收剑回防。"
+    },
+    {
+      "id": "sword-04",
+      "name": "撩剑",
+      "category": "sword",
+      "freq": 8,
+      "tier": "mid",
+      "pinyin": "liao jian",
+      "en": null,
+      "summary": "自下而上的弧线剑击。",
+      "keywords": [
+        "撩剑",
+        "liao jian",
+        "上撩"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（8）。**用法**：自下而上破上架，或接在格挡之后。**轨迹**：剑尖下垂 → 转腕 → 自下而上沿弧线撩出 → 剑尖指向对手下颌。"
+    },
+    {
+      "id": "sword-05",
+      "name": "云剑",
+      "category": "sword",
+      "freq": 3,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "剑身绕头横向平抹。",
+      "keywords": [
+        "云剑",
+        "云剑式"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（3）。**用法**：横向平抹类剑法，适合防守后横扫。**轨迹**：剑身绕头侧平抹一周 → 转腰 → 剑锋扫过对手颈线。"
+    },
+    {
+      "id": "sword-06",
+      "name": "点剑",
+      "category": "sword",
+      "freq": 3,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "腕力抖出的短促点刺。",
+      "keywords": [
+        "点剑",
+        "剑点"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（3）。**用法**：腕力抖出的短促点刺，打腕、打穴。**轨迹**：手腕下压 → 剑尖短促点出 → 立即收回。"
+    },
+    {
+      "id": "sword-07",
+      "name": "剑气",
+      "category": "sword",
+      "freq": 3,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "剑刃脱出的能量斩击。",
+      "keywords": [
+        "剑气",
+        "剑芒"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（3）。**用法**：写实题材须有蓄力前置，不做常规连发；详见招式库「单手持剑剑气外放」。"
+    },
+    {
+      "id": "spear_staff-01",
+      "name": "红缨枪",
+      "category": "spear_staff",
+      "freq": 16,
+      "tier": "high",
+      "pinyin": null,
+      "en": "red tassel spear",
+      "summary": "枪类主体名词，高频。",
+      "keywords": [
+        "红缨枪",
+        "红缨",
+        "red tassel spear"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（16）。**用法**：主体名词，写枪戏时点明兵器形制，帮助稳定画面。"
+    },
+    {
+      "id": "spear_staff-02",
+      "name": "扎枪",
+      "category": "spear_staff",
+      "freq": 12,
+      "tier": "high",
+      "pinyin": "zha qiang",
+      "en": null,
+      "summary": "枪法核心的直线突刺。",
+      "keywords": [
+        "扎枪",
+        "刺枪",
+        "zha qiang"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（12）。**用法**：枪法核心动作，落空要有明确反馈。**轨迹**：前手定方向 → 后脚蹬地 → 枪尖沿最短直线刺出 → 收放一气。"
+    },
+    {
+      "id": "spear_staff-03",
+      "name": "横扫",
+      "category": "spear_staff",
+      "freq": 12,
+      "tier": "high",
+      "pinyin": "heng sao",
+      "en": null,
+      "summary": "棍与枪通用的横向扫击。",
+      "keywords": [
+        "横扫",
+        "扫棍",
+        "扫枪",
+        "heng sao"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（12）。**用法**：棍枪通用，多打对手下盘逼其起跳。**轨迹**：换把控杆 → 拧腰带动 → 棍/枪身沿水平弧线扫出。"
+    },
+    {
+      "id": "spear_staff-04",
+      "name": "拦拿",
+      "category": "spear_staff",
+      "freq": 9,
+      "tier": "mid",
+      "pinyin": "lan / na",
+      "en": null,
+      "summary": "枪法中的拦格与拿控。",
+      "keywords": [
+        "拦拿",
+        "拦枪",
+        "拿枪",
+        "lan / na"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（9）。**用法**：枪的防守与控制组合，接在对手突刺之后。**轨迹**：枪杆横拦来械 → 顺势拿住对手兵器 → 拨开或反刺。"
+    },
+    {
+      "id": "spear_staff-05",
+      "name": "中平枪",
+      "category": "spear_staff",
+      "freq": 6,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "枪法中平持的起手架势。",
+      "keywords": [
+        "中平枪",
+        "中平"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（6）。**用法**：枪的起手架势，写枪戏开场可用。**轨迹**：双手持枪于腰高 → 枪尖直指对手中线 → 蓄势待发。"
+    },
+    {
+      "id": "saber-01",
+      "name": "大刀劈砍",
+      "category": "saber",
+      "freq": 5,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "大刀类兵器的劈砍总称。",
+      "keywords": [
+        "大刀劈砍",
+        "大刀",
+        "劈砍"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（5）。**用法**：重刀类主攻动作，幅度大、回收慢。**轨迹**：双手举刀过顶 → 沉身蓄力 → 沿中线劈下 → 收招留破绽。"
+    },
+    {
+      "id": "saber-02",
+      "name": "缠头刀",
+      "category": "saber",
+      "freq": 4,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "刀绕头侧护身起手。",
+      "keywords": [
+        "缠头刀",
+        "缠头"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（4）。**用法**：刀的护头起手，与「裹脑刀」成对。**轨迹**：刀身绕头侧划过 → 护住头颈 → 顺势劈出。"
+    },
+    {
+      "id": "saber-03",
+      "name": "裹脑刀",
+      "category": "saber",
+      "freq": 4,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "刀绕背后护身的反向动作。",
+      "keywords": [
+        "裹脑刀",
+        "裹脑"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（4）。**用法**：与「缠头刀」成对，构成完整的绕身护体。**轨迹**：刀身绕背后划过 → 转身带动 → 自另一侧出刀。"
+    },
+    {
+      "id": "saber-04",
+      "name": "过顶举刀蓄力劈",
+      "category": "saber",
+      "freq": 4,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "举刀过顶的蓄力重劈。",
+      "keywords": [
+        "过顶举刀蓄力劈",
+        "举刀蓄力",
+        "过顶劈"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（4）。**用法**：蓄力明显的重劈，适合做终结或逼对手硬架。**轨迹**：双手举刀过顶 → 停顿蓄力 → 全身压下 → 重劈落地。"
+    },
+    {
+      "id": "saber-05",
+      "name": "双刀交叉格挡",
+      "category": "saber",
+      "freq": 3,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "双刀交叉成架接劈砍。",
+      "keywords": [
+        "双刀交叉格挡",
+        "交叉格挡",
+        "双刀格挡"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（3）。**用法**：双持刀角色的防守动作，接触点要清楚。**轨迹**：双刀在身前交叉成 X → 迎住劈砍 → 侧向绞开。"
+    },
+    {
+      "id": "stance-01",
+      "name": "弓步",
+      "category": "stance",
+      "freq": 38,
+      "tier": "high",
+      "pinyin": "gongbu / bow stance",
+      "en": "bow stance",
+      "summary": "步法第一高频，显著提升专业感。",
+      "keywords": [
+        "弓步",
+        "gongbu",
+        "bow stance"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（38，步法第一）。**用法**：放 [Shot 1] / [Shot 3]，起手与定式都用它，专业感提升最明显。**形态**：前腿屈膝前弓、后腿蹬直，重心压在前脚。"
+    },
+    {
+      "id": "stance-02",
+      "name": "马步",
+      "category": "stance",
+      "freq": 29,
+      "tier": "high",
+      "pinyin": "mabu / horse stance",
+      "en": "horse stance",
+      "summary": "桩功基础架势，高频。",
+      "keywords": [
+        "马步",
+        "mabu",
+        "horse stance"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（29）。**用法**：起手定式与蓄力段。**形态**：双脚开立屈膝下蹲、膝不过脚尖、重心居中。"
+    },
+    {
+      "id": "stance-03",
+      "name": "点步",
+      "category": "stance",
+      "freq": 13,
+      "tier": "high",
+      "pinyin": "dianbu",
+      "en": null,
+      "summary": "前脚轻点地面的过渡步。",
+      "keywords": [
+        "点步",
+        "dianbu"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（13）。**用法**：步法过渡与调整节奏用。**形态**：前脚以脚尖轻点地面、重心留在后腿，随时可进可退。"
+    },
+    {
+      "id": "stance-04",
+      "name": "进退步法",
+      "category": "stance",
+      "freq": 11,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "前进后退的节奏步法。",
+      "keywords": [
+        "进退步法",
+        "进退步",
+        "步法"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（11）。**用法**：写整段移动节奏时用，规避人物原地不动。**形态**：进步前压 → 退步后引，节奏与攻防对应。"
+    },
+    {
+      "id": "stance-05",
+      "name": "垫步",
+      "category": "stance",
+      "freq": 9,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "后脚跟进的小步调整。",
+      "keywords": [
+        "垫步"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（9）。**用法**：出招前后的重心调整，让移动更连贯。**形态**：后脚向前垫半步跟上前脚，缩短与对手距离。"
+    },
+    {
+      "id": "stance-06",
+      "name": "虚步",
+      "category": "stance",
+      "freq": 7,
+      "tier": "mid",
+      "pinyin": "xubu / empty stance",
+      "en": "empty stance",
+      "summary": "重心后坐的试探架势。",
+      "keywords": [
+        "虚步",
+        "xubu",
+        "empty stance"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（7）。**用法**：对峙试探与蓄势段。**形态**：重心后坐、前脚虚点，随时可发。"
+    },
+    {
+      "id": "stance-07",
+      "name": "半马步",
+      "category": "stance",
+      "freq": 7,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "马步的浅蹲变体。",
+      "keywords": [
+        "半马步"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（7）。**用法**：长时间对峙段，比全马步更利于移动。**形态**：双脚开立、屈膝程度约为马步一半。"
+    },
+    {
+      "id": "stance-08",
+      "name": "进步",
+      "category": "stance",
+      "freq": 7,
+      "tier": "mid",
+      "pinyin": "jinbu / advancing step",
+      "en": "advancing step",
+      "summary": "向前压迫的步法。",
+      "keywords": [
+        "进步",
+        "jinbu",
+        "advancing step"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（7）。**用法**：进攻前的压步，与出招绑定写。**形态**：前脚向前迈出、重心随之前移，后脚跟进。"
+    },
+    {
+      "id": "stance-09",
+      "name": "侧身步",
+      "category": "stance",
+      "freq": 5,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "横向绕行的步法。",
+      "keywords": [
+        "侧身步",
+        "横移步",
+        "绕步"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（5）。**用法**：绕行与抢占侧位，一打多时常用。**形态**：以侧向碎步横移，上身保持朝向对手。"
+    },
+    {
+      "id": "aerial-01",
+      "name": "腾空",
+      "category": "aerial",
+      "freq": 32,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "离地动作的总称，高频。",
+      "keywords": [
+        "腾空",
+        "离地",
+        "跃起"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（32）。**用法**：高动态段的起手词，须写明起跳点与落点。**轨迹**：屈膝蓄力 → 蹬地离地 → 空中完成动作 → 落地缓冲。"
+    },
+    {
+      "id": "aerial-02",
+      "name": "纵跃",
+      "category": "aerial",
+      "freq": 18,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "向前或向上的跳跃位移。",
+      "keywords": [
+        "纵跃",
+        "跃起",
+        "跳跃"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（18）。**用法**：换位、登高、越障时用。**轨迹**：屈膝 → 蹬地 → 身体腾起前移 → 落地屈膝。"
+    },
+    {
+      "id": "aerial-03",
+      "name": "旋身横扫",
+      "category": "aerial",
+      "freq": 17,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "转体带动兵器横扫。",
+      "keywords": [
+        "旋身横扫",
+        "旋身",
+        "转体横扫"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（17）。**用法**：群战扫圈或一对多的解围动作。**轨迹**：原地转身一周 → 兵器沿水平弧线扫出 → 收势回正。"
+    },
+    {
+      "id": "aerial-04",
+      "name": "下潜",
+      "category": "aerial",
+      "freq": 11,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "重心骤降的闪避动作。",
+      "keywords": [
+        "下潜",
+        "下沉",
+        "低头闪"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（11）。**用法**：躲高位横扫或为摔技钻入做准备。**轨迹**：屈膝骤降重心 → 上身随之下沉 → 从攻击下方穿过。"
+    },
+    {
+      "id": "aerial-05",
+      "name": "翻滚",
+      "category": "aerial",
+      "freq": 10,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "地面前滚或侧滚位移。",
+      "keywords": [
+        "翻滚",
+        "前滚",
+        "侧滚"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（10）。**用法**：躲避与快速位移，须写明滚的方向与起身位置。**轨迹**：屈身抱头 → 沿地面翻滚一周 → 顺势起身成步。"
+    },
+    {
+      "id": "aerial-06",
+      "name": "空中转体",
+      "category": "aerial",
+      "freq": 10,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "腾空中完成的转体。",
+      "keywords": [
+        "空中转体",
+        "转体",
+        "空中转身"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（10）。**用法**：高光腾空动作的核心，须写明转体圈数与落点。**轨迹**：起跳 → 空中绕纵轴转体 → 落地稳住重心。"
+    },
+    {
+      "id": "aerial-07",
+      "name": "后仰",
+      "category": "aerial",
+      "freq": 10,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "上身后倒的受击或闪避姿态。",
+      "keywords": [
+        "后仰",
+        "仰身",
+        "后倒"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（10）。**用法**：受击反馈与闪避都用，是命中感的关键词。**轨迹**：上身骤然后倒 → 下颚抬起 → 脚步后撤稳住或踉跄。"
+    },
+    {
+      "id": "aerial-08",
+      "name": "滚翻卸力",
+      "category": "aerial",
+      "freq": 6,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "被击退后以滚翻化解冲击。",
+      "keywords": [
+        "滚翻卸力",
+        "滚翻",
+        "卸力滚翻"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（6）。**用法**：重击后的落地处理，规避人物生硬停住。**轨迹**：被击退落地 → 顺势团身滚翻 → 卸掉冲击后起身。"
+    },
+    {
+      "id": "aerial-09",
+      "name": "蹬墙借力",
+      "category": "aerial",
+      "freq": 3,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "借墙面反蹬完成换位。",
+      "keywords": [
+        "蹬墙借力",
+        "蹬墙",
+        "墙面借力"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（3）。**用法**：需要场景有可蹬的墙/柱/木桩，须写清借力点。**轨迹**：跃起踩上墙面 → 反蹬发力 → 借力反向腾出。"
+    },
+    {
+      "id": "power-01",
+      "name": "拧腰",
+      "category": "power",
+      "freq": 32,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "发力链核心，常作「拧腰送胯」。",
+      "keywords": [
+        "拧腰",
+        "拧腰送胯"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（32，发力第一）。**用法**：几乎所有出招前的发力描述，提升动作质感最明显。**写法**：`拧腰送胯 → 肩肘带动 → 兵器/拳脚沿轨迹打出`。"
+    },
+    {
+      "id": "power-02",
+      "name": "沉肩坠肘",
+      "category": "power",
+      "freq": 24,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "起手式的标准描述。",
+      "keywords": [
+        "沉肩坠肘",
+        "沉肩",
+        "坠肘"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（24）。**用法**：起手式描述，让蓄势看起来「有内劲」。**写法**：`沉肩坠肘 → 屈膝下蹲 → 蓄势待发`。"
+    },
+    {
+      "id": "power-03",
+      "name": "屈膝",
+      "category": "power",
+      "freq": 21,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "重心下沉的基础动作。",
+      "keywords": [
+        "屈膝",
+        "屈膝下蹲",
+        "膝盖微屈"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（21）。**用法**：起跳、蓄力、落地缓冲的通用前置。**写法**：`屈膝下沉 → 重心压低 → 蹬地发力`。"
+    },
+    {
+      "id": "power-04",
+      "name": "顺势",
+      "category": "power",
+      "freq": 18,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "衔接词，让动作不硬切。",
+      "keywords": [
+        "顺势",
+        "顺势而为",
+        "顺力"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（18）。**用法**：两段动作之间的衔接词，规避生硬。**写法**：`格挡 → 顺势转腰 → 反手撩出`。"
+    },
+    {
+      "id": "power-05",
+      "name": "转腰",
+      "category": "power",
+      "freq": 14,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "躯干转动带动出招。",
+      "keywords": [
+        "转腰",
+        "腰转"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（14）。**用法**：与「拧腰」同类，力度略轻，用于中等幅度出招。**写法**：`转腰带动肩肘 → 兵器沿轨迹打出`。"
+    },
+    {
+      "id": "power-06",
+      "name": "腰胯发力",
+      "category": "power",
+      "freq": 14,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "以腰胯为主的整体发力。",
+      "keywords": [
+        "腰胯发力",
+        "以腰胯发力",
+        "胯发力"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（14）。**用法**：重击与突刺的发力描述。**写法**：`以腰胯发力 → 后脚蹬地送力 → 兵器直线击出`。"
+    },
+    {
+      "id": "power-07",
+      "name": "躯干拧转",
+      "category": "power",
+      "freq": 14,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "上身整体旋转的发力。",
+      "keywords": [
+        "躯干拧转",
+        "躯干转动"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（14）。**用法**：大幅横扫与转体动作的发力描述。**写法**：`躯干拧转 → 带动手臂与兵器 → 沿水平弧线扫出`。"
+    },
+    {
+      "id": "power-08",
+      "name": "重心压向前",
+      "category": "power",
+      "freq": 14,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "进攻时的重心前移。",
+      "keywords": [
+        "重心压向前",
+        "压向前",
+        "重心前移",
+        "重心压向前脚"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（14）。**用法**：进攻段的重心描述，让压迫感成立。**写法**：`进步 → 重心压向前脚 → 持续压迫`。"
+    },
+    {
+      "id": "power-09",
+      "name": "蓄力",
+      "category": "power",
+      "freq": 13,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "出手前的力量积攒。",
+      "keywords": [
+        "蓄力",
+        "蓄势",
+        "聚力"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（13）。**用法**：重击、刀气剑气等需要前置的招式必写。**写法**：`沉身蓄力 → 停顿一拍 → 全力爆发`。"
+    },
+    {
+      "id": "power-10",
+      "name": "蹬地",
+      "category": "power",
+      "freq": 12,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "后脚蹬地的发力起点。",
+      "keywords": [
+        "蹬地",
+        "后脚蹬地",
+        "蹬踏"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（12）。**用法**：所有需要「力从地起」的动作起点。**写法**：`后脚蹬地 → 腰胯送力 → 兵器/拳脚击出`。"
+    },
+    {
+      "id": "weight_shift-01",
+      "name": "重心移至后腿",
+      "category": "weight_shift",
+      "freq": 19,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "防守与蓄势的重心状态。",
+      "keywords": [
+        "重心移至后腿",
+        "重心后移",
+        "重心在后腿"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（19）。**用法**：格挡、闪避、蓄势段的重心描述，写在 [Shot] 衔接处。**写法**：`格挡后 → 重心移至后腿 → 拉开半步重新对峙`。"
+    },
+    {
+      "id": "weight_shift-02",
+      "name": "重心压向前脚",
+      "category": "weight_shift",
+      "freq": 14,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "进攻与压迫的重心状态。",
+      "keywords": [
+        "重心压向前脚",
+        "重心前压"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（14）。**用法**：进攻段的重心描述，与「进步」搭配。**写法**：`进步 → 重心压向前脚 → 出招`。"
+    },
+    {
+      "id": "weight_shift-03",
+      "name": "支撑腿",
+      "category": "weight_shift",
+      "freq": 14,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "出腿时承担体重的腿。",
+      "keywords": [
+        "支撑腿",
+        "支撑脚"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（14）。**用法**：所有腿法与腾空动作必须交代支撑腿，否则会悬空错乱。**写法**：`支撑腿碾地 → 另一腿甩出`。"
+    },
+    {
+      "id": "weight_shift-04",
+      "name": "脚过渡到前脚",
+      "category": "weight_shift",
+      "freq": 12,
+      "tier": "high",
+      "pinyin": null,
+      "en": null,
+      "summary": "步法衔接的重心过渡。",
+      "keywords": [
+        "脚过渡到前脚",
+        "重心过渡",
+        "过渡到前脚"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：高频（12）。**用法**：两个动作之间的步法衔接，防止人物卡住。**写法**：`收招 → 重心由后脚过渡到前脚 → 接下一招`。"
+    },
+    {
+      "id": "weight_shift-05",
+      "name": "前腿后腿",
+      "category": "weight_shift",
+      "freq": 9,
+      "tier": "mid",
+      "pinyin": null,
+      "en": null,
+      "summary": "明确前后腿分工。",
+      "keywords": [
+        "前腿",
+        "后腿",
+        "前后腿"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**档位**：中频（9）。**用法**：写明哪条腿在前、哪条腿发力，让站架稳定。**写法**：`前腿虚点 → 后腿蹬地送力`。"
+    },
+    {
+      "id": "shot_scene-01",
+      "name": "镜头景别与机位词表",
+      "category": "shot_scene",
+      "freq": null,
+      "tier": "ref",
+      "pinyin": null,
+      "en": null,
+      "summary": "辅助词表（非招式），供镜头设计取词。",
+      "keywords": [
+        "镜头词表",
+        "景别",
+        "机位",
+        "shot list"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**景别**：Wide shot（宽景）/ Full shot（全景）/ Medium shot（中景）/ Medium-long shot（中远景）/ Close-up（近景）。\n**机位**：fixed camera（固定）/ side angle（侧角）/ low-angle（低角）/ tracking shot（跟拍）/ handheld follow（手持跟拍）/ three-quarter view（三分之四侧）。\n**用法**：写在分镜表的「景别与机位」列；运镜只取一条主线。"
+    },
+    {
+      "id": "shot_scene-02",
+      "name": "场景词表",
+      "category": "shot_scene",
+      "freq": null,
+      "tier": "ref",
+      "pinyin": null,
+      "en": null,
+      "summary": "辅助词表（非招式），供场景抽取取词。",
+      "keywords": [
+        "场景词表",
+        "scene list"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "traditional courtyard（传统庭院）/ bamboo grove（竹林）/ snowy courtyard（雪后庭院）/ white-wall studio（白墙影棚）/ motion-capture studio（动捕棚）/ industrial stage（工业场景）/ ruined city（废墟都市）/ boxing ring（拳台）/ wooden stage（木台）/ concrete bridge（水泥桥）。\n**用法**：与 `scenes` 域配合，写清空间锚点与可交互物。"
+    },
+    {
+      "id": "shot_scene-03",
+      "name": "主体词表",
+      "category": "shot_scene",
+      "freq": null,
+      "tier": "ref",
+      "pinyin": null,
+      "en": null,
+      "summary": "辅助词表（非招式），供角色与兵器指称。",
+      "keywords": [
+        "主体词表",
+        "subject list"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "red-robed swordsman（红衣剑客）/ dark-armored warrior（暗甲武者）/ female martial artist（女性武人）/ twin hook swords（双钩）/ heavy saber（重刀）/ straight jian（直剑）/ red tassel spear（红缨枪）。\n**用法**：用于稳定角色与兵器的指称，规避同一段里换称呼。"
+    },
+    {
+      "id": "sfx-01",
+      "name": "兵刃破空音效",
+      "category": "sfx",
+      "freq": null,
+      "tier": "ref",
+      "pinyin": null,
+      "en": null,
+      "summary": "下游取用（本技能不产出声音指令）。",
+      "keywords": [
+        "兵刃破空",
+        "破空音效",
+        "blade whoosh"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "blade whoosh / sword whistle / shaft cutting air。\n**用法**：本技能只登记词条；声音指令由下游层决定，本技能不产出。"
+    },
+    {
+      "id": "sfx-02",
+      "name": "身体音效",
+      "category": "sfx",
+      "freq": null,
+      "tier": "ref",
+      "pinyin": null,
+      "en": null,
+      "summary": "下游取用（本技能不产出声音指令）。",
+      "keywords": [
+        "身体音效",
+        "衣料摩擦",
+        "cloth friction"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "cloth friction / fabric snapping / heavy breathing。\n**用法**：本技能只登记词条；声音指令由下游层决定，本技能不产出。"
+    },
+    {
+      "id": "sfx-03",
+      "name": "脚步音效",
+      "category": "sfx",
+      "freq": null,
+      "tier": "ref",
+      "pinyin": null,
+      "en": null,
+      "summary": "下游取用（本技能不产出声音指令）。",
+      "keywords": [
+        "脚步音效",
+        "footsteps"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "footsteps scraping / scuffing / footwork thuds。\n**用法**：本技能只登记词条；声音指令由下游层决定，本技能不产出。"
+    },
+    {
+      "id": "sfx-04",
+      "name": "接触音效",
+      "category": "sfx",
+      "freq": null,
+      "tier": "ref",
+      "pinyin": null,
+      "en": null,
+      "summary": "下游取用（本技能不产出声音指令）。",
+      "keywords": [
+        "接触音效",
+        "撞击声",
+        "impact"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "dull impact / metal clash / punch impact / ground scrape。\n**用法**：本技能只登记词条；声音指令由下游层决定，本技能不产出。"
+    },
+    {
+      "id": "sfx-05",
+      "name": "环境音效",
+      "category": "sfx",
+      "freq": null,
+      "tier": "ref",
+      "pinyin": null,
+      "en": null,
+      "summary": "下游取用（本技能不产出声音指令）。",
+      "keywords": [
+        "环境音效",
+        "ambience"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "outdoor ambience / bamboo leaves / street ambience。\n**用法**：本技能只登记词条；声音指令由下游层决定，本技能不产出。"
+    },
+    {
+      "id": "env-01",
+      "name": "竹叶飞散",
+      "category": "environment",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "bamboo leaves scattering",
+      "summary": "竹林戏的招牌反馈。",
+      "keywords": [
+        "竹叶飞散",
+        "bamboo leaves scattering"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：打斗发生在竹林时用；与「破空声」「竹叶声」配套。 **表现**：兵器带风扫过 → 竹叶成片离枝 → 随气流旋转飘落 → 落地铺一层。"
+    },
+    {
+      "id": "env-02",
+      "name": "薄雾流动",
+      "category": "environment",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "mist drifting",
+      "summary": "山间、清晨、竹林的空间层次。",
+      "keywords": [
+        "薄雾流动",
+        "mist drifting"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：远景与全景用；近景别写，会糊脸。 **表现**：气劲推开 → 雾被撕成两股 → 缓缓合拢。"
+    },
+    {
+      "id": "env-03",
+      "name": "雨水溅开",
+      "category": "environment",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "rainwater splashing",
+      "summary": "雨戏的基本反馈。",
+      "keywords": [
+        "雨水溅开",
+        "rainwater splashing"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：踩踏、落地、格挡后退时用。 **表现**：脚掌或兵器落地 → 水花沿切线飞起 → 顺重力回落。"
+    },
+    {
+      "id": "env-04",
+      "name": "积水溅起",
+      "category": "environment",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "puddle water kicked up",
+      "summary": "雨后庭院、湿滑石地。",
+      "keywords": [
+        "积水溅起",
+        "puddle water kicked up"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：与「雨水溅开」区分：这条是静止水面的积水被踢起。 **表现**：脚尖发力 → 积水被踢成一片水幕 → 顺重力散落。"
+    },
+    {
+      "id": "env-05",
+      "name": "瓦片滑动",
+      "category": "environment",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "roof tiles shifting",
+      "summary": "屋顶戏专用。",
+      "keywords": [
+        "瓦片滑动",
+        "roof tiles shifting"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：轻功落点、蹬踏借力时用。 **表现**：脚尖点瓦 → 瓦片被踩得错位滑开 → 发出摩擦声 → 一两片坠下。"
+    },
+    {
+      "id": "env-06",
+      "name": "碎石崩飞",
+      "category": "environment",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "debris bursting outward",
+      "summary": "石地、山崖、演武场的重击反馈。",
+      "keywords": [
+        "碎石崩飞",
+        "debris bursting outward"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：重兵器、大招、落地砸击时用。 **表现**：受力点炸开 → 碎石向四周崩飞 → 顺重力滚落。"
+    },
+    {
+      "id": "env-07",
+      "name": "地面裂纹",
+      "category": "environment",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "ground cracking",
+      "summary": "全力一击、大招成形的尺度感。",
+      "keywords": [
+        "地面裂纹",
+        "ground cracking"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：只在大招或终结技那一拍用，别每拍都用。 **表现**：受力点下沉 → 裂纹向四周蔓延 → 尘土从缝里扬起。"
+    },
+    {
+      "id": "env-08",
+      "name": "火星迸射",
+      "category": "environment",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "sparks bursting",
+      "summary": "兵器相交的第一反馈。",
+      "keywords": [
+        "火星迸射",
+        "sparks bursting"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：与「金属撞击声」配套；冷色场景改成冷白光点。 **表现**：两刃相交 → 火星沿切线四散 → 顺重力下坠 → 明灭消失。"
+    },
+    {
+      "id": "env-09",
+      "name": "尘土扬起",
+      "category": "environment",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "dust rising",
+      "summary": "土路、演武场、旷野的通用反馈。",
+      "keywords": [
+        "尘土扬起",
+        "dust rising"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：位移、倒地、重击时用。 **表现**：脚底或落点受压 → 尘土扬起 → 随气流扩散 → 缓缓落下。"
+    },
+    {
+      "id": "env-10",
+      "name": "衣摆翻飞",
+      "category": "environment",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "robe hem flaring",
+      "summary": "人物受风或发力的通用反馈。",
+      "keywords": [
+        "衣摆翻飞",
+        "robe hem flaring"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：每次发力与受击都可以带一次，但别每句都写。 **表现**：气浪或动作带动 → 衣摆被扯向一侧 → 余风未止时继续摆两下。"
+    },
+    {
+      "id": "env-11",
+      "name": "发丝扬起",
+      "category": "environment",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "hair strands lifting",
+      "summary": "近景与特写里的力量感。",
+      "keywords": [
+        "发丝扬起",
+        "hair strands lifting"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：近景用；远景看不出来。 **表现**：气劲上冲 → 发丝离开肩背 → 落回时仍有余势。"
+    },
+    {
+      "id": "env-12",
+      "name": "雪粉震起",
+      "category": "environment",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "snow powder kicked up",
+      "summary": "雪地戏专用。",
+      "keywords": [
+        "雪粉震起",
+        "snow powder kicked up"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：踩踏、震地、气浪时用。 **表现**：受力点震动 → 表层雪粉被震起 → 顺重力回落。"
+    },
+    {
+      "id": "env-13",
+      "name": "落叶掀飞",
+      "category": "environment",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "fallen leaves swept up",
+      "summary": "树林、秋景。",
+      "keywords": [
+        "落叶掀飞",
+        "fallen leaves swept up"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：与「竹叶飞散」区分：这条是地面落叶被气流掀起。 **表现**：气浪贴地推开 → 落叶成片掀起 → 旋转着飘远。"
+    },
+    {
+      "id": "env-14",
+      "name": "帘幕翻动",
+      "category": "environment",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "curtain swaying",
+      "summary": "室内、客栈、营帐。",
+      "keywords": [
+        "帘幕翻动",
+        "curtain swaying"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：室内戏替代「尘土扬起」用。 **表现**：气浪推入 → 帘幕向内鼓起 → 摆动两下回位。"
+    },
+    {
+      "id": "sfx-06",
+      "name": "金属撞击声",
+      "category": "sfx",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "metal clang",
+      "summary": "兵器相交的第一音。",
+      "keywords": [
+        "金属撞击声",
+        "metal clang"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：与「火星迸射」成对出现。 **表现**：两刃相击 → 短促金属声 → 余震嗡鸣。"
+    },
+    {
+      "id": "sfx-07",
+      "name": "剑刃震颤声",
+      "category": "sfx",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "blade ringing",
+      "summary": "兵器格挡后的余音。",
+      "keywords": [
+        "剑刃震颤声",
+        "blade ringing"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：接在「金属撞击声」之后。 **表现**：硬接之后 → 刃身高频震颤 → 嗡鸣衰减。"
+    },
+    {
+      "id": "sfx-08",
+      "name": "破空声",
+      "category": "sfx",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "whoosh",
+      "summary": "兵器挥过的风声。",
+      "keywords": [
+        "破空声",
+        "whoosh"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：每次挥击都可以带，但一拍最多一次。 **表现**：兵器加速 → 空气被切开 → 短促呼啸。"
+    },
+    {
+      "id": "sfx-09",
+      "name": "衣料摩擦声",
+      "category": "sfx",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "cloth friction",
+      "summary": "动作带的布料声。",
+      "keywords": [
+        "衣料摩擦声",
+        "cloth friction"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：转身、错身、翻腾时用。 **表现**：身体转动 → 衣料相互摩擦 → 细碎沙沙声。"
+    },
+    {
+      "id": "sfx-10",
+      "name": "脚步点地声",
+      "category": "sfx",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "footstep tapping",
+      "summary": "轻功与步法的落点音。",
+      "keywords": [
+        "脚步点地声",
+        "footstep tapping"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：轻功、点步、垫步时用。 **表现**：脚尖触地 → 短促一点 → 随即弹起。"
+    },
+    {
+      "id": "sfx-11",
+      "name": "瓦片摩擦声",
+      "category": "sfx",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "tile scraping",
+      "summary": "屋顶戏专用。",
+      "keywords": [
+        "瓦片摩擦声",
+        "tile scraping"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：与「瓦片滑动」成对。 **表现**：脚掌碾过瓦面 → 粗粝摩擦声。"
+    },
+    {
+      "id": "sfx-12",
+      "name": "气流呼啸声",
+      "category": "sfx",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "air roaring",
+      "summary": "掌风、气劲的听觉表现。",
+      "keywords": [
+        "气流呼啸声",
+        "air roaring"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：与「气浪贴地」成对。 **表现**：气劲推出 → 空气被挤压 → 低沉呼啸。"
+    },
+    {
+      "id": "sfx-13",
+      "name": "尘土炸裂声",
+      "category": "sfx",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "dust burst",
+      "summary": "重击落地的闷响。",
+      "keywords": [
+        "尘土炸裂声",
+        "dust burst"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：与「碎石崩飞」「地面裂纹」配套。 **表现**：重物砸地 → 闷响 → 尘土炸开声。"
+    },
+    {
+      "id": "sfx-14",
+      "name": "雨声",
+      "category": "sfx",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "rain",
+      "summary": "雨戏的铺底环境音。",
+      "keywords": [
+        "雨声",
+        "rain"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：写进 overall_soundscape，不写进单拍。 **表现**：持续铺底 → 密度随雨势变化。"
+    },
+    {
+      "id": "sfx-15",
+      "name": "风声",
+      "category": "sfx",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "wind",
+      "summary": "旷野、屋顶、高处的铺底音。",
+      "keywords": [
+        "风声",
+        "wind"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：写进 overall_soundscape。 **表现**：持续铺底 → 遇开阔处加强。"
+    },
+    {
+      "id": "sfx-16",
+      "name": "竹叶声",
+      "category": "sfx",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "bamboo rustle",
+      "summary": "竹林戏的铺底音。",
+      "keywords": [
+        "竹叶声",
+        "bamboo rustle"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：与「竹叶飞散」配套。 **表现**：风穿过竹林 → 成片沙沙声。"
+    },
+    {
+      "id": "sfx-17",
+      "name": "拔剑声",
+      "category": "sfx",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "sword drawing",
+      "summary": "起手前的标志性音。",
+      "keywords": [
+        "拔剑声",
+        "sword drawing"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：只用在开场或转守为攻的那一下。 **表现**：剑身出鞘 → 金属长音 → 出鞘瞬间一记清响。"
+    },
+    {
+      "id": "sfx-18",
+      "name": "兵器入鞘声",
+      "category": "sfx",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "weapon sheathing",
+      "summary": "收势音。",
+      "keywords": [
+        "兵器入鞘声",
+        "weapon sheathing"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：只用在终结技定格前。 **表现**：刃入鞘口 → 一声清脆的合拢。"
+    },
+    {
+      "id": "sword-08",
+      "name": "斜斩",
+      "category": "sword",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "diagonal slash",
+      "summary": "最基础的剑击之一。",
+      "keywords": [
+        "斜斩",
+        "diagonal slash"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：起手或连招中段用；与「劈剑」区分——斜斩是斜向的，劈剑是垂直的。 **表现**：肩肘带动 → 剑刃自右上斜下 → 收在左下。"
+    },
+    {
+      "id": "sword-09",
+      "name": "直刺",
+      "category": "sword",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "straight thrust",
+      "summary": "最基础的剑击之二。",
+      "keywords": [
+        "直刺",
+        "straight thrust"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：距离拉开后抢占中线时用。 **表现**：后脚蹬地 → 剑尖沿中线直出 → 手臂伸直。"
+    },
+    {
+      "id": "sword-10",
+      "name": "回劈",
+      "category": "sword",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "reverse chop",
+      "summary": "错身之后的反向劈。",
+      "keywords": [
+        "回劈",
+        "reverse chop"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：与「错身换位」配套，错身时反手回劈。 **表现**：身体转过 → 借转身之势反手劈下。"
+    },
+    {
+      "id": "sword-11",
+      "name": "挑腕",
+      "category": "sword",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "wrist flick",
+      "summary": "以小博大的卸力动作。",
+      "keywords": [
+        "挑腕",
+        "wrist flick"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：被压制时用；破坏对手的握持角度。 **表现**：腕部一抖 → 剑尖上挑 → 挑开对手兵器。"
+    },
+    {
+      "id": "saber-06",
+      "name": "横扫",
+      "category": "saber",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "horizontal sweep",
+      "summary": "刀的基础横击。",
+      "keywords": [
+        "横扫",
+        "horizontal sweep"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：逼退、清空间时用。 **表现**：拧腰带动 → 刀身水平划过 → 收在另一侧。"
+    },
+    {
+      "id": "saber-07",
+      "name": "下劈",
+      "category": "saber",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "downward chop",
+      "summary": "刀的主力劈击。",
+      "keywords": [
+        "下劈",
+        "downward chop"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：与「劈剑」区分：刀的劈更重、收招更慢。 **表现**：过顶举刀 → 全身压下去 → 劈到底。"
+    },
+    {
+      "id": "saber-08",
+      "name": "反手斩",
+      "category": "saber",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "backhand slash",
+      "summary": "近身贴打时的刀击。",
+      "keywords": [
+        "反手斩",
+        "backhand slash"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：距离被压到一臂内时用。 **表现**：反手握刀 → 自内向外横斩 → 幅度小、速度快。"
+    },
+    {
+      "id": "saber-09",
+      "name": "突进刺",
+      "category": "saber",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "lunging thrust",
+      "summary": "刀的直线突刺。",
+      "keywords": [
+        "突进刺",
+        "lunging thrust"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：抢距离、破格挡时用。 **表现**：前脚抢步 → 刀尖直送 → 身体前压。"
+    },
+    {
+      "id": "spear_staff-06",
+      "name": "挑枪",
+      "category": "spear_staff",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "spear flick-up",
+      "summary": "枪的上挑。",
+      "keywords": [
+        "挑枪",
+        "spear flick-up"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：挑飞对手兵器或破下盘时用。 **表现**：后手一压 → 枪尖上挑 → 借杠杆撬起对手兵器。"
+    },
+    {
+      "id": "spear_staff-07",
+      "name": "压枪",
+      "category": "spear_staff",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "spear press-down",
+      "summary": "枪的下压控制。",
+      "keywords": [
+        "压枪",
+        "spear press-down"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：压制对手起手时用。 **表现**：前手一沉 → 枪杆压下 → 把对手兵器按在低位。"
+    },
+    {
+      "id": "aerial-10",
+      "name": "脚尖点瓦",
+      "category": "aerial",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "toe-tap on tiles",
+      "summary": "屋顶轻功的落点动作。",
+      "keywords": [
+        "脚尖点瓦",
+        "toe-tap on tiles"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：与「瓦片滑动」成对。 **表现**：腾空落下 → 脚尖先触 → 一点即起 → 不压实。"
+    },
+    {
+      "id": "aerial-11",
+      "name": "屋脊对峙",
+      "category": "aerial",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "ridge standoff",
+      "summary": "屋顶戏的对峙站位。",
+      "keywords": [
+        "屋脊对峙",
+        "ridge standoff"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：双人屋顶对峙的开场用。 **表现**：两人各站屋脊一端 → 重心压低 → 衣袍被夜风扯动。"
+    },
+    {
+      "id": "aerial-12",
+      "name": "衣袍展开",
+      "category": "aerial",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "robe spreading",
+      "summary": "腾空时的形态感。",
+      "keywords": [
+        "衣袍展开",
+        "robe spreading"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：腾空、纵跃的空中段用。 **表现**：离地 → 衣袍与下摆完全展开 → 落地时收拢。"
+    },
+    {
+      "id": "aerial-13",
+      "name": "落地卸力",
+      "category": "aerial",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "landing absorption",
+      "summary": "落地的缓冲动作。",
+      "keywords": [
+        "落地卸力",
+        "landing absorption"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：每次腾空落地都要写，否则落地会僵。 **表现**：触地 → 屈膝下沉 → 单手或兵器点地 → 再起身。"
+    },
+    {
+      "id": "aerial-14",
+      "name": "竹林穿梭",
+      "category": "aerial",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "weaving through bamboo",
+      "summary": "竹林戏的位移方式。",
+      "keywords": [
+        "竹林穿梭",
+        "weaving through bamboo"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：竹林追逐或换位时用。 **表现**：蹬竹借力 → 在竹杆之间折线穿插 → 竹叶被带得成片散开。"
+    },
+    {
+      "id": "palm_elbow-07",
+      "name": "掌心前推",
+      "category": "palm_elbow",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "palm push",
+      "summary": "掌法的主发动作。",
+      "keywords": [
+        "掌心前推",
+        "palm push"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：与「气浪贴地」成对；先有推掌，才允许出现气浪。 **表现**：沉肩坠肘 → 掌心朝前推出 → 掌根发力。"
+    },
+    {
+      "id": "palm_elbow-08",
+      "name": "空气压缩",
+      "category": "palm_elbow",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "air compression",
+      "summary": "气劲的可视化。",
+      "keywords": [
+        "空气压缩",
+        "air compression",
+        "空气被压缩"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：**必须跟在推掌之后**，不许先出现气浪再补动作。 **表现**：掌心前方空气被压成半透明波纹 → 向前推出。"
+    },
+    {
+      "id": "palm_elbow-09",
+      "name": "气浪贴地",
+      "category": "palm_elbow",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": null,
+      "en": "ground-hugging shockwave",
+      "summary": "气劲的传播形态。",
+      "keywords": [
+        "气浪贴地",
+        "ground-hugging shockwave"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：与「空气压缩」成对；沿途必带环境反馈（尘土炸开、落叶掀飞）。 **表现**：气浪贴地飞出 → 所过之处尘土炸开 → 撞到对手后炸散。"
+    },
+    {
+      "id": "reaction-01",
+      "name": "手腕绷紧",
+      "category": "reaction",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": "shou wan beng jin",
+      "en": "tensed wrist",
+      "summary": "发力瞬间的关节状态。",
+      "keywords": [
+        "手腕绷紧",
+        "绷腕",
+        "腕部绷紧"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：写在出招前一拍，给动作一个「蓄住」的瞬间，规避出招看起来软。**写法**：`握紧剑柄 → 手腕绷紧 → 顺势劈出`。**边界**：是**发力前**的紧张，不是受击后的僵硬；受击后的手部反应见「虎口发麻」。"
+    },
+    {
+      "id": "reaction-02",
+      "name": "剑尖微颤",
+      "category": "reaction",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": "jian jian wei chan",
+      "en": "trembling blade tip",
+      "summary": "兵器余韵的细节。",
+      "keywords": [
+        "剑尖微颤",
+        "剑尖颤动",
+        "兵器余韵"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：用在**一次重击或硬接之后**，让兵器把余力留在画面里，是「接触点可读」的收尾笔。**写法**：`两剑相交 → 错身分开 → 剑尖微颤`。**边界**：只在重击 / 硬接后用；每个动作都颤会显得兵器握不稳。"
+    },
+    {
+      "id": "reaction-03",
+      "name": "虎口发麻",
+      "category": "reaction",
+      "freq": 0,
+      "tier": "ref",
+      "pinyin": "hu kou fa ma",
+      "en": "numb grip",
+      "summary": "硬接之后的受击反馈。",
+      "keywords": [
+        "虎口发麻",
+        "虎口震麻",
+        "手部受击"
+      ],
+      "weak_keywords": [],
+      "medium": null,
+      "avoid_when": [],
+      "body": "**来源**：外部武侠打斗词表借鉴补充（无训练集频次，故标 `ref`）。**用法**：给**守方**写的受击反馈，专治「打中了却没事」的空心感；常用于硬接重兵器之后。**写法**：`硬接一记重刀 → 虎口发麻 → 后退半步重新握剑`。**边界**：属**局部感觉**，必须配一个可见的外在动作（退步 / 甩手 / 换握）承载它，不得只写感觉。"
+    }
+  ]
+}

@@ -1,0 +1,242 @@
+{
+  "placeholders": {
+    "fxai_prompt": {
+      "type": "string",
+      "default": "",
+      "description": "提示词/场景数据(lines_data/多行提示词/风格描述)",
+      "used_in": [
+        "影视剧场",
+        "MV场景",
+        "音乐风格",
+        "千问图片",
+        "千问三视图",
+        "千问四视图",
+        "H3角色替换"
+      ]
+    },
+    "fxai_imageinput": {
+      "type": "string",
+      "default": "",
+      "description": "图片输入(图片列表/图片目录/角色资源图片)",
+      "used_in": [
+        "MV单场景",
+        "MV多场景",
+        "MV多参考",
+        "千问图片",
+        "千问三视图",
+        "千问四视图",
+        "H3角色替换"
+      ]
+    },
+    "fxai_audioinput": {
+      "type": "string",
+      "default": "",
+      "description": "音频文件路径",
+      "used_in": [
+        "MV单场景",
+        "MV多场景",
+        "MV多参考"
+      ]
+    },
+    "fxai_videoinput": {
+      "type": "string",
+      "default": "",
+      "description": "视频文件路径(源视频/待精修视频，服务端可读路径)",
+      "used_in": [
+        "人脸精修",
+        "视频超分",
+        "H3角色替换"
+      ]
+    },
+    "fxai_seed": {
+      "type": "integer",
+      "default": 0,
+      "description": "随机种子(噪波种子/K采样器种子/种子节点)",
+      "used_in": [
+        "影视剧场",
+        "MV场景",
+        "音乐生成",
+        "千问图片",
+        "千问三视图",
+        "千问四视图"
+      ]
+    },
+    "fxai_width": {
+      "type": "integer",
+      "default": 960,
+      "description": "宽度或最大边长",
+      "used_in": [
+        "影视剧场",
+        "MV场景",
+        "千问图片",
+        "千问三视图",
+        "千问四视图"
+      ]
+    },
+    "fxai_height": {
+      "type": "integer",
+      "default": 544,
+      "description": "高度",
+      "used_in": [
+        "影视剧场",
+        "MV场景",
+        "千问图片",
+        "千问三视图",
+        "千问四视图"
+      ]
+    },
+    "fxai_start_index": {
+      "type": "integer",
+      "default": 0,
+      "description": "开始索引",
+      "used_in": [
+        "影视剧场",
+        "MV场景"
+      ]
+    },
+    "fxai_end_index": {
+      "type": "integer",
+      "default": -1,
+      "description": "结束索引(-1表示全部)",
+      "used_in": [
+        "影视剧场",
+        "MV场景"
+      ]
+    },
+    "fxai_auto_shutdown": {
+      "type": "boolean",
+      "default": false,
+      "description": "自动关机",
+      "used_in": [
+        "影视剧场",
+        "MV场景"
+      ]
+    },
+    "fxai_segment_data": {
+      "type": "string",
+      "default": "[]",
+      "description": "关键帧JSON数组(音频分段关键帧)",
+      "used_in": [
+        "MV单场景",
+        "MV多场景",
+        "MV多参考"
+      ]
+    },
+    "fxai_skip_initial": {
+      "type": "boolean",
+      "default": true,
+      "description": "跳过初始段",
+      "used_in": [
+        "MV单场景",
+        "MV多场景",
+        "MV多参考"
+      ]
+    },
+    "fxai_include_tail": {
+      "type": "boolean",
+      "default": false,
+      "description": "包含尾部段",
+      "used_in": [
+        "MV单场景",
+        "MV多场景",
+        "MV多参考"
+      ]
+    },
+    "fxai_average_segment": {
+      "type": "boolean",
+      "default": true,
+      "description": "是否平均分段",
+      "used_in": [
+        "MV单场景",
+        "MV多场景",
+        "MV多参考"
+      ]
+    },
+    "fxai_duration": {
+      "type": "integer",
+      "default": 10,
+      "description": "平均分段时长(秒)",
+      "used_in": [
+        "MV单场景",
+        "MV多场景",
+        "MV多参考"
+      ]
+    },
+    "fxai_lyrics": {
+      "type": "string",
+      "default": "",
+      "description": "歌词内容(音乐生成专用)",
+      "used_in": [
+        "音乐生成"
+      ]
+    },
+    "fxai_music_duration": {
+      "type": "integer",
+      "default": 300,
+      "description": "音乐最长时长(秒, 上限=模型最大时长; 仅音乐生成 MiniMax Music 3 用, 模型可在歌词唱完后自行提前结束)",
+      "used_in": [
+        "音乐生成"
+      ]
+    },
+    "fxai_outputdir": {
+      "type": "string",
+      "default": "",
+      "description": "输出目录(图像管理器/音频管理器/视频保存目录)",
+      "used_in": [
+        "千问四视图",
+        "人声分离",
+        "音乐生成",
+        "MV场景",
+        "影视剧场",
+        "千问图片",
+        "千问三视图",
+        "MV单场景",
+        "MV多场景",
+        "MV多参考",
+        "H3角色替换"
+      ]
+    },
+    "fxai_filename_index": {
+      "type": "integer",
+      "default": 0,
+      "description": "文件名序号(配合图像管理器「启用文件名覆盖」同名覆盖)",
+      "used_in": [
+        "千问图片",
+        "千问三视图",
+        "千问四视图",
+        "MV场景"
+      ]
+    },
+    "fxai_scale": {
+      "type": "string",
+      "default": "1.5",
+      "description": "超分放大倍数(1.0~4.0，文本形态喂公式节点，超分与精修共用这一个数)",
+      "used_in": [
+        "视频超分"
+      ]
+    },
+    "fxai_tone_mode": {
+      "type": "string",
+      "default": "不启用",
+      "description": "影调对齐方式(增益/偏移/不启用)；暗背景或光斑背景素材用「不启用」",
+      "used_in": [
+        "H3角色替换"
+      ]
+    }
+  },
+  "non_string_placeholders": [
+    "fxai_width",
+    "fxai_height",
+    "fxai_seed",
+    "fxai_start_index",
+    "fxai_end_index",
+    "fxai_auto_shutdown",
+    "fxai_filename_index",
+    "fxai_skip_initial",
+    "fxai_include_tail",
+    "fxai_average_segment",
+    "fxai_duration",
+    "fxai_music_duration"
+  ],
+  "updated": "2026-10-31"
+}

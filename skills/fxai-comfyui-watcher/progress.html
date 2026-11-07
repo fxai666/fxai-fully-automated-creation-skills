@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>ComfyUI 进度面板</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --line:#e5e7eb; --text:#1f2328; --dim:#6b7280;
+    --ok:#16a34a; --warn:#d97706; --err:#dc2626; --accent:#2563eb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font:14px/1.6 "Microsoft YaHei",system-ui,-apple-system,"Segoe UI",sans-serif}
+  .wrap{max-width:960px;margin:0 auto;padding:24px 20px 60px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:18px}
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+  input{width:220px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;
+        background:#fff;color:var(--text);font-size:13px}
+  button{padding:7px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;
+         color:var(--text);cursor:pointer;font-size:13px}
+  button:hover{background:#f3f4f6}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#9ca3af;margin-right:6px}
+  .dot.on{background:var(--ok);box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+  .dot.off{background:var(--err);box-shadow:0 0 0 3px rgba(220,38,38,.15)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .card h2{font-size:13px;color:var(--dim);font-weight:600;margin:0 0 12px;letter-spacing:.04em}
+  .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:10px}
+  .k{color:var(--dim);font-size:13px}
+  .v{font-weight:600;font-variant-numeric:tabular-nums}
+  .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  .track{height:10px;background:#eef0f3;border-radius:99px;overflow:hidden;margin:14px 0 6px}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,#3b82f6,#2563eb);
+        border-radius:99px;transition:width .4s ease}
+  .fill.ok{background:linear-gradient(90deg,#22c55e,#16a34a)}
+  .fill.err{background:linear-gradient(90deg,#f87171,#dc2626)}
+  .tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;
+       background:#eef2ff;color:#3730a3;margin-right:6px}
+  .tag.g{background:#ecfdf5;color:#065f46}
+  .tag.y{background:#fffbeb;color:#92400e}
+  .tag.r{background:#fef2f2;color:#991b1b}
+  #feed{max-height:320px;overflow:auto;font-size:13px}
+  #feed div{padding:4px 0;border-bottom:1px dashed #eef0f3}
+  #feed .t{color:var(--dim);margin-right:8px;font-variant-numeric:tabular-nums}
+  .banner{display:none;margin-bottom:16px;padding:14px 18px;border-radius:12px;font-weight:600}
+  .banner.show{display:block}
+  .banner.ok{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+  .banner.err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+  .muted{color:var(--dim);font-weight:400}
+  .tip{font-size:12px;color:var(--dim);margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ComfyUI 进度面板</h1>
+  <div class="sub">浏览器直连 ComfyUI 的 WebSocket 收广播，<b>不经过任何中间程序、不写任何文件</b>。换服务器只需改下面地址。</div>
+
+  <div class="bar">
+    <span><span id="dot" class="dot"></span><span id="connTxt">未连接</span></span>
+    <input id="url" value="http://127.0.0.1:8188">
+    <button onclick="connect()">连接</button>
+    <button onclick="clearFeed()">清屏</button>
+    <button onclick="toggleNotify()">桌面通知：关</button>
+  </div>
+
+  <div id="banner" class="banner"></div>
+
+  <div class="card">
+    <h2>当前任务</h2>
+    <div class="row"><span class="k">状态</span><span class="v" id="state">—</span></div>
+    <div class="row"><span class="k">prompt_id</span><span class="v mono" id="pid">—</span></div>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <div class="row"><span class="k" id="progTxt">等待任务</span><span class="k" id="pctTxt"></span></div>
+    <div class="row" style="margin-top:14px"><span class="k">已保存</span>
+      <span class="v"><span id="saved">—</span></span></div>
+    <div class="row"><span class="k">最终产物</span><span class="v mono" id="final">—</span></div>
+  </div>
+
+  <div class="card">
+    <h2>实时事件</h2>
+    <div id="feed"><div class="muted">（还没有事件）</div></div>
+    <div class="tip">完成判据：<code>execution_success</code>（工作流跑完＝所有保存动作结束）→ 判为「全部保存完毕」；
+      监听别人提交的任务时收不到该定向事件，则用「最后一次保存后静默 30 秒」兜底。</div>
+  </div>
+</div>
+
+<script>
+let ws=null, notify=false, lastEvent=0, settleTimer=null, saved={}, pidCur='', sceneCur=null, sceneTot=null, scenesDone=0;
+const $=id=>document.getElementById(id);
+const cid=()=>Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b=>('0'+(b.toString(16))).slice(-2)).join('');
+
+function connect(){
+  const base=$('url').value.trim().replace(/\/+$/,'');
+  if(ws){ws.close();}
+  const proto = base.startsWith('https') ? 'wss' : 'ws';
+  ws = new WebSocket(proto+'://'+base.replace(/^https?:\/\//,'')+'/ws?clientId='+cid());
+  $('dot').className='dot'; $('connTxt').textContent='连接中…';
+  ws.onopen = ()=>{ $('dot').className='dot on'; $('connTxt').textContent='已连接 '+base; log('已连接 '+base); };
+  ws.onclose = ()=>{ $('dot').className='dot off'; $('connTxt').textContent='连接断开'; };
+  ws.onmessage = ev=>{
+    let m; try{ m=JSON.parse(ev.data); }catch(e){ return; }
+    handle(m.type||'', m.data||{});
+  };
+}
+
+function handle(type, d){
+  lastEvent=Date.now(); armSettle();
+  if(type==='status'){ const s=d.status||{}; log('队列：运行 '+(s.queue_running??0)+' / 等待 '+(s.queue_pending??0)); return; }
+  if(type==='fxai:progress'){
+    if(d.prompt_id) pidCur=d.prompt_id;
+    const e=d.event, x=d.data||{};
+    if(e==='scene_executing'){ sceneCur=x.current; sceneTot=x.total; scenesDone=Math.max(0,(x.current||1)-1);
+      log('▶ 开始第 '+(x.current)+'/'+(x.total)+' 个场景（'+(x.duration)+'s）'); }
+    else if(e==='scene_saved'){ scenesDone=x.scene_count??scenesDone+1; log('✔ 第 '+(x.scene_index??'')+' 个场景已生成'); }
+    else if(e==='upscale_start'){ log('↑ '+ (x.message||'放大开始')); }
+    else if(e==='upscale_done'){ log('✓ '+(x.message||'放大完成')); }
+    else { log(e+' '+JSON.stringify(x).slice(0,120)); }
+    render(); return;
+  }
+  if(type==='fxai:task_saved'){
+    if(d.prompt_id) pidCur=d.prompt_id;
+    const parts=(d.url||'').split('|'); const seg=parts[0].split('/');
+    const cat=seg[0], sub=seg[1]||''; const files=parts.slice(1).filter(Boolean);
+    saved[cat]=(saved[cat]||0)+(files.length||1);
+    log('💾 保存 '+cat+(sub?'/'+sub:'')+' → '+(files.join(', ')||'-'));
+    if(cat==='video' && sub==='merged' && files[0]) $('final').textContent=files[0];
+    else if(!$('final').textContent || $('final').textContent==='—') $('final').textContent=files[0]||'—';
+    render(); return;
+  }
+  if(type==='execution_success'){ if(!pidCur) pidCur=d.prompt_id||pidCur; finish('ok','工作流执行完成，全部保存完毕'); return; }
+  if(type==='execution_error'){ if(!pidCur) pidCur=d.prompt_id||pidCur; finish('err','执行出错：'+(d.exception_message||'').slice(0,160)); return; }
+  if(type==='execution_interrupted'){ if(!pidCur) pidCur=d.prompt_id||pidCur; finish('err','任务被中断'); return; }
+  if(type==='executing' && d.prompt_id){ if(!pidCur) pidCur=d.prompt_id; }
+}
+
+function armSettle(){
+  if(settleTimer) clearTimeout(settleTimer);
+  settleTimer=setTimeout(()=>{
+    if(Object.keys(saved).length) finish('ok','保存后静默 30 秒 → 判定全部保存完毕');
+  }, 30000);
+}
+
+function finish(kind, text){
+  $('state').textContent = (kind==='ok'?'已完成':'已失败/中断');
+  $('fill').className = 'fill '+(kind==='ok'?'ok':'err');
+  $('fill').style.width='100%';
+  $('pctTxt').textContent='';
+  const b=$('banner'); b.className='banner show '+(kind==='ok'?'ok':'err');
+  b.textContent = text + (($('final').textContent && $('final').textContent!=='—') ? ('　→　最终产物：'+$('final').textContent) : '');
+  if(notify && Notification.permission==='granted'){
+    new Notification('ComfyUI '+(kind==='ok'?'完成':'中断/失败'), {body: text});
+  }
+  if(settleTimer) clearTimeout(settleTimer);
+}
+
+function render(){
+  $('pid').textContent = pidCur ? pidCur.slice(0,8) : '—';
+  $('saved').innerHTML = Object.keys(saved).length
+    ? Object.entries(saved).map(([k,v])=>'<span class="tag g">'+k+' '+v+'</span>').join('') : '—';
+  let txt='', pct=0;
+  if(sceneCur && sceneTot){
+    pct = Math.round(sceneCur/sceneTot*100);
+    txt = '第 '+sceneCur+'/'+sceneTot+' 个场景（已出 '+scenesDone+'）';
+  }else if(scenesDone){
+    pct=100; txt='已出 '+scenesDone+' 个场景';
+  }
+  $('progTxt').textContent = txt || '等待任务';
+  $('pctTxt').textContent = txt ? (pct+'%') : '';
+  $('fill').style.width = pct+'%';
+  if(!sceneCur) $('state').textContent = Object.keys(saved).length ? '收尾中' : '运行中';
+}
+
+function log(s){
+  const f=$('feed');
+  if(f.firstChild && f.firstChild.className==='muted') f.innerHTML='';
+  const d=document.createElement('div');
+  const t=new Date(); const p=n=>String(n).padStart(2,'0');
+  d.innerHTML='<span class="t">'+p(t.getHours())+':'+p(t.getMinutes())+':'+p(t.getSeconds())+'</span>'+s;
+  f.prepend(d);
+  while(f.children.length>120) f.lastChild.remove();
+}
+function clearFeed(){ $('feed').innerHTML='<div class="muted">（已清屏）</div>'; }
+function toggleNotify(){
+  notify=!notify;
+  if(notify && Notification.permission!=='granted') Notification.requestPermission();
+  document.querySelectorAll('button')[3].textContent='桌面通知：'+(notify?'开':'关');
+}
+connect();
+</script>
+</body>
+</html>

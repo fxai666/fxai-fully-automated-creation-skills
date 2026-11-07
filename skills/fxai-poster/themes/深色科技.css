@@ -1,0 +1,15 @@
+/*
+深色科技 · 深色底 + 青蓝主色 + 金色强调
+适用：AI / 科技 / 工具教程 / 方法论 / 数字人口播封面
+*/
+:root{
+  --bg1:#070c18; --bg2:#0d1830; --bg3:#0a1226;
+  --ink:#f5fbe8; --ink2:#b9c8de; --ink3:#7f93b5;
+  --ac:#38bdf8; --acsoft:rgba(56,189,248,.10);
+  --hl:#f5c451;
+  --grid:rgba(255,255,255,.05);
+  --panelrgba:rgba(255,255,255,.07);
+  --panelborder:rgba(255,255,255,.16);
+  --rule1:#38bdf8; --rule2:#f5c451;
+  --font:"Microsoft YaHei","微软雅黑",sans-serif;
+}

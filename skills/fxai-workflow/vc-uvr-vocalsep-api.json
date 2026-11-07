@@ -1,0 +1,22 @@
+{
+  "_TEMPLATE_": "备用占位模板（非实际使用，默认走 vc-melband-vocalsep-api.json）。换其它分离模型时用它改：① 音频输入节点的取值写为字符串占位符 fxai_audioinput；② 保存节点的「目录」字段写为 fxai_outputdir；③ 产物走返回结果令牌的音频管理节点（FxAiAudioManager）。模型节点 class_type 必须与服务端节点一致。文件名 <模型> 与实际模型对应。",
+  "10": {
+    "inputs": { "音频文件": "fxai_audioinput" },
+    "class_type": "FxAiAudioSelector",
+    "_meta": { "title": "音频输入（取值用 fxai_audioinput 占位符）" }
+  },
+  "20": {
+    "inputs": { "model": "TODO_MODEL_NAME", "audio": ["10", 0] },
+    "class_type": "TODO_VocalSeparationNode",
+    "_meta": { "title": "人声分离（替换为服务端真实模型节点）" }
+  },
+  "30": {
+    "inputs": {
+      "目录": "fxai_outputdir",
+      "audio": ["20", 0],
+      "accompaniment": ["20", 1]
+    },
+    "class_type": "FxAiAudioManager",
+    "_meta": { "title": "凤希AI - 音频管理器（保存 人声.wav / 伴奏.wav）" }
+  }
+}

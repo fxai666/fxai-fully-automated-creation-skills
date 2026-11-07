@@ -1,0 +1,17 @@
+/*
+薄荷青 · 浅色样式
+浅青底 + 薄荷绿强调：健康 / 医疗 / 健身 / 环保 / 教育 / 农业
+*/
+:root{
+  --bg1:#f2fbf8; --bg2:#e6f6f1; --bg3:#d9efe8;
+  --ink:#0f3b32; --ink2:#4a7a70; --ink3:#7fa79e;
+  --ac:#12b98a; --ac2:#0e9e9e; --acsoft:#3fd6ab;
+  --ac3:#2f9e5f; --ac4:#2f86d8; --ac5:#e0699a; --ac6:#6f7bf0; --ac3soft:#e3f7ef;
+  --onac:#ffffff; --bad:#e0453c;
+  --panel:#0f3b32; --panelrgb:255,255,255; --panel2rgb:240,250,247;
+  --onpanel:#ffffff; --onpanel2:#bfe3d8;
+  --card:#ffffff; --cardink:#0f3b32;
+  --linergb:18,185,138; --chiprgb:20,80,70; --shadowrgb:20,80,70;
+  --bubble:#ffffff; --bubbleink:#0f3b32;
+  --acrgb:18,185,138; --ac2rgb:14,158,158; --ac3rgb:47,158,95; --badrgb:224,69,60;
+}

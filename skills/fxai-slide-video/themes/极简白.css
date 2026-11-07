@@ -1,0 +1,17 @@
+/*
+极简白 · 浅色样式
+白底 + 深墨字 + 橙强调：职场 / 教育 / 知识科普 / 长文讲解（白天刷、投屏、打印都清楚）
+*/
+:root{
+  --bg1:#ffffff; --bg2:#f4f7fb; --bg3:#e9eef6;
+  --ink:#16233b; --ink2:#5a6a85; --ink3:#8a97ad;
+  --ac:#ff6b35; --ac2:#ffb020; --acsoft:#ff9060;
+  --ac3:#1a9d5a; --ac4:#2f7de1; --ac5:#d94f8c; --ac6:#7a5cf0; --ac3soft:#eef6f1;
+  --onac:#ffffff; --bad:#e0453c;
+  --panel:#16233b; --panelrgb:255,255,255; --panel2rgb:235,241,250;
+  --onpanel:#ffffff; --onpanel2:#c3cede;
+  --card:#ffffff; --cardink:#16233b;
+  --linergb:90,120,160; --chiprgb:22,35,59; --shadowrgb:24,45,80;
+  --bubble:#f2f5fa; --bubbleink:#16233b;
+  --acrgb:255,107,53; --ac2rgb:255,176,32; --ac3rgb:26,157,90; --badrgb:224,69,60;
+}

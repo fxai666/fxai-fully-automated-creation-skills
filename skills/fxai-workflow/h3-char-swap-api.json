@@ -1,0 +1,518 @@
+{
+ "1": {
+  "inputs": {
+   "unet_name": "minimax_h3_singularity_ref2va_int8.safetensors",
+   "weight_dtype": "default"
+  },
+  "class_type": "UNETLoader",
+  "_meta": {
+   "title": "底座（与 V3 同款）"
+  }
+ },
+ "2": {
+  "inputs": {
+   "lora_data": "[{\"lora_name\":\"minimax_h3_ref2v_turbo_8step_768p_bf16.safetensors\",\"model_strength\":1,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1,\"fade_end\":1},{\"lora_name\":\"h3_character_swap.safetensors\",\"model_strength\":1,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1,\"fade_end\":1},{\"lora_name\":\"Motion_Repair.safetensors\",\"model_strength\":0.45,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1,\"fade_end\":1}]",
+   "lora_wrap": "",
+   "model": [
+    "37",
+    0
+   ]
+  },
+  "class_type": "FxAiLoraLoader",
+  "_meta": {
+   "title": "LoRA 链（V3 同款 · 仅多换人 v1.5）"
+  }
+ },
+ "4": {
+  "inputs": {
+   "shift_video": 12,
+   "shift_audio": 3,
+   "model": [
+    "2",
+    0
+   ]
+  },
+  "class_type": "MiniMaxH3SigmaShift",
+  "_meta": {
+   "title": "SigmaShift 12 / 3"
+  }
+ },
+ "5": {
+  "inputs": {
+   "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "class_type": "CLIPLoader",
+  "_meta": {
+   "title": "加载CLIP"
+  }
+ },
+ "6": {
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "视频 VAE"
+  }
+ },
+ "7": {
+  "inputs": {
+   "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "音频 VAE"
+  }
+ },
+ "8": {
+  "inputs": {
+   "图片列表": "fxai_imageinput",
+   "preview_wrapper": ""
+  },
+  "class_type": "FxAiCharacterImageSelector",
+  "_meta": {
+   "title": "参考角色图（<Picture 1>）"
+  }
+ },
+ "9": {
+  "inputs": {
+   "value": "fxai_prompt"
+  },
+  "class_type": "PrimitiveStringMultiline",
+  "_meta": {
+   "title": "换人提示词（三段式模板）"
+  }
+ },
+ "10": {
+  "inputs": {
+   "视频文件": "fxai_videoinput",
+   "关键帧JSON": "fxai_segment_data",
+   "跳过初始段": "fxai_skip_initial",
+   "包含尾部段": "fxai_include_tail",
+   "是否平均分段": "fxai_average_segment",
+   "平均分段时长": "fxai_duration",
+   "目标模型": "MiniMax"
+  },
+  "class_type": "FxAiVideoSegmenterV1",
+  "_meta": {
+   "title": "① 分段器（每段 4 秒 · MiniMax 模式）"
+  }
+ },
+ "11": {
+  "inputs": {
+   "total": [
+    "40",
+    2
+   ],
+   "start_index": [
+    "40",
+    1
+   ]
+  },
+  "class_type": "FxAiForLoopStart",
+  "_meta": {
+   "title": "② 循环开始"
+  }
+ },
+ "12": {
+  "inputs": {
+   "视频路径": [
+    "10",
+    0
+   ],
+   "当前索引": [
+    "11",
+    1
+   ],
+   "起始帧": [
+    "10",
+    6
+   ],
+   "分段时长列表": [
+    "40",
+    0
+   ]
+  },
+  "class_type": "FxAiVideoSegmentLoad",
+  "_meta": {
+   "title": "③ 取本段源视频"
+  }
+ },
+ "14": {
+  "inputs": {
+   "宽度": [
+    "40",
+    4
+   ],
+   "高度": [
+    "40",
+    5
+   ],
+   "帧数": [
+    "12",
+    2
+   ],
+   "音频模式": "音色参考",
+   "提示词": [
+    "9",
+    0
+   ],
+   "CLIP模型": [
+    "5",
+    0
+   ],
+   "视频VAE": [
+    "6",
+    0
+   ],
+   "音频VAE": [
+    "7",
+    0
+   ],
+   "参考图片列表": [
+    "8",
+    0
+   ],
+   "参考视频": [
+    "12",
+    0
+   ],
+   "参考视频音频": [
+    "12",
+    1
+   ],
+   "接缝首帧": [
+    "11",
+    2
+   ]
+  },
+  "class_type": "FxAiMiniMaxImageToVideoV2",
+  "_meta": {
+   "title": "⑤ 凤希AI - MiniMax图生视频V2（换人核心）"
+  }
+ },
+ "15": {
+  "inputs": {
+   "model": [
+    "38",
+    0
+   ],
+   "conditioning": [
+    "14",
+    0
+   ]
+  },
+  "class_type": "BasicGuider",
+  "_meta": {
+   "title": "基本引导器"
+  }
+ },
+ "16": {
+  "inputs": {
+   "sampler_name": "res_multistep"
+  },
+  "class_type": "KSamplerSelect",
+  "_meta": {
+   "title": "K采样器选择"
+  }
+ },
+ "17": {
+  "inputs": {
+   "scheduler": "simple",
+   "steps": 8,
+   "denoise": 1,
+   "model": [
+    "38",
+    0
+   ]
+  },
+  "class_type": "BasicScheduler",
+  "_meta": {
+   "title": "8 步（配 turbo 8步 LoRA）"
+  }
+ },
+ "18": {
+  "inputs": {
+   "noise_seed": "fxai_seed"
+  },
+  "class_type": "RandomNoise",
+  "_meta": {
+   "title": "随机噪波"
+  }
+ },
+ "19": {
+  "inputs": {
+   "noise": [
+    "18",
+    0
+   ],
+   "guider": [
+    "15",
+    0
+   ],
+   "sampler": [
+    "16",
+    0
+   ],
+   "sigmas": [
+    "17",
+    0
+   ],
+   "latent_image": [
+    "14",
+    1
+   ]
+  },
+  "class_type": "SamplerCustomAdvanced",
+  "_meta": {
+   "title": "自定义采样器（高级）"
+  }
+ },
+ "20": {
+  "inputs": {
+   "samples": [
+    "19",
+    0
+   ],
+   "vae": [
+    "6",
+    0
+   ]
+  },
+  "class_type": "VAEDecode",
+  "_meta": {
+   "title": "VAE解码"
+  }
+ },
+ "21": {
+  "inputs": {
+   "视频序号": [
+    "11",
+    1
+   ],
+   "保存目录": "fxai_outputdir",
+   "帧率FPS": [
+    "10",
+    3
+   ],
+   "保存后释放": true,
+   "图片序列": [
+    "28",
+    0
+   ],
+   "音频": [
+    "12",
+    1
+   ]
+  },
+  "class_type": "FxAiVideoSaveV1",
+  "_meta": {
+   "title": "⑥ 本段单独存一个视频"
+  }
+ },
+ "22": {
+  "inputs": {
+   "flow": [
+    "11",
+    0
+   ],
+   "initial_value1": [
+    "27",
+    0
+   ],
+   "initial_value2": [
+    "21",
+    2
+   ]
+  },
+  "class_type": "FxAiForLoopEnd",
+  "_meta": {
+   "title": "⑦ 循环结束"
+  }
+ },
+ "23": {
+  "inputs": {
+   "源视频文件夹路径": [
+    "22",
+    1
+   ],
+   "文件数量": [
+    "10",
+    2
+   ],
+   "名称前缀": "h3_swap",
+   "音频": [
+    "10",
+    5
+   ]
+  },
+  "class_type": "FxAiVideoMerger",
+  "_meta": {
+   "title": "⑧ 合并成片（无重编码 + 原音轨）"
+  }
+ },
+ "26": {
+  "inputs": {
+   "batch_index": 0,
+   "length": [
+    "12",
+    2
+   ],
+   "image": [
+    "20",
+    0
+   ]
+  },
+  "class_type": "ImageFromBatch",
+  "_meta": {
+   "title": "⑤b 裁回本段真实帧数（补的尾巴不要）"
+  }
+ },
+ "27": {
+  "inputs": {
+   "batch_index": -1,
+   "length": 1,
+   "image": [
+    "39",
+    0
+   ]
+  },
+  "class_type": "ImageFromBatch",
+  "_meta": {
+   "title": "⑤c 取本段末帧（影调后·接缝前）→ 下一段接缝锚点"
+  }
+ },
+ "28": {
+  "inputs": {
+   "最大偏移": 12,
+   "图片序列": [
+    "39",
+    0
+   ],
+   "参考帧": [
+    "11",
+    2
+   ]
+  },
+  "class_type": "FxAiSeamColorMatch",
+  "_meta": {
+   "title": "⑤d 接缝色彩对齐（整段平移到上一段色阶）"
+  }
+ },
+ "37": {
+  "inputs": {
+   "速度档位": "不加速",
+   "采样步数": 8,
+   "模型": [
+    "1",
+    0
+   ]
+  },
+  "class_type": "FxAiMiniMaxBlockCache",
+  "_meta": {
+   "title": "块缓存加速（不加速 = 原速，想快换「均衡」）"
+  }
+ },
+ "38": {
+  "inputs": {
+   "attention": "comfy kitchen attention",
+   "model": [
+    "4",
+    0
+   ]
+  },
+  "class_type": "ModelAttentionBackend",
+  "_meta": {
+   "title": "注意力后端（INT8 · 必须挂）"
+  }
+ },
+ "39": {
+  "inputs": {
+   "方式": "fxai_tone_mode",
+   "采样区": "八方位",
+   "强度": 1,
+   "最大调整": 20,
+   "逐帧": false,
+   "平滑帧数": 15,
+   "图片序列": [
+    "26",
+    0
+   ],
+   "参考序列": [
+    "12",
+    0
+   ]
+  },
+  "class_type": "FxAiToneMatch",
+  "_meta": {
+   "title": "⑤c 影调对齐（背景拉回源片）"
+  }
+ },
+ "40": {
+  "inputs": {
+   "启用场景分段": true,
+   "开始索引": "fxai_start_index",
+   "结束索引": "fxai_end_index",
+   "帧率": 30,
+   "宽度": [
+    "41",
+    0
+   ],
+   "高度": [
+    "41",
+    1
+   ],
+   "长宽对齐基数": 32,
+   "过渡帧数": 9,
+   "采样次数": 1,
+   "自动关机": "fxai_auto_shutdown",
+   "场景分段时长": [
+    "10",
+    1
+   ]
+  },
+  "class_type": "FxAIGeneratorController",
+  "_meta": {
+   "title": "⓪ 生成控制器（分辨率在这里设）"
+  }
+ },
+ "41": {
+  "inputs": {
+   "最大边长": "fxai_width",
+   "原宽度": [
+    "10",
+    7
+   ],
+   "原高度": [
+    "10",
+    8
+   ]
+  },
+  "class_type": "FxAiScaleSize",
+  "_meta": {
+   "title": "宽高-按最大边长缩放"
+  }
+ },
+ "46": {
+  "inputs": {
+   "等待秒数": 60,
+   "启用关机": [
+    "40",
+    10
+   ],
+   "触发输入": [
+    "23",
+    0
+   ]
+  },
+  "class_type": "FxAiAutoShutdown",
+  "_meta": {
+   "title": "凤希AI - 自动关机(GameOver)",
+   "cnr_id": "fxai-toolkit",
+   "aux_id": "fxai666/fxai-toolkit",
+   "ver": "69ebff1e60b2a71d1bea716c578375e9f9ec86ed"
+  }
+ }
+}

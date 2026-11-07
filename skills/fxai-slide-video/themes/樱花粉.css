@@ -1,0 +1,17 @@
+/*
+樱花粉 · 浅色样式
+浅粉底 + 玫红强调：美妆 / 母婴 / 穿搭 / 情感 / 女性向内容
+*/
+:root{
+  --bg1:#fff6f8; --bg2:#ffeaf0; --bg3:#ffdce6;
+  --ink:#40142a; --ink2:#8d5570; --ink3:#b07f95;
+  --ac:#e8437a; --ac2:#ff7a9c; --acsoft:#ff5c8a;
+  --ac3:#2fa383; --ac4:#6b8ff0; --ac5:#c76bd8; --ac6:#8a7bff; --ac3soft:#eaf7f2;
+  --onac:#ffffff; --bad:#e0453c;
+  --panel:#a01f4b; --panelrgb:255,255,255; --panel2rgb:255,240,246;
+  --onpanel:#ffffff; --onpanel2:#ffd6e2;
+  --card:#ffffff; --cardink:#40142a;
+  --linergb:232,67,122; --chiprgb:120,40,70; --shadowrgb:150,70,100;
+  --bubble:#ffffff; --bubbleink:#40142a;
+  --acrgb:232,67,122; --ac2rgb:255,122,156; --ac3rgb:47,163,131; --badrgb:224,69,60;
+}

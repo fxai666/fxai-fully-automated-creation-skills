@@ -1,0 +1,79 @@
+{
+  "_readme": "画面侧时间线。跑：python scripts/ad_assemble.py slots --spec 时间线.json --out _tmp/timeline_visual.mp4。每段 = start/end 时间码 + media 清单；media 给一叠即段内轮播。槽内只放画面，标题卡 / 字幕 / 贴片走 05 册后期层。时间码与 04 册的配音时间码对齐。",
+  "canvas": { "w": 1280, "h": 720, "fps": 25 },
+  "fade": 0.12,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 6.52,
+      "media": ["_scenes/片头.png"],
+      "zoom": 0.04
+    },
+    {
+      "start": 6.52,
+      "end": 10.08,
+      "media": ["_clips/镜1.mp4"]
+    },
+    {
+      "start": 10.08,
+      "end": 13.6,
+      "media": ["_scenes/甲.png", "_scenes/乙.png"],
+      "trans": "push_left",
+      "trans_dur": 0.5,
+      "zoom": 0.05
+    },
+    {
+      "start": 13.6,
+      "end": 16.12,
+      "media": [
+        {
+          "page": {
+            "type": "text",
+            "kicker": "参数",
+            "title": "一句话<em>说清卖点</em>",
+            "items": ["卖点一", "卖点二", "卖点三"],
+            "note": "一句补充"
+          }
+        }
+      ]
+    },
+    {
+      "start": 16.12,
+      "end": 20.0,
+      "media": ["_clips/竖屏素材.mp4"],
+      "fit": "blur"
+    },
+    {
+      "_note": "三分栏：左文右图（横屏）/ 上中下（竖屏）。fields 里不写 media，素材走段级 media 清单",
+      "start": 20.0,
+      "end": 23.52,
+      "layout": "thirds",
+      "bg": "blurvideo",
+      "fit": "cover",
+      "fields": {
+        "kicker": "岗位 01 / 08",
+        "title": "编剧 · <em>AI</em>",
+        "lead": "剧本到成片",
+        "points": ["一句话出三幕结构", "改台词直接重跑"],
+        "steps": ["编剧", "分镜", "美术", "歌手", "演员", "字幕", "封面", "剪辑"],
+        "cur": 1
+      },
+      "media": ["_clips/编剧.mp4"]
+    },
+    {
+      "_note": "全屏压字：媒体铺满整幅、文字渐隐压在左侧（slogan / 品牌收尾用）",
+      "start": 23.52,
+      "end": 28.0,
+      "layout": "thirds",
+      "bg": "blurvideo",
+      "fields": {
+        "kicker": "一套技能包，一条流水线",
+        "title": "一个人<br>就是<em>一支团队</em>",
+        "note": "这句是收尾",
+        "media_full": true
+      },
+      "media": ["_clips/收尾.mp4"],
+      "zoom": 0.04
+    }
+  ]
+}

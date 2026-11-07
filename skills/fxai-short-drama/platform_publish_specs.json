@@ -1,0 +1,49 @@
+{
+  "video_common": {
+    "format": "MP4 (H.264)",
+    "resolution": "1080x1920",
+    "ratio": "9:16",
+    "audio": "系统生成 / 无版权音乐",
+    "watermark": "无水印",
+    "min_duration": 60,
+    "note": "竖屏 9:16 为短剧主规格；各平台封面据此派生。视频文件统一走本管线输出，无水印。单集时长下限 60 秒（所有平台通用，短于 1 分钟不交付）。"
+  },
+  "platforms": {
+    "红果短剧": {
+      "required_images": [
+        {"key": "cover", "label": "剧集封面", "role": "poster", "w": 1200, "h": 1600, "ratio": "3:4", "note": "书壳封面必须 3:4（差 0.1 像素即拒审）；文件 1–5MB；人物不可拉伸变形", "per_episode": true}
+      ],
+      "required_fields": ["剧名", "简介", "分类标签", "总集数"],
+      "special": ["竖版剧集封面也可 800x800 以上", "与番茄同源（字节系）", "封面即详情页介绍图，无需另出介绍图"],
+      "ai_declare": false
+    },
+    "番茄短剧": {
+      "required_images": [
+        {"key": "cover", "label": "剧集封面", "role": "poster", "w": 1200, "h": 1600, "ratio": "3:4", "note": "书壳封面 1200x1600；9:16 亦可", "per_episode": true}
+      ],
+      "required_fields": ["标题(≤20字)", "封面(≥1080x1920)", "简介(≤80字)", "标签(3-5个)"],
+      "special": ["与红果同源（字节系）", "封面人物占比>50% 点击率更高", "封面即详情页介绍图"],
+      "ai_declare": false
+    },
+    "快手": {
+      "required_images": [
+        {"key": "cover", "label": "视频封面", "role": "poster", "w": 1080, "h": 1920, "ratio": "9:16", "note": "竖版强制 9:16", "per_episode": true},
+        {"key": "avatar", "label": "账号头像", "role": "avatar", "w": 750, "h": 750, "ratio": "1:1", "note": "方图用于小剧场/主页封面"}
+      ],
+      "required_fields": ["剧名", "简介", "分类", "角色信息"],
+      "special": ["竖版强制 9:16", "方图用于小剧场/主页封面"],
+      "ai_declare": true
+    },
+    "火龙漫剧": {
+      "required_images": [
+        {"key": "cover_v", "label": "竖版封面", "role": "poster", "w": 770, "h": 1080, "ratio": "约9:13(770:1080)", "note": "移动端推荐；标题居中(平台建议中下区域)，最下方16%为安全禁区勿放字", "per_episode": true},
+        {"key": "cover_h", "label": "横版封面", "role": "poster", "w": 1920, "h": 1080, "ratio": "16:9", "note": "PC端展示", "per_episode": false},
+        {"key": "rank", "label": "榜单封面", "role": "clean", "w": 2450, "h": 800, "ratio": "约3:1(2450:800)", "note": "平台榜单推荐，禁用带任何标题文字，只出底图"},
+        {"key": "role_still", "label": "角色剧照", "role": "avatar", "w": 240, "h": 240, "ratio": "1:1", "note": "半身正面照<1M；建议替换为角色三视图/参考图"}
+      ],
+      "required_fields": ["主标题(≤14字)", "副标题(≤13字)", "内容简介(≤150字)", "角色信息(≥1位主角剧照240x240+姓名+性别+简介)", "总集数", "AI创作声明"],
+      "special": ["投稿入口：腾讯视频创作平台 mp.v.qq.com → 漫剧创作", "竖版封面标题放中下、底部16%为安全禁区(当前生成居中，可微调)", "AI作品必须勾选『AI创作声明』", "单集标题禁用仅写『第N集』(本工具自动带集名)", "画风偏二次元/半写实(本剧为动物角色卡通，符合)"],
+      "ai_declare": true
+    }
+  }
+}

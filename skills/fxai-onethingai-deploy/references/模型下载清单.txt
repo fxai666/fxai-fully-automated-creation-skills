@@ -1,0 +1,93 @@
+================================================================
+云端语音模型 · 下载清单
+================================================================
+
+【怎么用】
+  1. 每组下面的 URL，一条一条复制到控制台 URL 栏
+  2. 每组的"下载路径"要单独填，别串组
+  3. 小文件（json / txt）先下，最后下大文件（.bin / .safetensors）
+
+================================================================
+第 1 组：Whisper 转写（5 条，1.6G）★ 先下这组试水
+================================================================
+
+下载路径：
+/root/whisper/models
+
+https://hf-mirror.com/mobiuslabsgmbh/faster-whisper-large-v3-turbo/resolve/main/config.json
+
+https://hf-mirror.com/mobiuslabsgmbh/faster-whisper-large-v3-turbo/resolve/main/preprocessor_config.json
+
+https://hf-mirror.com/mobiuslabsgmbh/faster-whisper-large-v3-turbo/resolve/main/tokenizer.json
+
+https://hf-mirror.com/mobiuslabsgmbh/faster-whisper-large-v3-turbo/resolve/main/vocabulary.json
+
+https://hf-mirror.com/mobiuslabsgmbh/faster-whisper-large-v3-turbo/resolve/main/model.bin
+
+
+================================================================
+第 2 组：千问TTS CustomVoice（11 条，4.3G）默认引擎
+================================================================
+
+下载路径：
+/root/qwen3tts/models/Qwen3-TTS-12Hz-1.7B-CustomVoice
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/main/config.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/main/generation_config.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/main/preprocessor_config.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/main/tokenizer_config.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/main/vocab.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/main/merges.txt
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/main/model.safetensors
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/main/speech_tokenizer/config.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/main/speech_tokenizer/configuration.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/main/speech_tokenizer/preprocessor_config.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/resolve/main/speech_tokenizer/model.safetensors
+
+
+================================================================
+第 3 组：千问TTS Base（11 条，4.3G）声音克隆，可选
+================================================================
+
+下载路径：
+/root/qwen3tts/models/Qwen3-TTS-12Hz-1.7B-Base
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/main/config.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/main/generation_config.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/main/preprocessor_config.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/main/tokenizer_config.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/main/vocab.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/main/merges.txt
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/main/model.safetensors
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/main/speech_tokenizer/config.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/main/speech_tokenizer/configuration.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/main/speech_tokenizer/preprocessor_config.json
+
+https://hf-mirror.com/Qwen/Qwen3-TTS-12Hz-1.7B-Base/resolve/main/speech_tokenizer/model.safetensors
+
+
+================================================================
+第 4 组：CosyVoice3  ← 缺清单，等确认
+================================================================
+
+用哪个 checkpoint + 服务端代码在哪，都还没定。
+确认后我再补这一组。

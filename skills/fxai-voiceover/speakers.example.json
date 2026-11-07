@@ -1,0 +1,16 @@
+[
+  {
+    "id": "nvzhu000",
+    "name": "女主000",
+    "ref_audio": "voices/nvzhu000.wav",
+    "instruct_text": "用自然的口语语气说这句话",
+    "speed": 1.0
+  },
+  {
+    "id": "nanhai",
+    "name": "阿海",
+    "ref_audio": "voices/nanhai.wav",
+    "instruct_text": "用沉稳男声的语气说这句话",
+    "speed": 0.95
+  }
+]
