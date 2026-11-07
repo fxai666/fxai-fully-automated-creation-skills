@@ -116,6 +116,8 @@ abc123-8188.container.x-gpu.com
 
 > 注意：是复制 `fxai-*` 这些**目录本身**，不要再套一层父目录。
 
+**还没有智能体？** 先装一个就能用：👉 **[下载 WorkBuddy](https://www.workbuddy.cn/events/invite?inviteCode=q8j94equzsvuskb)**（链接已含推广码；凤希AI 就是在这个宿主上开发和验证的）。它只是**其中一个**可选宿主——任何支持 `SKILL.md` 技能目录的智能体都能装这套技能，装法完全一样。
+
 ### 5. 把这段话发给你的智能体（复制即用）
 
 ```text
