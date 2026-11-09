@@ -200,21 +200,26 @@ def gen_web(out_png, w, h, theme, tag, title, kicker, sub, keys, brand, site):
     return out_png
 
 
-def gen_image(out_png, w, h, prompt, subdir="poster_img", tag=None):
-    """纯生图：委托 fxai-scene-gen（role=None 纯画面）"""
+def gen_image(out_png, w, h, prompt, subdir="poster_img", tag=None, role=None,
+               force=False):
+    """生图：委托 fxai-scene-gen。role=None 纯画面；封面要人物时传作品自己的角色参考图相对路径。
+
+    本地 GPU / 云端容器走同一个 HTTP 接口，服务寻址由 fxai-workflow 负责，本处不写地址。
+    """
     from scene_gen import gen_scene_image
-    dst, rel = gen_scene_image(prompt, role=None, w=w, h=h,
-                               tag=tag or "poster", subdir=subdir)
+    dst, rel = gen_scene_image(prompt, role=role, w=w, h=h,
+                               tag=tag or "poster", subdir=subdir, force=force)
     shutil.copy(dst, out_png)
     return out_png
 
 
 def gen_hybrid(out_png, w, h, theme, prompt, tag, title, kicker, sub, keys,
-               brand, site, overlay=0.55, subdir="poster_img"):
+               brand, site, overlay=0.55, subdir="poster_img", role=None):
     """先生图 → 当底图 → 网页叠字 → 截图"""
     os.makedirs(BURN, exist_ok=True)
     bg_tmp = os.path.join(BURN, "bg.png")
-    gen_image(bg_tmp, w, h, prompt, subdir=subdir, tag=(tag or "poster") + "_bg")
+    gen_image(bg_tmp, w, h, prompt, subdir=subdir,
+              tag=(tag or "poster") + "_bg", role=role)
     v = parse_vars(load_theme(theme))
     html = build_html(v, tag, title, kicker, sub, keys, brand, site,
                       bg_image="bg.png", overlay=overlay)
@@ -352,7 +357,7 @@ def main():
     ap.add_argument("--mode", default="web", choices=["web", "image", "hybrid"])
     ap.add_argument("--out-dir", default=".", help="产物目录")
     ap.add_argument("--name", default="poster", help="产物文件名（不含扩展名）")
-    ap.add_argument("--size", default="768x1280", help="宽x高，默认 768x1280")
+    ap.add_argument("--size", default="1080x1920", help="宽x高，默认 vert_9x16 (1080x1920)；尺寸唯一真源 cover_sizes.json")
     ap.add_argument("--theme", default="深色科技", help="网页/混合模式主题")
     ap.add_argument("--tag", default="", help="胶囊标签（内容属性词）")
     ap.add_argument("--title", default="", help="主标题，| 或 \\n 分行；第二行起为强调色")
@@ -364,6 +369,8 @@ def main():
     ap.add_argument("--site", default=None,
                     help="网址；默认不显示（媒体平台不允许）。给 auto = 用全局配置，给文字 = 自定义")
     ap.add_argument("--prompt", default="", help="image/hybrid 模式的生图提示词")
+    ap.add_argument("--role", default="",
+                    help="作品自有角色参考图相对路径；留空=纯场景不含人物（封面须人物时必填）")
     ap.add_argument("--overlay", type=float, default=0.55, help="混合模式底图不透明度")
     ap.add_argument("--attach-video", default="", help="把海报铺到该视频首帧")
     ap.add_argument("--cover-frames", type=int, default=10,
@@ -391,12 +398,12 @@ def main():
     elif a.mode == "image":
         if not a.prompt:
             raise SystemExit("! image 模式必须给 --prompt")
-        gen_image(out_png, w, h, a.prompt)
+        gen_image(out_png, w, h, a.prompt, role=a.role or None)
     else:
         if not a.prompt:
             raise SystemExit("! hybrid 模式必须给 --prompt（底图）")
         gen_hybrid(out_png, w, h, a.theme, a.prompt, a.tag, a.title, a.kicker,
-                   a.sub, keys, brand_name, site_url, a.overlay)
+                   a.sub, keys, brand_name, site_url, a.overlay, role=a.role or None)
 
     print("[poster] ->", out_png)
     if a.attach_video:

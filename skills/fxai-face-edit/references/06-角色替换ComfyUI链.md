@@ -7,6 +7,8 @@
 跑的是 `fxai-workflow/h3-char-swap-api.json`（源自作者存档《凤希AI-H3角色替换循环分段V1》），
 注册表任务名 `charswap`、模型 `h3`。入口脚本 `scripts/char_swap.py`，提交/轮询/下载全走公共层 `comfy_client`。
 
+**提交前门禁**：先探测显存实况、按需卸载全部模型、一次验证即走；500 / 显存类错误走一次自愈重投。均由提交公共层自动执行，判据、自愈边界与三类动作分工见 `fxai-standard/references/01`「GPU 提交前门禁」；本链只调入口，不另写判据、不复制阈值。
+
 ## 一、三条链路怎么选
 
 | | 云端 FaceFusion | 本机精修链 | **本机角色替换链** |

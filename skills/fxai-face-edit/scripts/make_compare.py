@@ -10,6 +10,19 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 
 
+def frame_checker():
+    """帧数验收共用实现在 fxai-standard/scripts/video_frames.py，判据只留一处。"""
+    import os
+    scripts = os.environ.get(
+        "FXAI_STANDARD_SCRIPTS",
+        os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..",
+                                      "fxai-standard", "scripts")))
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
+    import video_frames
+    return video_frames
+
+
 def run(cmd, capture=False):
     p = subprocess.run(cmd, capture_output=capture, text=True,
                        encoding="utf-8", errors="replace")
@@ -24,8 +37,11 @@ def probe(path):
                "stream=codec_type,width,height,nb_frames,r_frame_rate",
                "-of", "json", str(path)], capture=True)
     d = json.loads(out)
-    v = next(s for s in d["streams"] if s["codec_type"] == "video")
-    has_audio = any(s["codec_type"] == "audio" for s in d["streams"])
+    streams = d.get("streams") or []
+    v = next((s for s in streams if s.get("codec_type") == "video"), None)
+    if v is None:
+        raise RuntimeError("ffprobe 未找到视频流：%s" % path)
+    has_audio = any(s.get("codec_type") == "audio" for s in streams)
     return v, has_audio
 
 
@@ -74,9 +90,10 @@ def main():
     run(cmd)
 
     ov, o_audio = probe(out)
-    print("源片 %sx%s（%s）→ %s；输出 %sx%s / %s 帧 / 音轨%s"
+    dec = frame_checker().assert_frames(out, n) if n else int(ov.get("nb_frames") or 0)
+    print("源片 %sx%s（%s）→ %s；输出 %sx%s / %s 帧（解码实测 %d）/ 音轨%s"
           % (sv["width"], sv["height"], "横屏" if landscape else "竖屏", layout,
-             ov["width"], ov["height"], ov.get("nb_frames", "?"),
+             ov["width"], ov["height"], ov.get("nb_frames", "?"), dec,
              "有" if o_audio else "无"))
     print(out)
 

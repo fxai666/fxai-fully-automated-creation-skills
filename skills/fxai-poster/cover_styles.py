@@ -23,6 +23,7 @@
 只用两款字：得意黑（标题花字）+ 微软雅黑（正文/副标）。
 一切颜色、字号、边距都从 STYLES 里改，不许在 HTML 里散落硬编码。
 """
+import json
 import pathlib
 import sys
 
@@ -112,6 +113,8 @@ def _photo_big(bg, t1, t2, sub, w, h, s1=282, s2=196, top=110, gap=22,
            .replace("{{ls1}}", str(ls1)).replace("{{ls2}}", str(ls2))
            .replace("{{ss}}", str(ss)).replace("{{subtop}}", str(subtop))
            .replace("{{BODY}}", BODY))
+    for k, v in _side_vars(side).items():
+        css = css.replace("{{%s}}" % k, str(v))
     body = """
 <img class="bg" src="{{BG}}"><div class="veil"></div>
 <div class="star" style="left:{{X1}}px;top:{{Y1}}px;font-size:52px;opacity:.95">✦</div>
@@ -380,10 +383,178 @@ def _uri(p):
     return pathlib.Path(p).resolve().as_uri()
 
 
+# ---------------------------------------------------------------- 8 竖排贴左
+# 为什么有这一款：照片类封面（photo_big）把大字横排压在顶部，人物一旦居中构图，
+# 字就落在额头到下巴那一段，等于给脸打了个码。竖排只占左侧一条窄带，人物完整露出，
+# 而且从 1080×1920 到 900×383 各种比例都不会把标题裁断。
+CSS_VERT_TITLE = """
+.bg{object-position:50% 0%}   /* 顶部对齐：竖图转 3:4 / 1:1 时先保头顶 */
+.veilL{position:absolute;{{VEILPOS}};top:0;bottom:0;width:{{vlw}}%;
+  background:linear-gradient({{GRAD}},rgba(3,6,12,.93) 0%,rgba(3,6,12,.89) 21%,
+             rgba(3,6,12,.50) 44%,rgba(3,6,12,.14) 68%,rgba(3,6,12,0) 86%)}
+.veilT{position:absolute;left:0;right:0;top:0;height:15%;
+  background:linear-gradient(180deg,rgba(3,6,12,.66),rgba(3,6,12,0))}
+.veilB{position:absolute;left:0;right:0;bottom:0;height:26%;
+  background:linear-gradient(0deg,rgba(3,6,12,.95) 22%,rgba(3,6,12,0))}
+.kick{position:absolute;{{ANCHOR}}:{{lx}}px;top:{{kicktop}}px;font-family:{{BODY}};
+  font-size:{{ks}}px;letter-spacing:.42em;color:{{GOLD}};font-weight:600;
+  text-shadow:0 2px 10px rgba(0,0,0,.75)}
+.kick i{display:inline-block;width:{{bw}}px;height:1px;background:{{GOLD}};
+  vertical-align:middle;margin-right:{{IMR}};margin-left:{{IML}};opacity:.85}
+.en{position:absolute;{{ANCHOR}}:{{lx}}px;top:{{entop}}px;font-family:{{BODY}};
+  font-size:{{es}}px;letter-spacing:.52em;color:#fff;opacity:.82;font-weight:300;
+  text-shadow:0 2px 12px rgba(0,0,0,.8)}
+.vt{position:absolute;{{ANCHOR}}:{{lx}}px;top:{{ttop}}px;writing-mode:vertical-rl;
+  text-orientation:upright;font-family:{{BODY}};font-weight:800;
+  font-size:{{ts}}px;letter-spacing:.10em;color:{{PAPER}};line-height:1;
+  text-shadow:0 6px 26px rgba(0,0,0,.75),0 2px 5px rgba(0,0,0,.85),0 0 60px rgba(216,195,154,.16)}
+.vt::before{content:"";display:block;width:100%;height:{{bw2}}px;
+  background:linear-gradient(90deg,transparent,{{GOLD}});margin-bottom:{{gp}}px;border-radius:2px}
+.sub{position:absolute;left:0;right:0;bottom:{{sbb}}px;text-align:center;
+  font-family:{{BODY}};font-size:{{ss}}px;letter-spacing:.34em;color:#fff;opacity:.93;
+  font-weight:500;text-shadow:0 2px 14px rgba(0,0,0,.9)}
+.foot{position:absolute;left:0;right:0;bottom:{{fbb}}px;text-align:center;
+  font-family:{{BODY}};font-size:{{fs}}px;letter-spacing:.26em;color:{{GOLD}};opacity:.88;
+  text-shadow:0 2px 10px rgba(0,0,0,.85)}
+"""
+
+
+CSS_VERT_LAND = """
+.bgblur{position:absolute;inset:-32%;background-image:url("{{SRC}}");
+  background-position:50% 8%;background-size:cover;
+  filter:blur({{BLUR}}px) brightness(.52) saturate(.92)}
+.hero{position:absolute;left:{{HEROX}};top:50%;height:122%;transform:translate(-50%,-50%);
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 7%,#000 93%,transparent 100%);
+  mask-image:linear-gradient(90deg,transparent 0,#000 7%,#000 93%,transparent 100%)}
+.hero img{height:100%;width:auto;display:block}
+.tint{position:absolute;inset:0;background:
+  linear-gradient({{GRAD}},rgba(3,6,12,.90) 0%,rgba(3,6,12,.80) 30%,
+                  rgba(3,6,12,.30) 48%,rgba(3,6,12,.16) 64%,
+                  rgba(3,6,12,.55) 82%,rgba(3,6,12,.90) 100%)}
+.veilT{position:absolute;left:0;right:0;top:0;height:15%;
+  background:linear-gradient(180deg,rgba(3,6,12,.66),rgba(3,6,12,0))}
+.veilB{position:absolute;left:0;right:0;bottom:0;height:26%;
+  background:linear-gradient(0deg,rgba(3,6,12,.95) 22%,rgba(3,6,12,0))}
+.kick{position:absolute;left:{{lx}}px;top:{{kicktop}}px;font-family:{{BODY}};
+  font-size:{{ks}}px;letter-spacing:.42em;color:{{GOLD}};font-weight:600;
+  text-shadow:0 2px 10px rgba(0,0,0,.75)}
+.kick i{display:inline-block;width:{{bw}}px;height:1px;background:{{GOLD}};
+  vertical-align:middle;margin-right:{{IMR}};margin-left:{{IML}};opacity:.85}
+.en{position:absolute;{{ANCHOR}}:{{lx}}px;top:{{entop}}px;font-family:{{BODY}};
+  font-size:{{es}}px;letter-spacing:.52em;color:#fff;opacity:.82;font-weight:300;
+  text-shadow:0 2px 12px rgba(0,0,0,.8)}
+.vt{position:absolute;{{ANCHOR}}:{{lx}}px;top:{{ttop}}px;writing-mode:vertical-rl;
+  text-orientation:upright;font-family:{{BODY}};font-weight:800;
+  font-size:{{ts}}px;letter-spacing:.10em;color:{{PAPER}};line-height:1;
+  text-shadow:0 6px 26px rgba(0,0,0,.75),0 2px 5px rgba(0,0,0,.85)}
+.vt::before{content:"";display:block;width:100%;height:{{bw2}}px;
+  background:linear-gradient(90deg,transparent,{{GOLD}});margin-bottom:{{gp}}px;border-radius:2px}
+.sub{position:absolute;left:0;right:0;bottom:{{sbb}}px;text-align:center;
+  font-family:{{BODY}};font-size:{{ss}}px;letter-spacing:.34em;color:#fff;opacity:.93;
+  font-weight:500;text-shadow:0 2px 14px rgba(0,0,0,.9)}
+.foot{position:absolute;left:0;right:0;bottom:{{fbb}}px;text-align:center;
+  font-family:{{BODY}};font-size:{{fs}}px;letter-spacing:.26em;color:{{GOLD}};opacity:.88;
+  text-shadow:0 2px 10px rgba(0,0,0,.85)}
+"""
+
+
+def _side_vars(side):
+    """文字贴哪侧 → 定位锚点 / 遮罩方向 / 主体位置 / 装饰线边距。"""
+    right = side == "right"
+    return dict(ANCHOR="right" if right else "left",
+                VEILPOS="right:0" if right else "left:0",
+                GRAD="270deg" if right else "90deg",
+                HEROX="38%" if right else "62%",
+                IMR="0" if right else ".62em", IML=".62em" if right else "0")
+
+
+def _kick_html(kick, side):
+    if side == "right":
+        return "<div class='kick'>%s<i></i></div>" % kick
+    return "<div class='kick'><i></i>%s</div>" % kick
+
+
+def _vert_title_land(bg, t1, sub="", w=1920, h=1080, en="", kick="", brand="",
+                     gold="#d8c39a", paper="#f7f2e9", side="left"):
+    """横版：模糊底只取上部天空（避免人像重影）+ 主体放大出血靠右，文字全走左侧空区。"""
+    f = h / 1080.0
+    compact = h < 520
+    vals = dict(SRC=_uri(bg), BLUR=round(62 * f), BODY=BODY,
+                GOLD=gold, PAPER=paper, **_side_vars(side),
+                lx=round(w * 0.050), kicktop=round(h * 0.075),
+                entop=round(h * 0.140), ttop=round(h * 0.205),
+                ks=max(10, round(19 * f)), es=max(11, round(25 * f)),
+                ts=max(28, round(132 * f)), ss=max(12, round(28 * f)),
+                fs=max(10, round(20 * f)), bw=max(18, round(64 * f)),
+                bw2=max(2, round(6 * f)), gp=max(6, round(26 * f)),
+                sbb=round(h * 0.062), fbb=round(h * 0.030))
+    css = CSS_VERT_LAND
+    for k, v in vals.items():
+        css = css.replace("{{%s}}" % k, str(v))
+    body = ['<div class="bgblur"></div>',
+            '<div class="hero"><img src="%s"></div>' % _uri(bg),
+            '<div class="tint"></div><div class="veilT"></div><div class="veilB"></div>']
+    if kick:
+        body.append(_kick_html(kick, side))
+    if en and not compact:
+        body.append('<div class="en">%s</div>' % en)
+    body.append('<div class="vt">%s</div>' % t1)
+    if sub and not compact:
+        body.append('<div class="sub">%s</div>' % sub)
+    if brand and not compact:
+        body.append('<div class="foot">%s</div>' % brand)
+    return page("".join(body), css, w, h)
+
+
+def _vert_title(bg, t1, sub="", w=1080, h=1920, en="", kick="", brand="",
+                gold="#d8c39a", paper="#f7f2e9", vlw=64, side="left"):
+    """竖排贴左。所有字号按 h 派生，所以同一套参数在 9:16 / 3:4 / 1:1 / 横幅上都成立。"""
+    if w > h:
+        return _vert_title_land(bg, t1, sub=sub, w=w, h=h, en=en, kick=kick,
+                                brand=brand, gold=gold, paper=paper, side=side)
+    f = h / 1920.0
+    compact = h < 520          # 公众号首图那种小图：多一行就糊，只留 kick + 标题
+    css = (CSS_VERT_TITLE
+           .replace("{{vlw}}", str(vlw))
+           .replace("{{lx}}", str(round(w * 0.050)))
+           .replace("{{kicktop}}", str(round(h * 0.055)))
+           .replace("{{entop}}", str(round(h * 0.092)))
+           .replace("{{ttop}}", str(round(h * 0.136)))
+           .replace("{{ks}}", str(max(10, round(19 * f))))
+           .replace("{{es}}", str(max(11, round(25 * f))))
+           .replace("{{ts}}", str(max(28, round(124 * f))))
+           .replace("{{ss}}", str(max(12, round(28 * f))))
+           .replace("{{fs}}", str(max(10, round(20 * f))))
+           .replace("{{bw}}", str(max(18, round(64 * f))))
+           .replace("{{bw2}}", str(max(2, round(6 * f))))
+           .replace("{{gp}}", str(max(6, round(26 * f))))
+           .replace("{{sbb}}", str(round(h * 0.062)))
+           .replace("{{fbb}}", str(round(h * 0.030)))
+           .replace("{{GOLD}}", gold).replace("{{PAPER}}", paper)
+           .replace("{{BODY}}", BODY))
+    for k, v in _side_vars(side).items():
+        css = css.replace("{{%s}}" % k, str(v))
+    body = ['<img class="bg" src="%s">' % _uri(bg),
+            '<div class="veilT"></div><div class="veilL"></div><div class="veilB"></div>']
+    if kick:
+        body.append(_kick_html(kick, side))
+    if en and not compact:
+        body.append('<div class="en">%s</div>' % en)
+    body.append('<div class="vt">%s</div>' % t1)
+    if sub and not compact:
+        body.append('<div class="sub">%s</div>' % sub)
+    if brand and not compact:
+        body.append('<div class="foot">%s</div>' % brand)
+    return page("".join(body), css, w, h)
+
+
 STYLES = {
     "photo_big": dict(cn="写真大字", fn=_photo_big, need_bg=True,
                       use="人物出镜 / 故事 / 情感 / 人设口播",
                       keys=("人", "故事", "我", "个人", "经历", "生活", "情感", "真实")),
+    "vert_title": dict(cn="竖排贴左", fn=_vert_title, need_bg=True,
+                       use="MV / 歌曲 / 情绪向（标题竖排贴左，绝不压脸）",
+                       keys=("MV", "歌", "曲", "音乐", "海边", "治愈", "情绪", "来信")),
     "magazine": dict(cn="杂志白卡", fn=_magazine, need_bg=True,
                      use="观点 / 认知 / 书单 / 深度（高级感）",
                      keys=("观点", "认知", "方法论", "为什么", "本质", "思考", "书")),
@@ -426,3 +597,34 @@ def render(style, out_dir, name, bg=None, w=1080, h=1920, **kw):
     html = st["fn"](bg, w=w, h=h, **kw)
     html = html.replace("</head>", "<style>%s</style></head>" % slides._font_face_css(), 1)
     return slides.render(name, html, pathlib.Path(out_dir), w=w, h=h)
+
+
+# ---------------------------------------------------------------- 尺寸矩阵
+_SIZES_JSON = pathlib.Path(__file__).resolve().parent / "cover_sizes.json"
+
+
+def load_sizes():
+    """读 cover_sizes.json（尺寸唯一真源）。缺文件时退回最小集的两个尺寸。"""
+    if _SIZES_JSON.is_file():
+        return json.loads(_SIZES_JSON.read_text(encoding="utf-8"))
+    return {"sizes": {"vert_9x16": {"w": 1080, "h": 1920},
+                      "horiz_16x9": {"w": 1920, "h": 1080}}, "policy": {}}
+
+
+def render_matrix(style, out_dir, name, bg=None, keys=None, **kw):
+    """一次出全套尺寸。
+
+    keys 省略时按 cover_sizes.json 的 policy.minimal_set（默认只要两张，
+    能统一就统一）；要额外尺寸就显式传 keys。返回 {key: png 路径}。
+    """
+    reg = load_sizes()
+    sizes = reg.get("sizes", {})
+    if not keys:
+        keys = reg.get("policy", {}).get("minimal_set") or ["vert_9x16", "horiz_16x9"]
+    out = {}
+    for k in keys:
+        if k not in sizes:
+            raise SystemExit("未知尺寸 key：%s（可选 %s）" % (k, ", ".join(sizes)))
+        w, h = int(sizes[k]["w"]), int(sizes[k]["h"])
+        out[k] = render(style, out_dir, "%s_%dx%d" % (name, w, h), bg=bg, w=w, h=h, **kw)
+    return out

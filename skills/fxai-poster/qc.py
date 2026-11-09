@@ -32,12 +32,14 @@ TYPES = {
         require=("title",), hooks_min=2,
     ),
     "video_cover": dict(
-        label="竖版视频封面（抖音 / 视频号 / 快手）", size="768x1280", mode=("web", "hybrid", "image"),
+        # 尺寸唯一真源 cover_sizes.json 的 vert_9x16；旧 768x1280 已废止
+        label="竖版视频封面（抖音 / 视频号 / 快手）", size="1080x1920", mode=("web", "hybrid", "image"),
         title_chars=7, title_lines=2, sub_chars=14, tag_chars=10, keys=3,
         require=("title",), hooks_min=2,
     ),
     "video_cover_h": dict(
-        label="横版视频封面（B 站 / YouTube）", size="1280x768", mode=("web", "hybrid", "image"),
+        # 尺寸唯一真源 cover_sizes.json 的 horiz_16x9；旧 1280x768 已废止
+        label="横版视频封面（B 站 / YouTube）", size="1920x1080", mode=("web", "hybrid", "image"),
         title_chars=9, title_lines=2, sub_chars=18, tag_chars=10, keys=3,
         require=("title",), hooks_min=2,
     ),

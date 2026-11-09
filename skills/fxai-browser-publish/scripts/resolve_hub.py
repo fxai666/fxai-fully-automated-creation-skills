@@ -27,7 +27,7 @@ from pathlib import Path
 ENV = "FXAI_PUBLISH_HUB"
 GLOBAL_CONFIG_REL = Path(".workbuddy") / "fxai_global.json"
 GLOBAL_SECTION = "publish_hub"
-SKILL_NAME = "fxai-auto-publish"
+SKILL_NAME = "fxai-browser-publish"
 SKILL_DIR = Path(__file__).resolve().parent.parent
 # 新实例用 sites；既有实例沿用 platforms 时同样识别，接入新站点按该实例既有键落记录。
 SITE_SECTIONS = ("sites", "platforms")

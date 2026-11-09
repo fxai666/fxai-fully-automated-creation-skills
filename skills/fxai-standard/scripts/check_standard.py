@@ -63,8 +63,10 @@ ROUTE_ONLY_LINE_KEYS = ("只读对应的那一册", "其余一律不读", "只�
 # ---------- 路径可移植 ----------
 # 盘符绝对路径写进技能包即不可移植：字体 / 浏览器 / 私钥 / 输出目录一律按环境解析。
 ABS_PATH_RE = re.compile(r"(?<![A-Za-z0-9_/.:])[A-Za-z]:[\\/][A-Za-z][^\s\"'`,;)\]}]*")
-# 系统目录缺省值放行（OS 定义，非本机物理路径）
+# 系统目录缺省值放行（OS 定义，非本机物理路径）：根目录与其下子路径同样放行，
+# 字体目录 C:/Windows/Fonts/... 是各机同位的系统路径，不属于本机私有盘符。
 SYS_ROOT_OK = {"c:\\windows", "c:/windows"}
+SYS_PREFIX_OK = ("c:\\windows\\", "c:/windows/")
 PATH_HINT = "本机绝对路径（按环境变量 / 技能目录 / 工作区相对路径解析）"
 
 # ---------- 项目清单契约 ----------
@@ -96,6 +98,144 @@ MANIFEST_HINT = (
 )
 PRODUCER_HINT = "疑似产出型技能，未登记到 check_standard.py 的 PRODUCERS，清单契约未校验"
 WHEN_HINT = "清单段落缺「建档」时机说明（口径：产物目录建好即建档、每完成一段更新）"
+
+# ---------- GPU 提交前门禁契约 ----------
+# 判据落在真正提交的东西上：公共层 POST /prompt 之前须调门禁，门禁实现须随本技能出包。
+# 规则正文见 references/01-产出铁律.md「GPU 提交前门禁」。
+GATE_SCRIPT_REL = os.path.join("scripts", "check_gpu_gate.py")
+GATE_IMPL_MARKS = ("def gate(", "/fxai/guard/recover")
+GATE_CALL_MARK = "gpu_gate(url=url"
+PROMPT_SUBMIT_MARK = '+ "/prompt"'
+GATE_IMPL_HINT = "GPU 提交前门禁实现缺失或不完整：scripts/check_gpu_gate.py 须提供 gate() 与同步硬回收"
+GATE_MISSING_HINT = "GPU 提交前门禁未接线：comfy_client.py 的 POST /prompt 之前须调用 gpu_gate()"
+GATE_ORDER_HINT = "GPU 提交前门禁接线位置有误：gpu_gate() 出现在 POST /prompt 之后"
+
+# ---------- 500 / 显存自愈契约 ----------
+# 探测优先、阈值短路、硬件实况判因、自愈一次重投须同时落在实现与提交点两处。
+# 规则正文见 references/01-产出铁律.md「GPU 提交前门禁」。
+HEAL_IMPL_MARKS = (
+    "def self_heal(", "def is_clean(", "def residual_gib(",
+    "def looks_like_memory_error(", "/fxai/guard/status",
+    "释放前探测", "跳过（释放前探测已低于阈值）",
+    "recover_calls", "SKIP_RECOVER_GIB",
+    '"hardware": hw', '"error_log": st.get("error_log")',
+    '"models_loaded": st.get("models_loaded")',
+    "looks_like_memory_error(err_log)", "looks_like_memory_error(last_error)",
+)
+HEAL_SHORT_MARK = "跳过（释放前探测已低于阈值）"
+HEAL_UNLOAD_MARK = "rec = unload(base, reason)"
+HEAL_CLIENT_MARKS = (
+    "def gpu_self_heal(", "G.self_heal(", "def _heal_and_retry(",
+    "heal_rounds", "heal_used",
+)
+HEAL_FIVEXX_MARK = "e.code >= 500"
+HEAL_FIVEXX_CALL = "if gpu_self_heal(url=url"
+HEAL_NET_RETRY_MARK = "net_try += 1"
+HEAL_TERMINAL_MARK = 'term.get("status") == "error"'
+HEAL_TERMINAL_CALL = "_heal_and_retry(wf, timeout"
+HEAL_IMPL_HINT = ("500/显存自愈实现不完整：scripts/check_gpu_gate.py 须提供 self_heal() "
+                  "与释放前探测短路、硬件实况判因")
+HEAL_PROBE_HINT = ("500/显存自愈实现顺序有误：gate() 须先探测短路放行，再按需卸载全部模型")
+HEAL_CLIENT_HINT = ("500/显存自愈未接线：comfy_client.py 须提供 gpu_self_heal() "
+                    "与 _heal_and_retry() 并在 5xx / 执行期错误两处调用")
+HEAL_ORDER_HINT = ("500/显存自愈接线位置有误：5xx 分支须在计网络重试次数之前"
+                   "调用 gpu_self_heal()")
+
+# ---------- 视频帧数验收契约 ----------
+# 判据落在真正产视频的脚本上：共用实现与对比片生成脚本两处同查。
+# 规则正文见 references/01-产出铁律.md「视频帧数验收」。
+FRAME_IMPL_REL = os.path.join("scripts", "video_frames.py")
+FRAME_IMPL_MARKS = ("def decoded_frames(", "-count_frames")
+FRAME_CALL_MARK = "assert_frames(out, n)"
+FRAME_GEN_MARK = "run(cmd)"
+FRAME_IMPL_HINT = "视频帧数验收实现缺失或不完整：scripts/video_frames.py 须提供 decoded_frames() 与 -count_frames 实测"
+FRAME_MISSING_HINT = "视频帧数验收未接线：make_compare.py 生成对比片后须调 assert_frames()"
+FRAME_ORDER_HINT = "视频帧数验收接线位置有误：assert_frames() 出现在生成命令之前"
+
+
+def _read_text(path):
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            return f.read()
+    except OSError:
+        return ""
+
+
+def check_gpu_gate_contract(root, name, errors):
+    """门禁是代码行为：提交点接线与门禁实现两处同时受检。"""
+    if name == "fxai-standard":
+        path = os.path.join(root, GATE_SCRIPT_REL)
+        text = _read_text(path)
+        if not os.path.isfile(path) or any(m not in text for m in GATE_IMPL_MARKS):
+            errors.append(GATE_IMPL_HINT)
+        return
+    if name == "fxai-workflow":
+        path = os.path.join(root, "comfy_client.py")
+        if not os.path.isfile(path):
+            return
+        text = _read_text(path)
+        submit_at = text.find(PROMPT_SUBMIT_MARK)
+        if submit_at < 0:
+            return
+        call_at = text.find(GATE_CALL_MARK)
+        if call_at < 0:
+            errors.append(GATE_MISSING_HINT)
+        elif call_at > submit_at:
+            errors.append(GATE_ORDER_HINT)
+
+
+def check_gpu_self_heal_contract(root, name, errors):
+    """探测优先与自愈重投是代码行为：实现与提交点两处同时受检。"""
+    if name == "fxai-standard":
+        path = os.path.join(root, GATE_SCRIPT_REL)
+        text = _read_text(path)
+        if not os.path.isfile(path) or any(m not in text for m in HEAL_IMPL_MARKS):
+            errors.append(HEAL_IMPL_HINT)
+        short_at = text.find(HEAL_SHORT_MARK)
+        unload_at = text.find(HEAL_UNLOAD_MARK, short_at if short_at >= 0 else 0)
+        if short_at < 0 or unload_at < 0:
+            errors.append(HEAL_PROBE_HINT)
+        return
+    if name == "fxai-workflow":
+        path = os.path.join(root, "comfy_client.py")
+        if not os.path.isfile(path):
+            return
+        text = _read_text(path)
+        if any(m not in text for m in HEAL_CLIENT_MARKS):
+            errors.append(HEAL_CLIENT_HINT)
+            return
+        fivexx_at = text.find(HEAL_FIVEXX_MARK)
+        call_at = text.find(HEAL_FIVEXX_CALL, fivexx_at if fivexx_at >= 0 else 0)
+        net_at = text.find(HEAL_NET_RETRY_MARK)
+        if fivexx_at < 0 or call_at < 0 or net_at < 0 or call_at > net_at:
+            errors.append(HEAL_ORDER_HINT)
+        term_at = text.find(HEAL_TERMINAL_MARK)
+        term_heal_at = text.find(HEAL_TERMINAL_CALL, term_at if term_at >= 0 else 0)
+        if term_at < 0 or term_heal_at < 0 or term_heal_at - term_at > 400:
+            errors.append(HEAL_CLIENT_HINT)
+
+
+def check_video_frame_contract(root, name, errors):
+    """帧数判据落在真正产视频的脚本上：共用实现与对比片生成脚本两处同查。"""
+    if name == "fxai-standard":
+        path = os.path.join(root, FRAME_IMPL_REL)
+        text = _read_text(path)
+        if not os.path.isfile(path) or any(m not in text for m in FRAME_IMPL_MARKS):
+            errors.append(FRAME_IMPL_HINT)
+        return
+    if name == "fxai-face-edit":
+        path = os.path.join(root, "scripts", "make_compare.py")
+        if not os.path.isfile(path):
+            return
+        text = _read_text(path)
+        gen_at = text.find(FRAME_GEN_MARK)
+        if gen_at < 0:
+            return
+        call_at = text.find(FRAME_CALL_MARK)
+        if call_at < 0:
+            errors.append(FRAME_MISSING_HINT)
+        elif call_at < gen_at:
+            errors.append(FRAME_ORDER_HINT)
 
 
 def iter_files(root):
@@ -136,7 +276,8 @@ def check_text(path, rel, errors, warns):
                 errors.append("%s:%d: 成句示范「%s」（改判据，见 02 册总则）" % (rel, lineno, word))
         for m in ABS_PATH_RE.finditer(line):
             hit = m.group(0).rstrip(".,:;")
-            if hit.lower() in SYS_ROOT_OK:
+            low = hit.lower()
+            if low in SYS_ROOT_OK or low.startswith(SYS_PREFIX_OK):
                 continue
             if any(c in hit for c in "*([+?|^$"):  # 正则字面量，非路径
                 continue
@@ -299,6 +440,9 @@ def audit(root, junk=False, fix=False):
     check_manifest_contract(root, name, errors, warns, fix=fix)
     check_category_registry(errors, warns)
     check_chrome_component(root, name, errors)
+    check_gpu_gate_contract(root, name, errors)
+    check_gpu_self_heal_contract(root, name, errors)
+    check_video_frame_contract(root, name, errors)
     for path in iter_files(root):
         rel = os.path.relpath(path, root).replace("\\", "/")
         if rel.startswith("scripts/") and rel.endswith("check_standard.py"):

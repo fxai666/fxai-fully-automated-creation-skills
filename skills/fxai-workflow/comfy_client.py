@@ -1434,8 +1434,68 @@ def _in_queue(pid, url):
     return False
 
 
+def gpu_gate(url="", tag="run"):
+    """POST /prompt 前的显存门禁，唯一实现在 fxai-standard/scripts/check_gpu_gate.py。
+
+    门禁未过抛 RuntimeError 停在提交前；此处只调判据，不另写一份判据。
+    提交侧一律经本函数，技能脚本各自复制门禁属第二处事实源。
+    """
+    scripts = os.environ.get(
+        "FXAI_STANDARD_SCRIPTS",
+        os.path.normpath(os.path.join(FXAI_WORKFLOW_DIR, "..", "fxai-standard", "scripts")))
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
+    try:
+        import check_gpu_gate as G
+    except ImportError as exc:
+        raise RuntimeError(
+            "GPU 提交前门禁缺失：%s 下未找到 check_gpu_gate.py，"
+            "按门禁口径停手，卸载验收未完成即提交属于越界" % scripts) from exc
+    result = G.gate(base=url, tag=tag)
+    print("  [%s] %s" % (tag, result["message"]), flush=True)
+    return result
+
+
+def gpu_self_heal(url="", tag="run", error_text="", http_code=0):
+    """运行时显存自愈，唯一实现在 fxai-standard/scripts/check_gpu_gate.py::self_heal()。
+
+    提交遇 5xx / 执行期 OOM 时调：读显存实况与错误日志判因 → 卸载一次 →
+    设备级验收，返回 True 时调用方立即重投一轮。判为服务不健康则停手交回给人。
+    """
+    scripts = os.environ.get(
+        "FXAI_STANDARD_SCRIPTS",
+        os.path.normpath(os.path.join(FXAI_WORKFLOW_DIR, "..", "fxai-standard", "scripts")))
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
+    try:
+        import check_gpu_gate as G
+    except ImportError:
+        return False
+    try:
+        res = G.self_heal(base=comfy_url(url), tag=tag,
+                          error_text=error_text, http_code=http_code)
+    except Exception as e:
+        print("  [%s] 显存自愈探测失败，按原错误处理：%r" % (tag, e), flush=True)
+        return False
+    print("  [%s] 自愈判定：%s" % (tag, res.get("reason")), flush=True)
+    return bool(res.get("healed"))
+
+
+def _heal_and_retry(wf, timeout, poll, tag, kind, url, models_checked,
+                    heal_rounds, error_text, http_code=0):
+    """执行期显存错误：自愈一次后整体重投；返回 None 交回原错误处理。"""
+    if heal_rounds >= 1:
+        return None
+    if not gpu_self_heal(url=url, tag=tag, error_text=error_text,
+                         http_code=http_code):
+        return None
+    print("  [%s] 显存已回落，自动重投一轮（自愈额度 1 次）" % tag, flush=True)
+    return run_workflow(wf, timeout=timeout, poll=poll, tag=tag, kind=kind,
+                        url=url, models_checked=True, heal_rounds=heal_rounds + 1)
+
+
 def run_workflow(wf, timeout=1800, poll=6, tag="run", kind=None, url=None,
-                 models_checked=False):
+                 models_checked=False, heal_rounds=0):
     """提交工作流并等产物 url。url 不传就按 comfy_url() 解析（可换服务器）。
 
     等待优先走全局广播监听（fxai-comfyui-watcher）：提交时带上监听自己的 clientId，
@@ -1448,6 +1508,7 @@ def run_workflow(wf, timeout=1800, poll=6, tag="run", kind=None, url=None,
     """
     validate_workflow_payload(wf, kind=kind, tag=tag)  # ← 提交前格式自检
     url = comfy_url(url)
+    gpu_gate(url=url, tag=tag)  # ← 提交前显存门禁，唯一实现在 fxai-standard/scripts
     # 模型名自适应：服务器升级后模型文件名变了，这里先换成服务器上实际有的那个再提交，
     # 省掉一次注定被拒的往返。名字没变时零动作；取不到服务器信息（离线）时静默跳过。
     if not models_checked:
@@ -1471,6 +1532,7 @@ def run_workflow(wf, timeout=1800, poll=6, tag="run", kind=None, url=None,
     last_err = None
     net_try = 0          # 网络抖动重试计数（模型名纠正不占这个额度）
     fixed_rounds = 0     # 模型名纠正次数上限，防「修了还是不对」时死循环
+    heal_used = False    # 5xx 显存自愈额度：整条提交链只用一次
     while net_try < 3:
         try:
             with _http("POST", url + "/prompt", data=payload, headers=headers, timeout=30) as r:
@@ -1500,6 +1562,15 @@ def run_workflow(wf, timeout=1800, poll=6, tag="run", kind=None, url=None,
                         if lis is not None:
                             lis.close()
                         raise RuntimeError(_fmt_model_fix([], un, tag)) from None
+            # ★ 5xx：按显存实况与错误日志判因，命中显存类就卸载全部模型并立即重投。
+            # 自愈成功不占网络抖动重试额度；判为服务不健康时停手，把重启交回给人。
+            if e.code >= 500 and not heal_used and heal_rounds < 1:
+                heal_used = True
+                if gpu_self_heal(url=url, tag=tag,
+                                 error_text=body_txt or ("HTTP %d @ /prompt" % e.code),
+                                 http_code=e.code):
+                    print("  [%s] 显存自愈完成，立即重投一次" % tag, flush=True)
+                    continue
             last_err = f"[{tag!s}] 提交被拒 HTTP {e.code!s}: {body_txt[:1000]!s}"
             net_try += 1
             print("  [%s] 提交重试 %d/3: %s" % (tag, net_try, last_err), flush=True)
@@ -1516,7 +1587,8 @@ def run_workflow(wf, timeout=1800, poll=6, tag="run", kind=None, url=None,
                 if lis is not None:
                     lis.close()
                 return run_workflow(wf, timeout=timeout, poll=poll, tag=tag,
-                                    kind=kind, url=url, models_checked=True)
+                                    kind=kind, url=url, models_checked=True,
+                                    heal_rounds=heal_rounds)
         if lis is not None:
             lis.close()
         raise RuntimeError(f"[{tag!s}] 提交被拒: {json.dumps(resp, ensure_ascii=False)[:800]!s}")
@@ -1533,7 +1605,12 @@ def run_workflow(wf, timeout=1800, poll=6, tag="run", kind=None, url=None,
         term = _wait_by_broadcast(pid, lis, max(1, int(deadline - time.time())), tag)
         if term is not None:
             if term.get("status") == "error":
-                raise RuntimeError(f"[{tag!s}] 工作流报错: {term.get('error') or '(无异常信息)'!s}"
+                err_txt = str(term.get("error") or "")
+                retried = _heal_and_retry(wf, timeout, poll, tag, kind, url,
+                                          models_checked, heal_rounds, err_txt)
+                if retried is not None:
+                    return retried
+                raise RuntimeError(f"[{tag!s}] 工作流报错: {err_txt or '(无异常信息)'!s}"
                                    f"｜prompt_id={pid!s}（查详情：comfy_watch.py status {pid!s}）")
             # ① 先用广播事件自带的 url 拼令牌（task_saved 已带 category/subdir/outputs）；
             #    收尾节点不登记结果表的工作流只在这条路上拿得到。
@@ -1564,6 +1641,10 @@ def run_workflow(wf, timeout=1800, poll=6, tag="run", kind=None, url=None,
         time.sleep(poll)
         status_str, errmsg = _history_status(pid)
         if status_str == "error":
+            retried = _heal_and_retry(wf, timeout, poll, tag, kind, url,
+                                      models_checked, heal_rounds, errmsg or "")
+            if retried is not None:
+                return retried
             raise RuntimeError(f"[{tag!s}] 工作流报错: {errmsg or '(无异常信息)'!s}"
                                f"｜prompt_id={pid!s}（查详情：comfy_watch.py status {pid!s}）")
         if status_str == "success":

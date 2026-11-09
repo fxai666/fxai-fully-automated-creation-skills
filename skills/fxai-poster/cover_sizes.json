@@ -1,0 +1,56 @@
+{
+  "note": "封面尺寸唯一真源。站点台账只引用 key，绝不各自写像素。改尺寸只改这一个文件，全部站点自动跟随。",
+  "version": 4,
+  "updated_at": "2026-11-09",
+
+  "policy": {
+    "principle": "能统一就统一，不能统一才分裂。同一个竖屏尺寸能过就不许再出一张。",
+    "minimal_set": ["vert_9x16", "horiz_16x9"],
+    "minimal_set_why": "竖屏站全部吃 1080×1920；横版站与所有「视频封面位」吃 1920×1080。两张覆盖全部 13 站。平台上传框比例（如抖音竖 3:4 / 横 4:3）是平台自己的裁切框，不是另出第三张的理由。",
+    "default_output": ["vert_9x16", "horiz_16x9"],
+    "default_output_why": "项目 封面.json 的 sizes 默认只列这两个 key；其余 key 是历史备选产物，不默认生成、不默认交付。",
+    "full_set": ["vert_9x16", "vert_3x4", "square_1x1", "horiz_16x9", "wechat_235"],
+    "full_set_when": "仅历史备选；只有站点明确给出专用位、且裁切会切到字、并经用户明确同意才追加。默认不走。",
+    "never": "不许把竖版硬塞进横版位，也不许让平台替我们裁字。竖排文字须落在 3:4 安全区内。"
+  },
+
+  "sizes": {
+    "vert_9x16": {
+      "w": 1080, "h": 1920, "ratio": "9:16", "layout": "portrait", "anchor": "top",
+      "note": "竖屏统一尺寸。高是宽的 1.78 倍，看起来很高是比例本身决定的。标题竖排贴空余最多的一边，不压脸。优先用它覆盖所有竖屏站。"
+    },
+    "vert_3x4": {
+      "w": 1080, "h": 1440, "ratio": "3:4", "layout": "portrait", "anchor": "top",
+      "note": "历史备选：图文社区首图位更紧凑。默认不生成。"
+    },
+    "square_1x1": {
+      "w": 1080, "h": 1080, "ratio": "1:1", "layout": "portrait", "anchor": "top",
+      "note": "历史备选：方图位 / 头像位。默认不生成。"
+    },
+    "horiz_16x9": {
+      "w": 1920, "h": 1080, "ratio": "16:9", "layout": "landscape", "anchor": "center",
+      "note": "横版统一尺寸。模糊底铺满 + 主体居中不裁人，所有视频封面位都用它。"
+    },
+    "wechat_235": {
+      "w": 900, "h": 383, "ratio": "2.35:1", "layout": "landscape", "anchor": "center",
+      "note": "历史备选：公众号首图。小尺寸走 compact 版式，只留标题。默认不生成。"
+    }
+  },
+
+  "site_specs": {
+    "douyin":          {"prefer": "vert_9x16", "min": [720, 1280], "ratio_ok": ["9:16", "3:4"], "crop": true, "upload_frame": {"vertical": "3:4", "horizontal": "4:3"}, "evidence": "用户 2026-11-09 实测", "note": "封面向导竖 3:4 / 横 4:3 上传框（实测）；主出图仍是 vert_9x16 + horiz_16x9 两张，由平台裁切，不另出第三张。竖排文字须落在 3:4 安全区内"},
+    "kuaishou":        {"prefer": "vert_9x16", "min": [720, 1280], "ratio_ok": ["9:16", "3:4"], "crop": true,  "evidence": "经验", "note": "9:16 直接过；发布页可单独换封面"},
+    "weixin_channels": {"prefer": "vert_9x16", "min": [720, 1280], "ratio_ok": ["9:16", "3:4", "6:7"], "crop": true, "evidence": "经验", "note": "发表页可改封面，默认取视频首帧"},
+    "tiktok":          {"prefer": "vert_9x16", "min": [720, 1280], "ratio_ok": ["9:16"], "crop": true,  "evidence": "经验", "note": "还可从视频帧自定义封面"},
+    "tieba":           {"prefer": "vert_9x16", "min": [720, 1280], "ratio_ok": ["9:16", "3:4"], "crop": true,  "evidence": "实测", "note": "视频贴封面需上传图片，非帧选择"},
+    "xiaohongshu":     {"prefer": "vert_9x16", "min": [720, 1280], "ratio_ok": ["9:16", "3:4"], "crop": true,  "evidence": "经验", "note": "竖屏站，9:16 可过；3:4 仅在专门首图位更优"},
+    "zhihu":           {"prefer": "vert_9x16", "min": [720, 1280], "ratio_ok": ["9:16", "16:9"], "crop": true, "evidence": "经验", "note": "视频发布页封面可裁，竖版可过"},
+    "weibo":           {"prefer": "vert_9x16", "min": [720, 1280], "ratio_ok": ["9:16", "3:4"], "crop": true,  "evidence": "实测", "note": "封面上传本地图，竖版可过"},
+    "bilibili":        {"prefer": "horiz_16x9", "min": [1146, 717], "ratio_ok": ["16:9"], "crop": true, "evidence": "实测", "note": "投稿封面 16:9，低于 1146×717 被拒"},
+    "baijiahao":       {"prefer": "horiz_16x9", "min": [960, 540], "ratio_ok": ["16:9", "3:4"], "crop": true, "evidence": "经验", "note": "横版封面位"},
+    "toutiao":         {"prefer": "horiz_16x9", "min": [960, 540], "ratio_ok": ["16:9", "3:4"], "crop": true, "evidence": "经验", "note": "横版封面位"},
+    "csdn":            {"prefer": "horiz_16x9", "min": [960, 540], "ratio_ok": ["16:9"], "crop": false, "evidence": "实测", "note": "裁剪下限 960×540：竖版裁完 614×346 被拒收，只能用横版"},
+    "youtube":         {"prefer": "horiz_16x9", "min": [1280, 720], "ratio_ok": ["16:9"], "crop": true, "evidence": "实测", "note": "缩略图 1280×720，单图 ≤2MB"},
+    "wechat_mp":       {"prefer": "wechat_235", "min": [900, 383], "ratio_ok": ["2.35:1"], "crop": true, "evidence": "经验", "note": "公众号首图专用比例，其他比例会被裁"}
+  }
+}

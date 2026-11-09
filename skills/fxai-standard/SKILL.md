@@ -13,7 +13,7 @@ scripts）前先读本册；改完跑 `scripts/check_standard.py` 体检，ERROR
 
 | 文件 | 什么时候读 |
 |---|---|
-| `references/01-产出铁律.md` | 定产物落点、交付清单、画幅、配置、项目记忆、渲染进度时；**提交/中断视频生成前必读** |
+| `references/01-产出铁律.md` | 定产物落点、交付清单、画幅、配置、项目记忆、渲染进度时；**提交/中断视频生成前必读**（含 GPU 提交前门禁） |
 | `references/02-文档写作规范.md` | 写或改 SKILL.md / references / 脚本注释时（过程叙述、句式、豁免） |
 | `references/03-技能结构规范.md` | 新建技能、拆 references 分册、压 SKILL.md 体积时 |
 | `references/04-规范体检.md` | 跑 check_standard.py、查判据与豁免标记时 |
