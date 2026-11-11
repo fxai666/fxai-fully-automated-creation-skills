@@ -450,7 +450,10 @@ def _brightness(path):
 def _rank_base_prompt(pd):
     """榜单封面无文字底图提示词：横版电影感剧照，画面里【没有任何文字】。
     角色外貌从 project_def.characters[].prompt 派生，不写死、不另编。
-    引用标签铁律：role 传 2 张参考图，提示词必须含 <image1>/<image2>（check_image_refs 硬拦）。"""
+    project_def.rank_prompt 可整体覆盖（题材与该模板不同、或只有单一主角时用）。
+    引用标签铁律：role 传 N 张参考图，提示词必须含 <image1>..<imageN>（check_image_refs 硬拦）。"""
+    if (pd.get("rank_prompt") or "").strip():
+        return pd["rank_prompt"].strip()
     ch = pd.get("characters", {}) or {}
 
     def _p(k, fb):
@@ -479,7 +482,7 @@ def gen_rank_base(series_root, pd, cache_dir, use_comfyui=True, size=(2450, 800)
         return None
     try:
         import image_gen
-        role = _series_role_refs(pd) or "both"
+        role = pd.get("rank_role") or _series_role_refs(pd) or "both"
         print("[榜单底图] %dx%d 提交生图技能（无文字纯底图，role=%s）" % (w, h, role))
         dst = image_gen.generate_image(_rank_base_prompt(pd), role=role, width=w, height=h,
                                        tag="cover_rank_%dx%d" % (w, h), save_dir=cache_dir,
@@ -800,10 +803,12 @@ def _render_intro(out, title, pd, specs):
         gender = info.get("gender", "男")
         desc = info.get("desc") or ("《%s》中登场的角色。" % title)
         local = info.get("local", "")
-        lines.append("| %s | %s | %s | %s |" % (nm, gender, desc, local))
+        lines.append("| %s | %s | %s | %s |" % (nm, gender, desc, ("系列根/" + local) if local else "—"))
     lines.append("")
     lines.append("## AI 生成声明\n")
-    lines.append("本剧由 AI 全流程生成（文生图 / 图生视频 / 自动剪辑），角色与场景均为拟人化动物卡通形象，不含真人出镜。发布时请按各平台要求勾选「内容由AI生成」。\n")
+    lines.append(pd.get("ai_declare_text") or
+                 "本剧由 AI 全流程生成（文生图 / 图生视频 / 自动剪辑），不含真人出镜。"
+                 "发布时请按各平台要求勾选「内容由AI生成」。\n")
     lines.append("## 各平台简介字数限制速查\n")
     for pname, pinfo in specs["platforms"].items():
         rfs = "、".join(pinfo.get("required_fields", []))
@@ -817,17 +822,23 @@ def _render_intro(out, title, pd, specs):
 
 
 # ------------------------- 表单字段预填 -------------------------
-def _field_value(field, title, pd, synopsis, one_liner, tags, category, ep_text):
+def _field_value(field, title, pd, synopsis, one_liner, tags, category, ep_text,
+                 ep_idx=None, ep_label=None):
     if "角色" in field:
         return "见下方角色信息表 / 剧情介绍.md"
+    if "副标题" in field and ep_label:
+        ep_name = ep_label.split("、", 1)[1] if "、" in ep_label else ep_label
+        return ("第%d集 %s" % (ep_idx, ep_name)) if ep_idx else ep_name
     if "集数" in field or "总集" in field:
         return ep_text
     if "剧名" in field or "标题" in field or "作品名称" in field:
         return title
     if "简介" in field or "描述" in field or "摘要" in field:
-        # 带字数上限的简介栏用短句（one_liner），否则用完整简介
-        if re.search(r"[≤<]", field):
-            return one_liner if len(one_liner) <= 90 else one_liner[:90]
+        # 带字数上限的简介栏：上限 ≥100 字用完整简介，短栏用一句话
+        m = re.search(r"[≤<]\s*(\d+)", field)
+        if m:
+            cap = int(m.group(1))
+            return synopsis if (cap >= 100 or len(one_liner) > cap) else one_liner
         return synopsis
     if "标签" in field:
         return "、".join(tags)
@@ -913,13 +924,23 @@ def gen_publish_kit(project_root, platforms=None, cover_art=None,
                            for i in p["required_images"] if i["role"] == "poster"},
                           key=lambda s: s[0] * s[1], reverse=True)
 
-    hero_map = {s: hero for s in poster_sizes}   # 全尺寸共用一版主图，本地裁切
+    # 主图按尺寸取专用版：<cache>/cover_main_WxH.png 存在就用它（文字按该比例排版、无裁切），
+    # 否则回退单版主图本地裁切（向后兼容）。
+    hero_map = {}
+    for s in poster_sizes:
+        cand = os.path.join(cache_dir, "cover_main_%dx%d.png" % s)
+        hero_map[s] = cand if os.path.exists(cand) else hero
     base_map, hook_map = {}, {}
     for ep_label in episodes:
+        ep_k = str(ep_label).split("、")[0]
         ep_gen = gen_ep_cover(series_root, ep_label, pd, cache_dir, use_comfyui,
                               size=master_size)
         ep_src = ep_gen or _ep_base(series_root, ep_label, hero, cache_dir, ep_base)
-        base_map[ep_label] = {s: ep_src for s in poster_sizes}
+        per_size = {}
+        for s in poster_sizes:
+            cand = os.path.join(cache_dir, "cover_ep%s_%dx%d.png" % (ep_k, s[0], s[1]))
+            per_size[s] = cand if os.path.exists(cand) else ep_src
+        base_map[ep_label] = per_size
         hook_map[ep_label] = _load_cover_meta(os.path.join(series_root, ep_label)).get("hook")
 
     manifest = {}
@@ -997,7 +1018,8 @@ def _render_page(pname, pinfo, title, pd, ep_text, synopsis, one_liner, tags, ca
                  % (title, who, pname, pname))
     lines.append("## 一、投稿表单字段（直接复制粘贴）\n")
     for field in pinfo.get("required_fields", []):
-        val = _field_value(field, title, pd, synopsis, one_liner, tags, category, ep_text)
+        val = _field_value(field, title, pd, synopsis, one_liner, tags, category, ep_text,
+                           ep_idx=ep_idx, ep_label=ep_label)
         lines.append("- **%s**：%s" % (field, val))
     lines.append("")
     lines.append("## 二、角色信息表\n")
@@ -1008,7 +1030,7 @@ def _render_page(pname, pinfo, title, pd, ep_text, synopsis, one_liner, tags, ca
         gender = info.get("gender", "男")
         desc = info.get("desc") or ("《%s》中登场的角色。" % title)
         local = info.get("local", "")
-        lines.append("| %s | %s | %s | %s |" % (nm, gender, desc, local))
+        lines.append("| %s | %s | %s | %s |" % (nm, gender, desc, ("系列根/" + local) if local else "—"))
     lines.append("")
     lines.append("## 三、封面/图片（已生成，直接上传）\n")
     for img, fn in files:

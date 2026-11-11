@@ -12,6 +12,7 @@ description: fxai 全系列技能共用的底层公共件（**公共目录，不
 | `SKILL.md` | 本文件：本公共件是什么/谁依赖它/提供哪些函数/等任务纪律/ref 路径语义（代码层事实 + 指针） |
 | `fxai_common.py` | 函数实现，被别的技能 import；**不用通读**，只在改公共函数或排障时查对应函数 |
 | `video_tone.py` | **分段视频的影调/接缝对齐**（纯后处理，不依赖 8188）。拼段前段间跳色、画面发灰时用；算法与 `FxAiToneMatch` / `FxAiSeamColorMatch` 同口径 |
+| `video_encode.py` | **最终交付成片编码**：取 2000 kbps 参数、两遍编码、码率验收。规格见 `fxai-standard/references/12-交付视频编码规格.md` |
 | `env_guard.py` | 换机器/给客户装时的环境守卫：缺「凤希AI伴侣」打下载指引、缺 pip 小包自动补。**只在这两种场景读**：① 技能要在新机器上跑起来 ② 改安装引导文案/下载链接 |
 | references/01-公共函数速查.md | 查它提供哪些函数：地址与代理 / HTTP / 环境守卫 / 口播文案 / 影调接缝 |
 | references/02-依赖与改动影响.md | 查谁在依赖它、改公共函数会波及哪些技能 |
@@ -28,7 +29,7 @@ description: fxai 全系列技能共用的底层公共件（**公共目录，不
 
 ## 它提供什么
 
-函数清单见 references/01-公共函数速查.md，分五类：
+函数清单见 references/01-公共函数速查.md，分六类：
 
 ### 地址与代理
 
@@ -57,6 +58,12 @@ fixed = video_tone.align(段列表, outdir="tmp/tone")   # 返回等长同序的
 ### 口播文案
 
 见 01 册。
+
+### 交付视频编码（`video_encode.py`）
+
+最终成片的总比特率与编码参数只从 `delivery_venc()` / `encode_delivery_2pass()` 取，
+产线不各自写 `-b:v` / `-crf`；交付前跑 `assert_delivery_bitrate()` 验收。
+函数清单见 01 册，规格与判据见 `fxai-standard/references/12-交付视频编码规格.md`。
 
 ## 公共约定：等任务纪律（跨技能唯一真相源）
 

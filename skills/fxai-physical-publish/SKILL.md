@@ -22,7 +22,8 @@ description: 物理仿真发布通道。用系统级 SendInput 鼠标键盘操�
 | `references/06-流程迭代与合集文案规范.md` | 三次迭代收敛、合集标准、文案分层、人工验证协作 |
 | `references/07-封面尺寸与版式规范.md` | 定封面尺寸 key、竖版标题排布时（**规范本体在 `fxai-poster`**） |
 | `references/08-步骤类型与回执.md` | 写流程 JSON、查 `do` 取值与通用字段、定回执口径时 |
-| `scripts/publish_cli.py` | 全部命令入口：`env` / `launch` / `snap` / `mark` / `run` / `reveal` |
+| `references/09-底部锚定与局部校验.md` | **坐标记不准 / 点不中 / 页面布局漂移时必读**：相对底边、局部截图、自动重定位、粘贴录入、开工诊断 |
+| `scripts/publish_cli.py` | 全部命令入口：`env` / `launch` / `snap` / `mark` / `probe` / `reanchor` / `preflight` / `run` / `reveal` |
 | `scripts/locate.py` | 按颜色扫描控件矩形，录区域前定位 |
 | `scripts/human/` | 引擎本体（窗口、轨迹、输入、区域），改引擎才读 |
 | `config.example.json` | 实例配置模板：节奏参数与字段名 |
@@ -39,7 +40,7 @@ description: 物理仿真发布通道。用系统级 SendInput 鼠标键盘操�
 
 ## 铁律（不可退让）
 
-每条一句判据；全文与处置见 `references/00-铁律与执行细则.md`。
+每条一句判据；全文见 `references/00-铁律与执行细则.md`，28~31 另见 `09-底部锚定与局部校验.md`。
 
 1. 🔴 **零注入**：不用无头、不接 CDP、不注入脚本、不改 DOM，浏览器按用户日常方式启动。
 2. 🔴 **零凭据**：不读不写 cookie、不存登录态；登录停下等人，程序只判断是否还在登录页。
@@ -68,6 +69,10 @@ description: 物理仿真发布通道。用系统级 SendInput 鼠标键盘操�
 25. 🔴 **封面只引 key**：台账只写 `{"cover": {"key": "horiz_16x9"}}`，尺寸与版式归 `fxai-poster`；竖版标题竖排贴空余边，不横排压脸。
 26. 🔴 **上传没到 100% 不提交**：进度 100% + 封面帧出现 + 能点开预览，三样齐了才填表。
 27. 🔴 **「点发布」是本站最后一个动作**：点完只看有无错误提示，无错立刻结束，不截图、不开作品、不复核；唯一例外是第 17 条验证弹窗。
+28. 🔴 **发布控件记「距视口底边」**：`anchor=bottom` + `bottom_offset`，滚到底反推 y；存量用 `reanchor` 迁移，新建默认 bottom。
+29. 🔴 **点前只截那一小块校验**：ROI 比模板，命中才点；未命中才全屏重扫、回写、复验。
+30. 🔴 **表单文本一律粘贴，清空只用框内拖选**（`select` / `clear`）：**绝不 Ctrl+A**——焦点不在框里时 Chrome 会整页全选。
+31. 🔴 **开工先诊断**：锁屏、客户区原点、独立确认窗；确认窗就是普通弹窗，点「离开/确定」继续，不当阻塞停下。
 
 ## 快速开始
 
@@ -75,16 +80,15 @@ description: 物理仿真发布通道。用系统级 SendInput 鼠标键盘操�
 PY="<python>"; S="$HOME/.workbuddy/skills/fxai-physical-publish/scripts"
 
 $PY -B $S/publish_cli.py env                     # 环境自检
-$PY -B $S/publish_cli.py launch --fit 1500x900   # 开真实浏览器并锁画布尺寸
-$PY -B $S/publish_cli.py mark --site <站点> --name <区域>  # F7 左上 / F8 右下 录制
+$PY -B $S/publish_cli.py launch --fit 1500x900   # 开真实浏览器
+$PY -B $S/publish_cli.py preflight --site <站点>      # 开工诊断
+$PY -B $S/publish_cli.py mark --site <站点> --name publish_btn --anchor bottom --color ksred --text 发布
+$PY -B $S/publish_cli.py probe --site <站点> --name publish_btn [--learn|--relocate]
+$PY -B $S/publish_cli.py reanchor --site <站点> --names publish_btn --anchor bottom
 $PY -B $S/publish_cli.py run --site <站点> --flow video   # 跑站点流程
 $PY -B $S/publish_cli.py reveal                  # 缩窗让位给人（不置顶）
 $PY -B $S/publish_cli.py minimize                # 最小化，把屏幕让给对话
 ```
 
-其余命令见 `references/08-步骤类型与回执.md`。
-
-## 指针
-
-- 目录归属（L0 能力 / L1 指针 / L2 实例 / L3 项目）：`references/00-铁律与执行细则.md` 第三节
-- 相邻技能：`fxai-browser-publish`（选择器 / 无头通道）、`fxai-poster`（出图与质检门禁）、`fxai-standard`（公共层范式、字体与素材授权）
+其余命令见 `references/08-步骤类型与回执.md`，目录归属见 `00` 第三节。
+相邻技能：`fxai-browser-publish`、`fxai-poster`、`fxai-standard`。

@@ -25,6 +25,15 @@ segments.json:
   - ffmpeg 必须带 libass（subtitles 滤镜）。conda 自带 ffmpeg 7.0.1 没有，请用 gyan 全量版。
   - ASS 文件 UTF-8 无 BOM，字幕中文用 Microsoft YaHei。
 """
+# >>> 交付码率统一出口（fxai-standard/references/12-交付视频编码规格.md）>>>
+import os as _os
+import sys as _sys
+_VC_ROOT = _os.path.normpath(_os.path.join(
+    _os.path.dirname(_os.path.abspath(__file__)), '../../fxai-common'))
+if _VC_ROOT not in _sys.path:
+    _sys.path.insert(0, _VC_ROOT)
+import video_encode as _venc
+# <<< 交付码率统一出口 <<<
 import os
 import sys
 import json
@@ -216,9 +225,8 @@ def main():
         cmd = [ffmpeg, "-y"]
         for sf in seg_files:
             cmd += ["-i", sf]
-        cmd += ["-filter_complex", fc, "-map", final_v, "-map", final_a,
-                "-c:v", "libx264", "-crf", "18", "-preset", "medium",
-                "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", args.out]
+        cmd += ["-filter_complex", fc, "-map", final_v, "-map", final_a] \
+               + _venc.delivery_venc(audio_copy=False, audio_bps=192000) + [args.out]
         run(cmd)
         print("DONE (%d segs, %.2fs) -> %s" % (n, get_duration(args.out, ffprobe_exe), args.out))
     finally:

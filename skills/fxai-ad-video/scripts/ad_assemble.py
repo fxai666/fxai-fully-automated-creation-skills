@@ -13,6 +13,15 @@
 
 规范见 fxai-ad-video/references/03、04、06。
 """
+# >>> 交付码率统一出口（fxai-standard/references/12-交付视频编码规格.md）>>>
+import os as _os
+import sys as _sys
+_VC_ROOT = _os.path.normpath(_os.path.join(
+    _os.path.dirname(_os.path.abspath(__file__)), '../../fxai-common'))
+if _VC_ROOT not in _sys.path:
+    _sys.path.insert(0, _VC_ROOT)
+import video_encode as _venc
+# <<< 交付码率统一出口 <<<
 import argparse
 import hashlib
 import json
@@ -570,9 +579,8 @@ def cmd_attach(args):
     cmd = [ff, "-y", "-v", "error", "-i", args.main,
            "-loop", "1", "-t", "%.3f" % hold, "-i", args.endcard,
            "-f", "lavfi", "-t", "%.3f" % hold, "-i", "anullsrc=r=48000:cl=stereo",
-           "-filter_complex", graph, "-map", "[v]", "-map", "[a]",
-           "-c:v", "libx264", "-preset", "medium", "-crf", "19",
-           "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", args.out]
+           "-filter_complex", graph, "-map", "[v]", "-map", "[a]"] \
+          + _venc.delivery_venc(audio_copy=False, audio_bps=192000) + [args.out]
     run(cmd)
     print("OK  %s（%.2fs = 正片 %.2fs + 片尾 %.2fs）" % (args.out, dur + hold, dur, hold))
 

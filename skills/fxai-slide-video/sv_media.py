@@ -3,6 +3,15 @@
 
 字幕一律按「各段音频的精确时长」排时间轴，不走 whisper 对齐。
 """
+# >>> 交付码率统一出口（fxai-standard/references/12-交付视频编码规格.md）>>>
+import os as _os
+import sys as _sys
+_VC_ROOT = _os.path.normpath(_os.path.join(
+    _os.path.dirname(_os.path.abspath(__file__)), '../fxai-common'))
+if _VC_ROOT not in _sys.path:
+    _sys.path.insert(0, _VC_ROOT)
+import video_encode as _venc
+# <<< 交付码率统一出口 <<<
 import subprocess, pathlib, re, json, os, sys, datetime, shutil
 
 _HERE = pathlib.Path(__file__).parent
@@ -569,12 +578,11 @@ def burn(video, ass, out, fps=None, cwd=None):
     base = pathlib.Path(cwd) if cwd else pathlib.Path(video).parent
     ofps = fps if fps is not None else FPS
     def build(enc):
-        v = (["-c:v", "h264_nvenc", "-preset", "p4", "-rc", "vbr", "-cq", "20", "-b:v", "0"]
-             if enc == "h264_nvenc" else ["-c:v", "libx264", "-preset", "medium", "-crf", "20"])
+        v = _venc.delivery_venc(audio_copy=True, extra=["-r", str(ofps)])
         # 必须 cwd=项目根 + 相对路径：subtitles 滤镜遇到中文绝对路径会挂
         return ([ffmpeg_bin(), "-y", "-i", _relp(video, base),
                  "-vf", f"subtitles=filename={_relp(ass, base)}"] + v +
-                ["-pix_fmt", "yuv420p", "-r", str(ofps), "-c:a", "copy", _relp(out, base)])
+                [_relp(out, base)])
     enc = _encoder()
     r = subprocess.run(build(enc), cwd=base, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if r.returncode != 0 and enc != "libx264":

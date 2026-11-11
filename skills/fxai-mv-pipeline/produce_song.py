@@ -203,6 +203,9 @@ def load_song_project(song_dir, song):
         "scenes": scenes,
         "camera_library": prod.get("camera_library") or [],
         "compose_variants": prod.get("compose_variants") or [],
+        # ★ 项目级提示词覆盖点（可选）：让指定分镜跳过内置「站唱 / 中景特写」通用模板，
+        #   用于骑乘、飞行动作等特殊表演。缺省 {} = 完全走原逻辑，不影响其它项目。
+        "prompt_rules": prod.get("prompt_rules") or {},
         "characters": prod.get("characters") or [],
         "size": prod.get("size") or {},
         "tags": tags,
@@ -513,7 +516,7 @@ def _parse_sing_plan(sing, k, L):
 
 
 def build_segment_prompt(char_descs, sdesc, cam, camf, act, seg, next_seg=None, prop_descs=None,
-                         inst_beats=None):
+                         inst_beats=None, prompt_rules=None):
     """★ 按「该音频分段的真实人声状态」生成 Ref2VA 六段式提示词，支持多人物。
 
 char_descs: list[str]，每元素 = 一个人物的穿搭/外貌描述，
@@ -533,7 +536,10 @@ seg: 来自 lyrics_align.classify_segments 的分段信息
     stype = seg.get("type") or ("演唱" if seg.get("vocal") else "间奏")
     act = (act or "").strip()
     # 段首过渡（承接上一段尾帧）：所有段的前 1 秒都闭唇安静，继承上一段的张嘴画面会穿帮
-    head = "段首过渡（承接上一段尾帧）：人物双唇自然闭合、安静站定，只有轻微呼吸与肩线起伏，不做口型；"
+    # ★ prompt_rules 可按项目覆盖（骑乘段不该写「安静站定」）；缺省完全保持原文。
+    _rules = prompt_rules or {}
+    head = ((_rules.get("head_text") or "").strip()
+            or "段首过渡（承接上一段尾帧）：人物双唇自然闭合、安静站定，只有轻微呼吸与肩线起伏，不做口型；")
 
     # —— subject_definitions（人物1~K + 场景K+1）——
     subj_defs = []
@@ -580,14 +586,19 @@ seg: 来自 lyrics_align.classify_segments 的分段信息
         # 按演唱者计划写成明确时间轴（段首/尾 1s 仍是过渡安全区）
         _parts = []
         _cur = HEAD_GUARD
+        # ★ 内置模板是「站唱」表演（轻步移动 / 原地轻踏 / 中景做手势），会把骑乘、飞行等
+        #   特殊 act 覆盖成步行。项目可用 prompt_rules 覆盖；缺省完全保持原文，其它项目不受影响。
+        _pre_tail = ((_rules.get("pre_sing_text") or "").strip()
+                     or "双唇仍保持闭合，只调整呼吸、肩线随乐句轻移，双脚在原地轻轻踏节；")
+        _perf_tail = ((_rules.get("sing_tail") or "").strip()
+                      or ("身形随乐句在画面中轻步移动（向镜头 / 向侧方 / 原地轻踏），"
+                          "双手随乐句在身前做出柔和而富有表现力的手势，肩线与重心随乐句轻轻换向；"))
         for _sj, _a, _b in plan:
             if _a > _cur + 0.05:
-                _parts.append("%s （起唱前）：双唇仍保持闭合，只调整呼吸、肩线随乐句轻移，双脚在原地轻轻踏节；"
-                              % _av.fmt_at(_cur))
+                _parts.append("%s （起唱前）：%s" % (_av.fmt_at(_cur), _pre_tail))
             _parts.append(
-                "%s （演唱）：<Subject %d> (S%d) 开口演唱，唇形与 <Audio 1> 中的人声精准同步开合，%s，"
-                "身形随乐句在画面中轻步移动（向镜头 / 向侧方 / 原地轻踏），双手随乐句在身前做出柔和而富有表现力的手势，"
-                "肩线与重心随乐句轻轻换向；" % (_av.fmt_at(_a), _sj, _sj, act or "表情安静专注"))
+                "%s （演唱）：<Subject %d> (S%d) 开口演唱，唇形与 <Audio 1> 中的人声精准同步开合，%s，%s"
+                % (_av.fmt_at(_a), _sj, _sj, act or "表情安静专注", _perf_tail))
             _cur = _b
         if _cur < round(L, 2):
             _parts.append("%s （收束）：最后一个音符落下后双唇轻轻闭合，动作放缓，定格为柔和宁静的神情。"
@@ -621,6 +632,11 @@ seg: 来自 lyrics_align.classify_segments 的分段信息
         )
         soundscape = "来自 <Audio 1> 的复制纯器乐伴奏与环境声音贯穿全程，没有人声。"
 
+    # ★ 项目级覆盖：主体/坐骑数量锁定 + 取景规则。缺省 = 原「中景构图」文案。
+    _scene_line = (((_rules.get("scene_rules") or "").strip() + "\n")
+                   if (_rules.get("scene_rules") or "").strip() else "")
+    _frame_tail = ((_rules.get("frame_rule") or "").strip()
+                   or "画面始终保持人物略偏中心的中景构图。")
     return (
         "subject_definitions:\n"
         + "\n".join(subj_defs) + "\n" + audio_desc + "\n"
@@ -630,9 +646,9 @@ seg: 来自 lyrics_align.classify_segments 的分段信息
         + "\n<Audio 1>: fully_copy - <Audio 1> 作为目标视频的完整最终音轨直接复用。\n"
         "\ndetailed_description:\n"
         "目标视频采用电影感、自然主义的音乐视频风格。\n"
-        "[Shot 1] 本段共 %.2f 秒，严格按以下时间轴表演：\n%s\n"
-        % (L, timeline)
-        + cam + "，" + camf + "，画面始终保持人物略偏中心的中景构图。\n"
+        + _scene_line
+        + ("[Shot 1] 本段共 %.2f 秒，严格按以下时间轴表演：\n%s\n" % (L, timeline))
+        + cam + "，" + camf + "，" + _frame_tail + "\n"
         + (("视频中出现的道具须严格参照 %s 等道具参考图，形制与质感保持一致，不可凭空改动。\n"
             % _prop_pics) if _prop_descs else "")
         + "\noverall_soundscape:\n" + soundscape + "\n"
@@ -998,6 +1014,14 @@ def main():
         raise RuntimeError("项目目录不存在：%s（需含 歌曲.md 与 场景素材.md）" % SONG_DIR)
     spec = load_song_project(SONG_DIR, ACTIVE_SONG)  # ★ 一切歌曲数据都从项目目录读
     T = spec["tags"]
+    # ★ 项目级提示词覆盖：只有列进 segments 的分镜才套用骑乘/特殊表演规则（1 起镜号）
+    _PR = spec.get("prompt_rules") or {}
+    RULE_SEGMENTS = set()
+    for _x in (_PR.get("segments") or []):
+        try:
+            RULE_SEGMENTS.add(int(_x))
+        except (TypeError, ValueError):
+            pass
     IMG_DIR = os.path.join(SONG_DIR, "图片")  # ★ 唯一子文件夹：所有产出图
     os.makedirs(IMG_DIR, exist_ok=True)
 
@@ -1436,9 +1460,11 @@ def main():
         _nseg = None
         if _nxt is not None:
             _nseg = {"vocal": _nxt.get("vocal", True)}
+        _hit = int(sc.get("index", _i + 1)) in RULE_SEGMENTS
         ref2va.append(build_segment_prompt(char_descs_all, sc["sdesc"], sc["cam"], sc["camf"],
                                            sc["act"], _seg, next_seg=_nseg, prop_descs=prop_descs,
-                                           inst_beats=INST_BEATS))
+                                           inst_beats=INST_BEATS,
+                                           prompt_rules=_PR if _hit else None))
     with open(os.path.join(SONG_DIR, "运镜提示词.md"), "w", encoding="utf-8") as f:
         f.write("# 运镜提示词 · %s\n\n" % ACTIVE_SONG)
         f.write("> 每个音频分段一套 H3 Ref2VA 六段式提示词（行数 = 分段数，一一对应）。\n")

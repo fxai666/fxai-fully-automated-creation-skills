@@ -41,8 +41,11 @@ SUBDIR_DEFAULT = "h3_swap"
 SRC_SUFFIX = "_src"
 # 每段时长（秒）：与工作流分段器一致，4 秒一段
 SEG = 4
-# 最大边长：源视频长边超过它就等比缩，没超就原样（不放大）。1080 = 长边 1080
-MAX_SIDE = 1080
+# 最大边长：**不写死数字，按显存自动取档**（comfy_client.default_max_side）。
+#   本机 ≤16G 卡 → 960；本机 ≥24G 卡 → 1280；线上实例（仙宫云等）→ 1280。
+# 显式 --max-side 永远优先；None = 没指定，走自动档。档位低于源片属正常，不做自动抬档。
+# 工作流按 64 倍数对齐：960 档在 720×1386 源上落 480×960，1280 档落 640×1280。
+MAX_SIDE = None
 # 成片时长下限比例：低于源片的这个比例，判定只跑出了部分段
 DUR_RATIO = 0.95
 # 成片时长上限比例：高于源片的这个比例，判定合并目录混进了非分段视频 / 时间戳错乱
@@ -158,7 +161,8 @@ def char_swap(video, out_dir="", ref="", prompt="", seed=42, max_side=MAX_SIDE,
                 多张逗号分隔，第一张才是 <Picture 1>。缺省 avatar/000.png
       prompt    换人提示词正文，或提示词文件路径（也认 @文件）；缺省用内置模板
       seed      随机种子，<1 即随机；缺省 42（逐段稳定，不易闪）
-      max_side  最大边长，长边超了等比缩、没超原样（不放大）；缺省 1080
+      max_side  最大边长。**不给就按显存自动取档**：本机 ≤16G 卡 960、≥24G 卡 1280、
+                线上实例 1280；显式传数字则完全按传的来（与源片大小无关，低于源片属正常）
       subdir    服务端保存子目录
       duration  每段时长（秒），缺省 4
       start_index / end_index  段索引区间，end_index=-1 即跑完全部段
@@ -178,6 +182,11 @@ def char_swap(video, out_dir="", ref="", prompt="", seed=42, max_side=MAX_SIDE,
     if tone not in TONE_CHOICES:
         raise ValueError("--tone 只能是 %s，收到：%s" % (" / ".join(TONE_CHOICES), tone))
     text = read_prompt(prompt)
+
+    # 长边档位：没显式给就按显存自动取（本机 ≤16G→960、≥24G→1280、线上→1280）。
+    # 不是「源片多大就跑多大」：档位只决定能力上限，低于源片属正常，要更清就显式抬高。
+    if not max_side:
+        max_side = C.default_max_side(url)
 
     # 服务端按自己的根目录解析路径：本机存在的相对路径先转绝对，否则必报「找不到视频文件」
     if not os.path.isabs(video) and os.path.exists(video):
@@ -294,7 +303,7 @@ def main():
                     help="换人提示词正文，或提示词文件路径（默认内置 body_swap 模板）")
     ap.add_argument("--seed", type=int, default=42, help="随机种子，<1 即随机（默认 42）")
     ap.add_argument("--max-side", type=int, default=MAX_SIDE,
-                    help="最大边长，长边超了等比缩、没超原样（默认 %d）" % MAX_SIDE)
+                    help="最大边长；不给则按显存自动（本机≤16G→960、≥24G→1280、线上→1280）")
     ap.add_argument("--duration", type=float, default=SEG, help="每段时长秒（默认 %d）" % SEG)
     ap.add_argument("--start-index", type=int, default=0, help="从第几段开始（默认 0）")
     ap.add_argument("--end-index", type=int, default=-1, help="到第几段结束，-1 即全部（默认 -1）")

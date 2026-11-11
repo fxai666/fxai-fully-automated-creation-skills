@@ -1,6 +1,15 @@
 # -*- coding: utf-8 -*-
 """\nfxai-short-drama 短剧自动化管线（唯一真相源）\n\n把「一集短剧的分镜+对白」变成「批量生成的多镜头视频并合并成片」。\n视频工作流复用共享 fxai-workflow/shortdrama-minimax-filmdrama-api.json（Ref2VA 多参考 + For 循环批量 + 视频合并；与 fxai-mv-pipeline 同一套 fxai_ 占位符工作流，统一放在 skills/fxai-workflow/ 公共目录）。\n\n规则：\n- 不写死任何本机绝对路径（如 <某ComfyUI本机路径>、<某数据目录>）。机器相关路径放 config.local.json；不再自带 config.local.json。\n- 地址/模板只认全局配置 comfy_url，不读环境变量（临时换服务器走 comfy_client 的 url 参数）。\n\n节点配置：\n- 993 FxAiGeneratorController.结束索引 必须 = -1（生成全部分段；模板默认 0 会截断）\n- 1155 FxAiMiniMaxImageToVideoV2.音频模式：宠物/卡通项目用 '系统生成'（无引用音频）\n\n产物查询：fxai-toolkit 节点不写 /history，用 POST /fxai/tasks/result 按 prompt_id 查。\n\n生成速度（16G 显存）：\n- 单卡 RTX 5060 Ti（16G）≈ 1 秒视频 / 1 分钟生成。即总时长 N 秒 ≈ 预计 N 分钟。\n  见 estimate_minutes() 与 GEN_SPEED_NOTE。\n"""
 
+# >>> 交付码率统一出口（fxai-standard/references/12-交付视频编码规格.md）>>>
+import os as _os
+import sys as _sys
+_VC_ROOT = _os.path.normpath(_os.path.join(
+    _os.path.dirname(_os.path.abspath(__file__)), '../fxai-common'))
+if _VC_ROOT not in _sys.path:
+    _sys.path.insert(0, _VC_ROOT)
+import video_encode as _venc
+# <<< 交付码率统一出口 <<<
 import json
 import os
 import re
@@ -1158,9 +1167,7 @@ def burn_subtitles_local(raw, srt, out, style=SUBTITLE_STYLE, denoise=False):
     if denoise:
         vf += ",hqdn3d=2:1:3:3"
     cmd = [_ffmpeg_path(), "-y", "-i", raw,
-           "-vf", vf,
-           "-c:v", "libx264", "-preset", "medium", "-crf", "18",
-           "-c:a", "aac", "-b:a", "192k", out]
+           "-vf", vf] + _venc.delivery_venc(audio_copy=False, audio_bps=192000) + [out]
     if denoise:
         cmd += ["-af", "afftdn=n=12"]
     subprocess.run(cmd, check=True, cwd=os.path.dirname(os.path.abspath(out)))

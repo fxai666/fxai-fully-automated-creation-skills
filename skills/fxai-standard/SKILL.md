@@ -24,6 +24,7 @@ scripts）前先读本册；改完跑 `scripts/check_standard.py` 体检，ERROR
 | `references/09-会话记忆.md` | 开工读记忆、收工写记忆、整理 `.workbuddy/memory/` 时 |
 | `references/10-资源引用路径规范.md` | 提交任务填参考图 / 音频 / 视频、上传本机素材、把生图产物接下一环节时（路径格式与 rel 取值） |
 | `references/11-浏览器运行时与自动安装.md` | 能力需要本机浏览器、检测 Chrome 就绪、缺失要自动下载安装时 |
+| `references/12-交付视频编码规格.md` | 写最终交付 MP4、改编码参数、交付前验收码率时 |
 
 **确定本次要做什么之后，只读对应的那一册，其余一律不读。**
 
@@ -52,6 +53,7 @@ scripts）前先读本册；改完跑 `scripts/check_standard.py` 体检，ERROR
 15. 🔴 **出图规范只在 `fxai-poster`**：封面 / 海报 / 配图的设计规范与质检门禁归它（08 册定要素、09 册三道门、10 册提示词、`qc.py` 出判据）；其他技能引用处留指针，出图后跑 `qc.py pre|prompt|post`，退出码 2 即重做。
 16. 🔴 **对比片按源片画幅拼**：横屏上下、竖屏左右（判据见 01 册）。
 17. 🔴 **浏览器运行时走公共件**：Chrome 检测与缺失补装统一调 `scripts/ensure_chrome.py`，其他技能只留指针；判据见 11 册。
+18. 🔴 **交付成片总比特率固定 2000 kbps**：码率数值只写在 `fxai-common/video_encode.py`，产线调统一出口，交付前跑 `scripts/video_bitrate.py` 验收；判据见 12 册。
 
 ## 规范体检
 

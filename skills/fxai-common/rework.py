@@ -22,6 +22,15 @@
     `[rework] 返修模式：只重渲第 N 段`
     `[rework] 只改了第 N 镜 → 自动降级为单镜返修（整片不重跑）`
 """
+# >>> 交付码率统一出口（fxai-standard/references/12-交付视频编码规格.md）>>>
+import os as _os
+import sys as _sys
+_VC_ROOT = _os.path.normpath(_os.path.join(
+    _os.path.dirname(_os.path.abspath(__file__)), '.'))
+if _VC_ROOT not in _sys.path:
+    _sys.path.insert(0, _VC_ROOT)
+import video_encode as _venc
+# <<< 交付码率统一出口 <<<
 import hashlib
 import json
 import os
@@ -270,7 +279,7 @@ def splice_segment(full_video, seg_video, shot_no, out=None, seg=SEG_SECONDS,
            "-map", "[v]"]
     if keep_audio_from_full:
         cmd += ["-map", "0:a?", "-c:a", "copy"]
-    cmd += ["-c:v", "libx264", "-crf", str(crf), "-pix_fmt", "yuv420p", out]
+    cmd += _venc.delivery_venc(audio_copy=keep_audio_from_full) + [out]
 
     print("[rework] 拼回成片：第 %d 镜 [%.2f ~ %.2f s] 用新段替换"
           % (shot_no, t0, t1), flush=True)

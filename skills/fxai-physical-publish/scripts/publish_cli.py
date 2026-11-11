@@ -17,7 +17,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from human import api, browser, clipboard, flow, keyboard, mouse, regions, screen, ui  # noqa: E402
+from human import api, browser, clipboard, flow, keyboard, mouse, probe, regions, screen, ui  # noqa: E402
 
 ROOT = regions.ROOT  # 实例目录（站点台账 / 运行记录 / 截图都在这里）
 api.enable_dpi_awareness()
@@ -165,15 +165,24 @@ def cmd_mark(args) -> int:
         y0, y1 = sorted((ay, by))
         rel = [x0 - cx, y0 - cy, x1 - x0, y1 - y0]
 
-    if not args.no_capture:
-        pass
-    p = regions.put_region(args.site, args.name, rel, args.note or "", [cw, ch])
+    cfg = None
+    if args.color:
+        cfg = {"color": args.color, "text": args.text or "", "tolerance": args.tolerance, "min_ratio": args.min_ratio}
+    p = regions.put_region(args.site, args.name, rel, args.note or "", [cw, ch],
+                           anchor=args.anchor, probe=cfg)
     print("\n已记录 → %s" % p)
-    print("  区域 %-14s 相对客户区 rect=%s  尺寸=%dx%d" % (args.name, rel, rel[2], rel[3]))
-    if args.shot:
-        sp = os.path.join(ROOT, "shots", "%s_%s.png" % (args.site, args.name))
+    print("  区域 %-14s rect=%s  尺寸=%dx%d  锚定=%s" % (args.name, rel, rel[2], rel[3], args.anchor))
+    if args.anchor == "bottom":
+        print("  距视口底边 bottom_offset=%d（上方增删行不影响）" % (ch - rel[1] - rel[3]))
+    sp = os.path.join(ROOT, "shots", "%s_%s.png" % (args.site, args.name))
+    if args.shot or args.color:
         screen.shot(cx + rel[0] - 8, cy + rel[1] - 8, rel[2] + 16, rel[3] + 16, sp)
         print("  局部截图: %s" % sp)
+    if args.color:
+        info = probe.learn(args.site, args.name, (cx + rel[0], cy + rel[1], rel[2], rel[3]),
+                           args.color, args.text or "", 12, sp)
+        print("  已学模板: %s（主色 %s 占比 %.3f，期望文字 %r）"
+              % (os.path.basename(info["png"]), args.color, info["color_ratio"], args.text or ""))
     return 0
 
 
@@ -246,11 +255,16 @@ def cmd_record(args) -> int:
             print("      区域太小，跳过\n")
             skipped += 1
             continue
-        regions.put_region(args.site, name, rel, note, [cw, ch])
+        it_cfg = it.get("probe") or ({"color": args.color, "text": it.get("text", "")} if args.color else None)
+        regions.put_region(args.site, name, rel, note, [cw, ch],
+                           anchor=it.get("anchor", args.anchor), probe=it_cfg)
         # 顺手截局部图，方便事后核对录的是不是那块
         sp = os.path.join(ROOT, "shots", "%s_%s.png" % (args.site, name))
         try:
             screen.shot(cx + rel[0] - 6, cy + rel[1] - 6, rel[2] + 12, rel[3] + 12, sp)
+            if it_cfg and it_cfg.get("color"):
+                probe.learn(args.site, name, (cx + rel[0], cy + rel[1], rel[2], rel[3]),
+                            it_cfg["color"], it_cfg.get("text", ""), 12, sp)
         except Exception:
             sp = ""
         print("      已记录 rect=%s  %dx%d  %s\n" % (rel, rel[2], rel[3], os.path.basename(sp)))
@@ -260,6 +274,72 @@ def cmd_record(args) -> int:
     d.setdefault("window", {})["exe"] = "chrome.exe"
     regions.save(args.site, d)
     print("完成：记录 %d 个，跳过 %d 个 → %s" % (done, skipped, regions._path(args.site)))
+    return 0
+
+
+# ------------------------------------------------------------------ probe / reanchor / preflight
+def _pick_client(args):
+    w = browser.pick_window(args.title or "", args.hwnd)
+    api.activate_window(w["hwnd"])
+    time.sleep(0.3)
+    return w, api.client_rect(w["hwnd"])
+
+
+def cmd_probe(args) -> int:
+    w, cr = _pick_client(args)
+    site, name = args.site, args.name
+    if args.learn:
+        rect = regions.resolve(site, name, cr)
+        info = probe.learn(site, name, rect,
+                           args.color or (regions.get_region(site, name).get("probe") or {}).get("color", ""),
+                           args.text or (regions.get_region(site, name).get("probe") or {}).get("text", ""),
+                           int(args.pad), args.out or "")
+        print(json.dumps({"action": "learned", "rect": list(rect), **{k: v for k, v in info.items() if k != "fp"}},
+                         ensure_ascii=False, indent=2))
+        return 0
+    if args.relocate:
+        reg = regions.get_region(site, name)
+        color = args.color or (reg.get("probe") or {}).get("color", "")
+        rr = probe.relocate(site, name, cr, color, regions.resolve(site, name, cr))
+        print(json.dumps(rr, ensure_ascii=False, indent=2))
+        return 0 if rr.get("ok") else 2
+    rect = regions.resolve(site, name, cr)
+    res = probe.check(site, name, rect, args.out or "",
+                      tolerance=args.tolerance if args.tolerance is not None else None)
+    print(json.dumps(res, ensure_ascii=False, indent=2))
+    print("局部截图（只看这一块，不是全屏）: %s" % res["shot"])
+    return 0 if res.get("ok") else 2
+
+
+def cmd_reanchor(args) -> int:
+    names = [n.strip() for n in args.names.split(",") if n.strip()]
+    if not names:
+        raise SystemExit("--names 需要逗号分隔的区域名，或 all")
+    if names == ["all"]:
+        names = list((regions.load(args.site).get("regions") or {}).keys())
+    out = regions.reanchor(args.site, names, args.anchor)
+    for n, off in out:
+        print("  %-24s anchor=%-6s bottom_offset=%s" % (n, args.anchor, off))
+    print("已迁移 %d 个区域 → %s" % (len(out), regions._path(args.site)))
+    return 0
+
+
+def cmd_preflight(args) -> int:
+    w = browser.pick_window(args.title or "", args.hwnd)
+    cr = api.client_rect(w["hwnd"])
+    rep = flow.preflight(args.site, cr)
+    # 用户 2026-11-11 口径：确认窗就是普通弹窗，点「离开/确定」即可，不当阻塞
+    if rep["blockers"] and not args.no_dismiss:
+        gone = flow.dismiss_modals(w["hwnd"], log=lambda e, **k: print("  [%s] %s" % (e, k)))
+        rep["dismissed"] = gone
+        rep = {**rep, "blockers": [b for b in rep["blockers"]
+                                   if not any(g["hwnd"] == b["hwnd"] and g.get("closed") for g in gone)]}
+    rep["target_window"] = {"hwnd": w["hwnd"], "title": w["title"][:60]}
+    print(json.dumps(rep, ensure_ascii=False, indent=2))
+    if rep["blockers"]:
+        print("\n⚠ 仍有未点掉的确认窗：%s" % ", ".join(b["title"][:30] for b in rep["blockers"]))
+    if rep["locked"]:
+        print("\n⚠ 工作站已锁定，SendInput 与截图都会失败。")
     return 0
 
 
@@ -292,6 +372,16 @@ def cmd_run(args) -> int:
         override = {"scale": 0.08}
     elif args.scale:
         override = {"scale": float(args.scale)}
+
+    # 开工前置诊断：锁屏 / 客户区原点 / 吞点击的独立确认窗
+    try:
+        rep = flow.preflight(args.site)
+        print("前置诊断: 锁屏=%s 可见窗口=%d 确认窗=%d 前台=#%s"
+              % (rep["locked"], rep["windows"], len(rep["blockers"]), rep["foreground"]))
+        for b in rep["blockers"]:
+            print("  ⚠ 顶层确认窗「%s」会吞点击，按铁律 19 用 Tab→Enter 先处理" % b["title"][:40])
+    except Exception as e:
+        print("前置诊断跳过: %s" % e)
 
     runner = flow.Runner(args.site, variables, human_override=override)
     print("运行目录: %s" % runner.run_dir)
@@ -394,6 +484,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--rect", default="", help="手工指定 client 坐标 x,y,w,h（不走 F7/F8）")
     p.add_argument("--note", default="")
     p.add_argument("--shot", action="store_true", help="同时截一张该区域局部图核对")
+    p.add_argument("--anchor", choices=["top", "bottom"], default="bottom",
+                   help="默认 bottom：记距视口底边的距离（滚到底后的发布按钮、提交按钮都用它）；"
+                        "侧栏入口 / 弹窗内按钮这类不随滚动移动的，显式 --anchor top")
+    p.add_argument("--color", default="", help="挂局部校验：按钮主色预设，如 ksred/blue/red")
+    p.add_argument("--text", default="", help="期望文字，供上层看局部图核对，如「发布」")
+    p.add_argument("--tolerance", type=float, default=0.12, help="模板指纹容差")
+    p.add_argument("--min-ratio", type=float, default=0.20, help="主色最小占比")
     p.add_argument("--no-capture", action="store_true")
     p.set_defaults(func=cmd_mark)
 
@@ -401,6 +498,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--site", required=True)
     p.add_argument("--plan", default="", help="区域清单 JSON")
     p.add_argument("--names", default="", help="逗号分隔的区域名（无提示）")
+    p.add_argument("--anchor", choices=["top", "bottom"], default="bottom",
+                   help="本批区域的锚定方式，默认 bottom（不随滚动移动的控件用 top）")
+    p.add_argument("--color", default="", help="本批区域统一挂的主色（挂了就自动学模板）")
     p.add_argument("--hwnd", type=int)
     p.add_argument("--title", default="")
     p.set_defaults(func=cmd_record)
@@ -408,6 +508,34 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("regions", help="查看已录制区域")
     p.add_argument("--site", default="")
     p.set_defaults(func=cmd_regions)
+
+    p = sub.add_parser("probe", help="局部截图校验：只截已记录坐标那一小块")
+    p.add_argument("--site", required=True)
+    p.add_argument("--name", required=True)
+    p.add_argument("--hwnd", type=int)
+    p.add_argument("--title", default="")
+    p.add_argument("--out", default="", help="局部图输出路径")
+    p.add_argument("--learn", action="store_true", help="把当前这块学成模板")
+    p.add_argument("--relocate", action="store_true", help="全屏重扫主色并回写台账")
+    p.add_argument("--color", default="", help="主色预设（learn/relocate 用）")
+    p.add_argument("--text", default="", help="期望文字，写进模板备注")
+    p.add_argument("--pad", type=int, default=12, help="ROI 外扩像素")
+    p.add_argument("--tolerance", type=float, default=None, help="指纹容差覆盖")
+    p.set_defaults(func=cmd_probe)
+
+    p = sub.add_parser("reanchor", help="把已有区域批量转成底部/顶部锚定")
+    p.add_argument("--site", required=True)
+    p.add_argument("--names", required=True, help="逗号分隔区域名，或 all")
+    p.add_argument("--anchor", choices=["top", "bottom"], default="bottom")
+    p.set_defaults(func=cmd_reanchor)
+
+    p = sub.add_parser("preflight", help="开工前置诊断：锁屏/客户区原点/吞点击的确认窗")
+    p.add_argument("--site", required=True)
+    p.add_argument("--hwnd", type=int)
+    p.add_argument("--title", default="")
+    p.add_argument("--no-dismiss", action="store_true",
+                   help="只诊断、不自动点掉确认窗（默认会自动点「离开/确定」）")
+    p.set_defaults(func=cmd_preflight)
 
     p = sub.add_parser("run", help="执行流程步骤")
     p.add_argument("--site", required=True)

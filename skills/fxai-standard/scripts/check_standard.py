@@ -152,6 +152,41 @@ FRAME_IMPL_HINT = "视频帧数验收实现缺失或不完整：scripts/video_fr
 FRAME_MISSING_HINT = "视频帧数验收未接线：make_compare.py 生成对比片后须调 assert_frames()"
 FRAME_ORDER_HINT = "视频帧数验收接线位置有误：assert_frames() 出现在生成命令之前"
 
+# ---------- 交付编码契约 ----------
+# 规则正文见 references/12-交付视频编码规格.md，判据说明见 04 册。
+BITRATE_IMPL_MARKS = ("DELIVERY_TOTAL_KBPS = 2000", "def delivery_venc(",
+                      "def assert_delivery_bitrate(")
+BITRATE_IMPL_HINT = ("交付编码出口缺失或不完整：fxai-common/video_encode.py 须提供 "
+                     "2000 kbps 常量、delivery_venc() 与 assert_delivery_bitrate()")
+BITRATE_CALL_MARKS = ("delivery_venc(", "encode_delivery_2pass(")
+BITRATE_TARGETS = {
+    "fxai-mv-pipeline": ("lyrics_align.py",),
+    "fxai-digital-human-video": ("dh_video.py", "scripts/overlay_titles.py"),
+    "fxai-short-drama": ("drama_pipeline.py",),
+    "fxai-slide-video": ("sv_media.py",),
+    "fxai-ad-video": ("scripts/ad_assemble.py",),
+    "fxai-video-editing": ("scripts/build_highlight.py",),
+    "fxai-common": ("rework.py",),
+}
+
+
+def check_delivery_bitrate_contract(root, name, errors):
+    """最终成片编码必须走统一出口：公共实现与各产线接线两处同查。"""
+    if name == "fxai-common":
+        path = os.path.join(root, "video_encode.py")
+        text = _read_text(path)
+        if not os.path.isfile(path) or any(m not in text for m in BITRATE_IMPL_MARKS):
+            errors.append(BITRATE_IMPL_HINT)
+    for rel in BITRATE_TARGETS.get(name, ()):
+        path = os.path.join(root, *rel.split("/"))
+        if not os.path.isfile(path):
+            errors.append("交付编码契约受检脚本缺失：%s/%s" % (name, rel))
+            continue
+        text = _read_text(path)
+        if not any(m in text for m in BITRATE_CALL_MARKS):
+            errors.append("交付编码未接线：%s/%s 须调 delivery_venc() 或 "
+                          "encode_delivery_2pass()" % (name, rel))
+
 
 def _read_text(path):
     try:
@@ -443,6 +478,7 @@ def audit(root, junk=False, fix=False):
     check_gpu_gate_contract(root, name, errors)
     check_gpu_self_heal_contract(root, name, errors)
     check_video_frame_contract(root, name, errors)
+    check_delivery_bitrate_contract(root, name, errors)
     for path in iter_files(root):
         rel = os.path.relpath(path, root).replace("\\", "/")
         if rel.startswith("scripts/") and rel.endswith("check_standard.py"):

@@ -17,6 +17,15 @@
 """
 
 
+# >>> 交付码率统一出口（fxai-standard/references/12-交付视频编码规格.md）>>>
+import os as _os
+import sys as _sys
+_VC_ROOT = _os.path.normpath(_os.path.join(
+    _os.path.dirname(_os.path.abspath(__file__)), '../fxai-common'))
+if _VC_ROOT not in _sys.path:
+    _sys.path.insert(0, _VC_ROOT)
+import video_encode as _venc
+# <<< 交付码率统一出口 <<<
 import os
 import re
 import sys
@@ -1545,14 +1554,10 @@ def burn_subtitle(ass_path, video, out_mp4, ffmpeg=None):
     ff = ffmpeg or ffmpeg_path()
     d = os.path.dirname(os.path.abspath(ass_path))
     out_dir = os.path.dirname(os.path.abspath(out_mp4))
-    subprocess.run([ff, "-y", "-i", video,
-                    "-vf", "subtitles=filename=%s" % os.path.basename(ass_path),
-                    "-c:a", "copy", os.path.basename(out_mp4)],
-                   cwd=d, check=True)
-    # 若输出目录与字幕目录不同，搬运过去
-    src = os.path.join(d, os.path.basename(out_mp4))
-    if os.path.abspath(src) != os.path.abspath(out_mp4) and os.path.isfile(src):
-        os.replace(src, out_mp4)
+    _venc.encode_delivery_2pass(
+        video, os.path.abspath(out_mp4),
+        vf="subtitles=filename=%s" % os.path.basename(ass_path),
+        ffmpeg=ff, cwd=d)
     return out_mp4
 
 

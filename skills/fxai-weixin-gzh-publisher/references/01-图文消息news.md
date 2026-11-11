@@ -53,6 +53,23 @@ python scripts/export_figures.py --dir <项目>/image
 - 发布版一律走 `export_figures.py`：宽度 1152、`quality=95`、`subsample=0`（4:4:4）、`optimize=True`，单张 ≤1.5MB（超了脚本会告警）。
 - PNG 母版保留在 `image/`，另出一份 jpg 给公众号用。
 
+### 1.3b 配图配色线路（2026-11-11 定 · 深色底一律弃用）
+
+用户口径：「公众号里面我们的线路更新一下，配图这些不要用深色的，要用有色彩的配图方式」。旧 `make_cover.py` 的深墨蓝底（#16233b 渐变）、深墨大色块、底部深墨横条、暗角全部作废。
+
+| 维度 | 现在的做法 |
+|---|---|
+| 底色 | 明亮淡彩渐变（每张一套主色系），柔和彩色光晕，细颗粒，**无暗角** |
+| 主体 | 高饱和彩色有机形状 / 几何拼贴插画占画面大半，2~4 个主色 + 奶油白留白 |
+| 重元素 | 由高饱和彩色块承担（同时把 `qc.py post` 的 RMS 拉过 28），**不用黑墨压场** |
+| 文字 | 留白处只贴一行 8~14 字短句 + 同色短竖条，字色用该张主色深调；不做整页文字排版 |
+| 系列识别 | 底部一条彩色渐变细带 + 三枚小色点，取代旧版深墨横条 |
+
+- 唯一公共件 **`scripts/figure_lib.py`**：六套主色系 `PALETTES` + `background / glow / shadow / blob / star / confetti / curve / stamp / footer / font / save`。项目脚本放 `_tmp/`，`from figure_lib import *` 后只画具体画面。
+- `make_cover.py` 走彩色线路（文字型封面兜底），CLI 参数 `--title / --subtitle / --tag / --motif / --accent` 保持不变，输出不出深墨蓝底。插画型封面直接走 `figure_lib`。
+- 规格不变：封面 1152×512、正文图 1152×760；PNG 母版留 `image/`，发布版一律 `export_figures.py` 导 JPG（q95 / 4:4:4），`qc.py post` 过门。
+- 字体一律 Noto Sans SC / Bold（SIL OFL 1.1，白名单 A）；浅色画面纯白主体占比过大反而判 FAIL，补彩色重元素，不要回退深色。
+
 **生成侧（ComfyUI）**
 - 工作流宽高 512~4096 且 32 的倍数。
 

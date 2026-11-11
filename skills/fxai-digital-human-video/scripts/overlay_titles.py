@@ -16,6 +16,15 @@
 · 封面段与成片编码参数必须一致，否则 concat demuxer 拒收：
   768×1280 / 24fps / yuv420p / h264；音频 aac 24000Hz stereo。
 """
+# >>> 交付码率统一出口（fxai-standard/references/12-交付视频编码规格.md）>>>
+import os as _os
+import sys as _sys
+_VC_ROOT = _os.path.normpath(_os.path.join(
+    _os.path.dirname(_os.path.abspath(__file__)), '../../fxai-common'))
+if _VC_ROOT not in _sys.path:
+    _sys.path.insert(0, _VC_ROOT)
+import video_encode as _venc
+# <<< 交付码率统一出口 <<<
 import argparse, json, os, re, subprocess, sys
 
 # 封面段帧数：定案在 fxai-poster/references/05-封面模板库.md「封面段时长」，此处只换算。
@@ -134,9 +143,10 @@ def stitch_cover(project, with_titles, cover, out):
         cwd=project)
     run([FF, "-y", "-i", cover_clip, "-i", with_titles,
          "-filter_complex", "[0:v][0:a][1:v][1:a]concat=n=2:v=1:a=1[v][a]",
-         "-map", "[v]", "-map", "[a]",
-         "-c:v", "h264_nvenc", "-preset", "p4", "-rc", "vbr", "-cq", "20", "-b:v", "0",
-         "-pix_fmt", "yuv420p", "-r", "24", "-c:a", "aac", "-ar", "24000", "-ac", "2", out],
+         "-map", "[v]", "-map", "[a]"]
+        + _venc.delivery_venc(audio_copy=False, audio_bps=192000,
+                              extra=["-r", "24", "-ar", "24000", "-ac", "2"])
+        + [out],
         cwd=project)
     print("封面拼接完成 ->", out)
     check_cover_noise(out)

@@ -18,6 +18,7 @@ import os
 import re
 import random
 import shutil
+import subprocess
 import sys
 import time
 import urllib.request
@@ -119,6 +120,63 @@ def prefer_cloud(quiet=False):
 def down_base(url=None):
     """产物下载基址 `/fxai/down/file` 所在主机（同样按 comfy_url() 的优先级解析）。"""
     return comfy_url(url).rstrip("/") + "/fxai/down/file"
+
+
+# ---------- 换人 / 重绘的分辨率档位（按显存给默认值）----------
+# 口径（用户定，2026-11-11）：**本机 16G 及以下卡长边固定 960；>16G（24G 卡）用 1280；
+# 线上实例（仙宫云等）按 1280。** 显式 --max-side 永远优先，这里只决定「没指定时」的默认值。
+# 判断依据是 nvidia-smi 报的单卡总显存，不按显卡型号猜：
+#   16G 卡实测 16311 MiB、24G 卡实测 24564 MiB，取 20G 作分界即可稳定区分。
+# 注意：工作流按 64 的倍数对齐，960 档在 720×1386 源上落 480×960，1280 档落 640×1280。
+SIDE_TIER_16G = 960
+SIDE_TIER_24G = 1280
+VRAM_TIER_MIB = 20 * 1024
+
+
+def gpu_vram_mib():
+    """本机单卡最大显存（MiB）。取不到返回 None —— 不猜、不按型号编。"""
+    try:
+        out = subprocess.run(
+            ["nvidia-smi", "--query-gpu=index,memory.total", "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=15).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    best = None
+    for line in out.splitlines():
+        parts = [x.strip() for x in line.split(",")]
+        if len(parts) >= 2 and parts[1].isdigit():
+            mib = int(parts[1])
+            if best is None or mib > best:
+                best = mib
+    return best
+
+
+def default_max_side(url="", quiet=False):
+    """未显式指定长边时的默认档位：本机按显存，线上按 1280。
+
+    ≤16G（含读不到显存）→ 960；≥20G（24G 卡）→ 1280；非本机（仙宫云等）→ 1280。
+    读不到显存时**取保守档 960**：宁可少一点分辨率，也不能让 16G 卡去跑 1280 炸片。
+    """
+    base = comfy_url(url)
+    host = (urllib.parse.urlparse(base).hostname or "").lower()
+    if host not in ("127.0.0.1", "localhost", "::1", ""):
+        if not quiet:
+            print("[side] 线上实例（%s）→ 默认长边 %d" % (host, SIDE_TIER_24G), flush=True)
+        return SIDE_TIER_24G
+    mib = gpu_vram_mib()
+    if mib is None:
+        if not quiet:
+            print("[side] 读不到本机显存，按 16G 及以下档取 %d（要更高请显式 --max-side）"
+                  % SIDE_TIER_16G, flush=True)
+        return SIDE_TIER_16G
+    if mib >= VRAM_TIER_MIB:
+        if not quiet:
+            print("[side] 本机显存 %d MiB（≥20G，24G 档）→ 默认长边 %d"
+                  % (mib, SIDE_TIER_24G), flush=True)
+        return SIDE_TIER_24G
+    if not quiet:
+        print("[side] 本机显存 %d MiB（16G 档）→ 默认长边 %d" % (mib, SIDE_TIER_16G), flush=True)
+    return SIDE_TIER_16G
 
 
 # 仙宫云看门狗：见 xgy_guard.py。云上的实例通常关机着（释放 GPU 后停计费），

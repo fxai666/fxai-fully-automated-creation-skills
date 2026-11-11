@@ -18,6 +18,15 @@
 #     提示词存档与视频清单落 doc/，并回填 doc/delivery.json 的 video 段。
 #   不带 --project 时退回到 --out-dir，同样写 doc 清单。
 # =====================================================================
+# >>> 交付码率统一出口（fxai-standard/references/12-交付视频编码规格.md）>>>
+import os as _os
+import sys as _sys
+_VC_ROOT = _os.path.normpath(_os.path.join(
+    _os.path.dirname(_os.path.abspath(__file__)), '../fxai-common'))
+if _VC_ROOT not in _sys.path:
+    _sys.path.insert(0, _VC_ROOT)
+import video_encode as _venc
+# <<< 交付码率统一出口 <<<
 import argparse
 import datetime
 import glob
@@ -621,8 +630,9 @@ def _burn_subtitles(video, video_dir, size, lyrics=None):
     ass = os.path.join(video_dir, sub + ".ass")
     out = os.path.join(video_dir, "成片_%dx%d.mp4" % (size[0], size[1]))
     subprocess.run([av.ffmpeg_libass(), "-y", "-i", video,
-                    "-vf", "subtitles=filename=%s" % os.path.basename(ass),
-                    "-c:a", "copy", os.path.basename(out)], cwd=video_dir, check=True)
+                    "-vf", "subtitles=filename=%s" % os.path.basename(ass)]
+                   + _venc.delivery_venc(audio_copy=True)
+                   + [os.path.basename(out)], cwd=video_dir, check=True)
     return out, ass
 
 
