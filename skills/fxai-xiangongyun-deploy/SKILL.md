@@ -12,7 +12,7 @@ description: 仙宫云 GPU 实例一键部署凤希技能包（ComfyUI + fxai-to
 |---|---|
 | `references/01-实例管理API.md` | 开机/关机/释放GPU/建实例/存镜像/查余额/充值。认证、命令表、API 判据、接口规范 |
 | `references/02-部署清单与下载管线.md` | 装节点/下模型/探源/对账/本机直传。装什么、怎么下、下坏了怎么办 |
-| `references/03-装完与排障.md` | 装完后的配置、重启、节点报IMPORT FAILED、升级 ComfyUI/节点、网络现状 |
+| `references/03-装完与排障.md` | 装完后的配置、**镜像内置自定义默认工作流**、重启、节点报IMPORT FAILED、升级 ComfyUI/节点、网络现状 |
 | `references/04-实例现状与云端运维.md` | 已建实例 `9xtjztkxzajn9vp5` 的现状、本机复用工具、推节点、ComfyUI-Manager、外网连通性 |
 | `references/仙宫云速查.md` | 官方教程摘录：HF 镜像加速、传文件 5 法、系统盘/数据盘、基础排障 |
 
@@ -67,3 +67,10 @@ python deploy.py run --no-nodes       # 只下模型
 
 **≈ 80.7 GB**（12 条模型）。系统盘 = 镜像 + 100 GB × GPU 数。下载前做磁盘预检，不够会直接告诉你该 `--group img` 还是该关机扩容。
 另有 6 类依赖（自研 LoRA / 文本编码器 / insightface / vosr2 / FlashVSR）不走公共下载源，见 `assets/models.json` 的 `final_version` 段。
+
+## 镜像分发：默认工作流
+
+`assets/default-workflow/` 两个文件必须随镜像带上：`fxai_default_workflow.py`（放
+`/root/xgyscripts/`）+ `99-fxai-default-wf.sh`（放 `/scripts/start.d/`，开机自动跑）。
+作用是把前端硬编码的官方基础文生图换成我们的工作流，**重新部署后裸地址打开就是自定义工作流**，
+不依赖任何浏览器 localStorage。规范与验收见 `references/03-装完与排障.md`「打开就是自定义默认工作流」。
