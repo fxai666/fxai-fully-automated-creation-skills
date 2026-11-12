@@ -47,9 +47,20 @@ PREFIX_SPOKEN = "dh"
 MULTIREF_SIZE = (768, 1280)            # 默认竖屏
 MULTIREF_SIZE_LANDSCAPE = (1280, 768)  # 横屏（显式要求时）
 
-DEFAULT_CHAR_DESC = "年轻女子，身穿过膝白色长风衣，利落短发，淡妆，清冷疏离"
-DEFAULT_SCENE_DESC_SING = "简洁而富有氛围感的演唱场景"
-DEFAULT_SCENE_DESC_SPEAK = "简洁而富有氛围感的口播场景，室内自然光，背景干净不抢戏"
+# 🔴 主体定义极简（铁律 17，2026-11-12 全局统一，用户定稿）：
+#   主体定义**只回答「这是什么」**——`<Subject N> 是 <Picture M> 中的<身份词>。` 一句到底；
+#   保留类目清单（脸 / 发型 / 服装 / 建筑 / 陈设…）**一律写进「延续分析」的 fully_preserved**。
+#   理由：主体定义里写满类目等于给模型第二遍外观指令，参考图会被文字覆盖（服装换色、款式漂）。
+#   见 fxai-h3-video-prompt/references/04-通用技巧与自查.md「铁律 17 展开」。
+KEEP_PERSON = "保留人物身份、发型发色、服装样式与颜色、裤装、鞋履。"
+KEEP_SCENE = "保留场景的建筑、陈设与物品。"
+KEEP_PROP = "保留道具的形制、材质与颜色。"
+DEFAULT_CHAR_DESC = "人物"
+DEFAULT_SCENE_DESC_SING = "场景"
+DEFAULT_SCENE_DESC_SPEAK = "场景"
+DEFAULT_CHAR_KEEP = KEEP_PERSON      # 兼容旧名
+DEFAULT_SCENE_KEEP = KEEP_SCENE
+DEFAULT_PROP_KEEP = KEEP_PROP
 
 
 # =====================================================================
@@ -294,15 +305,52 @@ SHOT_SPEC = {
 }
 
 
+def subject_identity(desc, default="人物"):
+    """从传入描述里取「身份词」，用于主体定义句（铁律 17）。
+
+    调用方可以传两种东西：
+    - 纯身份词（`古装年轻女子` / `场景`）→ 原样用；
+    - 旧写法「身份词 + 类目清单」（`古装年轻女子，脸、发型、服装…`）→ 只取第一个逗号前的身份词，
+      类目清单丢弃（它归「延续分析」，不进主体定义）。
+    """
+    d = str(desc or "").strip()
+    if not d:
+        return default
+    head = d.replace("，", ",").split(",")[0].strip()
+    for t in ("全部来自", "来自 <Picture"):
+        if t in head:
+            head = head.split(t)[0]
+    head = head.strip("。；;，, 、")
+    return head or default
+
+
+# 旧名兼容（produce_song 等调用方仍按 subject_keep_body 调用）
+subject_keep_body = subject_identity
+
+# 身份词里至少要有一个「人」的痕迹，否则说明调用方传的是穿搭 / 类目（如 `白色长裙，长发`），
+# 主体定义会写出「<Subject 1> 是 <Picture 1> 中的白色长裙。」这种病句 —— 兜底回「人物」。
+PERSON_HINTS = ("人", "者", "女", "男", "角色", "主角")
+
+
+def person_identity(desc, default="人物"):
+    """人物主体定义用的身份词：取到的是穿搭/类目就回退成 default。"""
+    head = subject_identity(desc, default="")
+    if head and any(w in head for w in PERSON_HINTS):
+        return head
+    return default
+
+
 def build_ref2va_prompt(char_descs, scene_desc, audio_label=None, kind="sing",
                         camera=None, act_extra=None, prop_descs=None,
                         trigger_words=None, act_mode="default", face_mode="front",
                         shot_size="中景", entry=None, lines=None):
     """按 MiniMax H3 Ref2VA（全参考）规范生成六段式提示词，支持多人物。
 
-    - char_descs: list[str]，每元素一个人物的穿搭/外貌描述。顺序与人物图列表一致：
-      <Picture 1>~<Picture K> = 人物1~K，<Picture K+1> = 场景。
-    - scene_desc: 场景环境描述（对应 <Picture K+1>）。
+    - char_descs: list[str]，每元素一个人物的**身份词**（`古装年轻女子` / `人物`）。
+      🔴 铁律 17：主体定义只回答「这是什么」，**不写外观类目**（脸/发型/服装/颜色全归延续分析）；
+      传成「身份词，脸、发型…」这种旧写法也能用，本函数只取第一个逗号前的身份词。
+      顺序与人物图列表一致：<Picture 1>~<Picture K> = 人物1~K，<Picture K+1> = 场景。
+    - scene_desc: 场景**身份词**（如 `场景` / `临水木构戏台`，对应 <Picture K+1>）。
     - audio_label: 音频身份说明，缺省按 kind 取（sing=原声演唱音轨 / speak=原声口播音轨）。
     - kind: "sing"（演唱，MV 用）| "speak"（口播讲话，数字人用）。
     - camera: 该段运镜覆盖（缺省用「缓慢轻微推近」；逐段轮换不同运镜，每段镜头各不一样）。
@@ -334,38 +382,37 @@ def build_ref2va_prompt(char_descs, scene_desc, audio_label=None, kind="sing",
         line_txt = line_txt.rstrip("。！？!?")
     subj_defs = []
     for _i, _cd in enumerate(char_descs, 1):
-        _d = "<Subject %d> 是 <Picture %d> 中的人物，%s。" % (_i, _i, _cd)
+        # 铁律 17：主体定义只写「<Picture N> 中的<身份词>。」，外观类目全归延续分析
+        _d = "<Subject %d> 是 <Picture %d> 中的%s。" % (
+            _i, _i, person_identity(_cd, default=DEFAULT_CHAR_DESC))
         if line_txt and _i == 1:
             _d = "%s她是画面里正在讲话的人，讲的内容是：%s。" % (_d, line_txt)
         subj_defs.append(_d)
-    # 场景描述常常不带句末标点（scenes.txt 一行一条），直接拼角色说明会粘成
-    # 「…画面中不出现任何人物作为人物对镜讲述的环境」——语义被吃掉一半。
-    _sd = (scene_desc or "").rstrip()
-    if _sd and not _sd.endswith(("。", "；", "，", "！", "？", ".", ";", ",")):
-        _sd += "。"
-    subj_defs.append("<Subject %d> 是 <Picture %d> 中的场景背景图，%s%s"
-                     % (scene_idx, scene_idx, _sd, nar["scene_role"]))
+    # 场景同样只写身份词（`场景` / `临水木构戏台`），不留「作为…的环境」这类补充说明。
+    subj_defs.append("<Subject %d> 是 <Picture %d> 中的%s。"
+                     % (scene_idx, scene_idx, subject_identity(scene_desc, default="场景")))
     # ★ 道具参考（如某件道具）：恒定追加在场景之后，<Picture/Subject> 编号 = scene_idx+1 起，
     #   与 build_multiref_lines._row_imgs 把 prop_rels 追加在每行图片列表末尾保持一致。
     _prop_descs = prop_descs or []
     for _j, _pd in enumerate(_prop_descs, 1):
         _p = scene_idx + _j
-        subj_defs.append("<Subject %d> 是 <Picture %d> 中的道具参考图，%s，作为视频中该道具的形制与质感依据。"
-                         % (_p, _p, _pd))
+        subj_defs.append("<Subject %d> 是 <Picture %d> 中的%s。"
+                         % (_p, _p, subject_identity(_pd, default="道具")))
     subj_defs.append("<Audio 1> 是视频中的%s，作为 <Subject 1> (S1) 的音色参考和目标视频的完整最终音轨。"
                      % label)
     people = "、".join("<Subject %d>" % i for i in range(1, k + 1))
     pics = "、".join("<Picture %d>" % i for i in range(1, k + 1))
     subj_block = "\n".join(subj_defs) + "\n"
+    # 保留类目清单写在这里（铁律 17）：主体定义只说「是什么」，这里说「保住哪几类」。
     retain_block = "\n".join(
-        "<Subject %d> (appears in [Shot 1]): fully_preserved - 保留人物身份与%s。" % (i, cd)
-        for i, cd in enumerate(char_descs, 1))
-    retain_block += ("\n<Subject %d> (appears in [Shot 1]): fully_preserved - 保留场景背景的整体环境氛围。\n"
-                     % scene_idx)
+        "<Subject %d> (appears in [Shot 1]): fully_preserved - %s" % (i, KEEP_PERSON)
+        for i in range(1, k + 1))
+    retain_block += ("\n<Subject %d> (appears in [Shot 1]): fully_preserved - %s\n"
+                     % (scene_idx, KEEP_SCENE))
     for _j, _pd in enumerate(_prop_descs, 1):
         _p = scene_idx + _j
-        retain_block += ("<Subject %d> (appears in [Shot 1]): fully_preserved - 保留该道具的完整形制、材质与质感。\n"
-                         % _p)
+        retain_block += ("<Subject %d> (appears in [Shot 1]): fully_preserved - %s\n"
+                         % (_p, KEEP_PROP))
     retain_block += "<Audio 1>: fully_copy - <Audio 1> 作为目标视频的完整最终音轨直接复用。\n"
     _prop_pics = "、".join("<Picture %d>" % (scene_idx + _j) for _j in range(1, len(_prop_descs) + 1))
     summary = ("[reference generation + audio reuse] 目标视频展示 %s 在 <Subject %d> 中%s。"
@@ -401,9 +448,11 @@ def build_ref2va_prompt(char_descs, scene_desc, audio_label=None, kind="sing",
     # 入场镜的位置描述要跟着变：她已经「走入并停住」，再写「站在画面略偏中心」会自相矛盾
     pos_text = "入场后停在画面略偏中心位置" if entry else "站在画面略偏中心位置"
     shot_spec = SHOT_SPEC.get(shot_size or "中景", "%s镜头" % (shot_size or "中景"))
+    # 🔴 铁律 17 配套：详细描述**不复述外观**，只用编号引用 —— 复述一次等于又下一遍文字指令，
+    # 参考图的服装/发型会被这段文字重新覆盖（2026-11-12 实测）。
     detail = ("[Shot 1] %s，以 <Subject %d> 作为场景背景。<Subject 1> (S1) %s，"
-              "%s，%s，表情自然专注。%s%s %s%s\n"
-              % (shot_spec, scene_idx, char_descs[0], pos_text, face,
+              "%s，表情自然专注。%s%s %s%s\n"
+              % (shot_spec, scene_idx, pos_text, face,
                  stable_rule, cam, _join_pre_act(pre_text, act_text), nar["end"]))
     if _prop_descs:
         detail += ("视频中出现的道具须严格参照 %s 等道具参考图，形制与质感保持一致，不可凭空改动。\n"
@@ -584,7 +633,8 @@ def fl2va_body(char_desc, scene_desc, act="", kind="sing"):
     """FL2VA 正文（`integrated_multimodal_description` 的 `[Shot 1]` 部分）拼装器。
 
     写的是**首尾帧之间发生什么**，不是把画面重描一遍：主体状态 → 动作链 → 运镜 → 落点。
-    - char_desc / scene_desc: 这段文案该有的人与场景（**带上道具**，见 H3 规范第 1.5 节）。
+    - char_desc / scene_desc: 这段文案该有的**身份词**（`人物` / `场景` / `开放式书房`）。🔴 铁律 17：
+      不传外观类目、不传具体颜色款式（写了会覆盖参考图）；留空则用中性占位。
     - act: 这一段的具体表演（口播写讲话与手势，MV 写演唱与乐句动作）；留空则用 kind 的默认动作链。
     - kind: "sing" | "speak"。
 
@@ -594,7 +644,7 @@ def fl2va_body(char_desc, scene_desc, act="", kind="sing"):
     stable_rule = ("整段为单个稳定镜头：镜头不摇晃、不做快速推拉；"
                    "人物动作连贯自然，幅度有大有小，不出现来回反复的晃动或抖动。")
     return ("[Shot 1] %s，%s。%s%s%s"
-            % (char_desc or DEFAULT_CHAR_DESC, scene_desc or DEFAULT_SCENE_DESC_SPEAK,
+            % (char_desc or "画面中的人物", scene_desc or "画面中的场景",
                stable_rule, _join_pre_act(nar["pre"], (act or nar["action"])), nar["end"]))
 
 

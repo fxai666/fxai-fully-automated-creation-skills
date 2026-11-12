@@ -16,6 +16,10 @@ import urllib.request
 import uuid
 from pathlib import Path
 
+# 同目录模块：公众号正文 HTML 的渲染兼容守卫（提交前必过，见 html_guard.py 顶部说明）
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import html_guard
+
 SKILL_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = SKILL_DIR / "config.json"
 # 公众号凭据落点：用户级 ~/.workbuddy/fxai_global.json 的 weixin_gzh 字段
@@ -418,10 +422,27 @@ def relay_process_html_images(html):
     return IMG_RE.sub(repl, html), counter["n"]
 
 
+def guard_content(html):
+    """正文提交前的硬闸门：先自动修，再硬校验，违规直接拒绝提交。
+
+    微信渲染侧的坑（<pre> 换行折叠、CSS 引号被拆、break-all 切断标签）见 html_guard.py。
+    任何 form 的图文提交都必须过这里，不允许绕过。
+    """
+    try:
+        return html_guard.guard(html)
+    except html_guard.HtmlGuardError as e:
+        fail(-1, "正文排版过不了公众号渲染校验，已拒绝提交", {
+            "violations": e.violations,
+            "fix": "按每条的 fix 改正文 HTML 后重试；可先跑 "
+                   "python scripts/wx_api.py check-html --content <正文.html> 单独自检",
+        })
+
+
 def relay_build_and_add(args):
-    """构建图文并建草稿，返回 media_id。"""
+    """构建图文并建草稿，返回 (media_id, 上传图片数, 正文修复记录)。"""
     cfg = load_cfg_soft()
     html = read_content(args.content)
+    html, html_fixes = guard_content(html)
     html, n_img = relay_process_html_images(html)
     cover = getattr(args, "cover", None)
     if not cover:
@@ -444,7 +465,7 @@ def relay_build_and_add(args):
     if cfg.get("only_fans_can_comment") is not None:
         params["only_fans_can_comment"] = int(cfg.get("only_fans_can_comment", 0))
     res = relay_call("freepublish/draftadd", params)
-    return res.get("media_id"), n_img
+    return res.get("media_id"), n_img, html_fixes
 
 
 def relay_material_add(args):
@@ -454,10 +475,13 @@ def relay_material_add(args):
 
 
 def relay_draft_add(args):
-    media_id, n_img = relay_build_and_add(args)
-    out({"ok": True, "media_id": media_id, "images_uploaded": n_img,
-         "title": str(args.title or "").strip(),
-         "next": "用 publish --media-id 发布，或 mass --media-id 群发"})
+    media_id, n_img, html_fixes = relay_build_and_add(args)
+    payload = {"ok": True, "media_id": media_id, "images_uploaded": n_img,
+               "title": str(args.title or "").strip(),
+               "next": "用 publish --media-id 发布，或 mass --media-id 群发"}
+    if html_fixes:
+        payload["html_fixed"] = html_fixes
+    out(payload)
 
 
 def relay_draft_get(args):
@@ -487,7 +511,7 @@ def relay_publish(args):
     else:
         if not (args.title and args.content and args.cover):
             fail(-1, "要么给 --media-id，要么同时给 --title/--content/--cover")
-        media_id, _ = relay_build_and_add(args)
+        media_id, _, _ = relay_build_and_add(args)
     res = relay_call("freepublish/publish", {"media_id": media_id})
     out({"ok": True, "publish_id": res.get("publish_id"), "draft_media_id": media_id,
          "note": "freepublish 异步，不推送粉丝、不占群发额度；几分钟后用 publish-status 查"})
@@ -846,6 +870,23 @@ def cmd_draft_add(args):
     return relay_draft_add(args)
 
 
+def cmd_check_html(args):
+    """只校验正文 HTML 的渲染兼容性，不建草稿、不碰接口。"""
+    html = read_content(args.content)
+    fixed, fixes = html_guard.normalize(html)
+    violations = html_guard.check(fixed)
+    if args.fix_out:
+        Path(args.fix_out).write_text(fixed, encoding="utf-8")
+    payload = {"ok": not violations, "file": str(args.content),
+               "fixes": fixes, "violations": violations,
+               "chars": {"in": len(html), "out": len(fixed)}}
+    if args.fix_out:
+        payload["fixed_file"] = str(args.fix_out)
+    out(payload)
+    if violations:
+        sys.exit(1)
+
+
 def cmd_draft_get(args):
     return relay_draft_get(args)
 
@@ -990,7 +1031,11 @@ def cmd_draft_add_newspic(args):
 def relay_draft_update(args):
     """draft/update 整体替换：articles 是「对象」不是数组，缺字段即整体覆盖。"""
     # articles 是 JSON 字符串整体当参数发，字段首尾空白用 _norm_json_strings 递归掐掉
-    art = {"content": read_plain(args.content)}
+    content = read_plain(args.content)
+    if str(getattr(args, "article_type", "") or "").strip() != "newspic":
+        # news 正文同 draft-add：过渲染兼容闸门（newspic 是纯文本，不适用）
+        content, _ = guard_content(content)
+    art = {"content": content}
     if args.title:
         art["title"] = str(args.title).strip()
     if getattr(args, "author", ""):
@@ -1096,6 +1141,11 @@ def main():
     p.add_argument("--digest", default="", help="摘要，不填则取正文前 54 字")
     p.add_argument("--comments", type=int, default=1, help="1=开启留言 0=关闭")
     p.set_defaults(fn=cmd_draft_add)
+
+    p = sub.add_parser("check-html", help="只校验正文 HTML 的公众号渲染兼容性（不提交）")
+    p.add_argument("--content", required=True, help="正文 HTML 文件")
+    p.add_argument("--fix-out", default="", help="把自动修复后的 HTML 另存到该路径")
+    p.set_defaults(fn=cmd_check_html)
 
     p = sub.add_parser("draft-get", help="get one draft")
     p.add_argument("--media-id", required=True)

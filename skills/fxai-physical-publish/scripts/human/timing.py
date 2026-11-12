@@ -82,14 +82,14 @@ class TimeKeeper:
     def delay(self, lo: float | None = None, hi: float | None = None) -> float:
         """按混合分布取一个停顿时长（秒），并夹在 [min_s, max_s] 内。
 
-        用于「阶段级」的停顿：换大环节、提交前、被叫走。不要在每步之后调用。
+        用于「阶段级」的停顿：换大环节、提交前、被叫走。不得在每步之后调用。
         """
         if not self.enabled:
             return 0.0
         bucket = self._bucket()
         r = self.r
         if bucket == "short":
-            # 对数正态，峰在 1.1 秒左右，避免均匀分布那种「平均 2 秒」的机械感
+            # 对数正态，峰在 1.1 秒左右，防止均匀分布那种「平均 2 秒」的机械感
             v = r.lognormvariate(0.1, 0.52)
         elif bucket == "medium":
             v = r.uniform(4.0, 25.0)
@@ -178,7 +178,7 @@ class TimeKeeper:
         return v
 
     def hesitation(self) -> float:
-        """提交前犹豫：这一步决定要不要发出去，真人会停得久一点。"""
+        """提交前犹豫：这一步决定是否发出去，真人会停得久一点。"""
         if not self.enabled:
             return 0.0
         v = max(self.min_s, self.r.uniform(2.5, 18.0) * self.scale)

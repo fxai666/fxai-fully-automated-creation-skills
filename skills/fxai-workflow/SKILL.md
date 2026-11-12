@@ -68,6 +68,8 @@ description: ComfyUI 客户端公共层（工作流 JSON + comfy_client.py），
 
 只认模型文件名类输入（`ckpt_name`/`unet_name`/`lora_name`/`vae_name`/`clip_name` 等，或值以 `.safetensors` 等模型后缀结尾）；采样器名、调度器名这类改了就变生成行为的枚举一律不动。
 
+- 🔴 **服务端连候选都找不到＝旧镜像**：V1.9 换了模型，旧实例补不齐（重下 / 改名 / 重启都无效）。必须提示用户用新镜像**重新创建实例**（仙宫云同样），确认后才建（实时扣费）。`_fmt_model_fix()` 已打印指引，细则见 `README.md`。
+
 ## 等任务结果
 
 `run_workflow` / `submit_workflow` 等 `fxai:task_saved`（＝合并/保存完毕）才返回，**返回即已过终态门**；监听器起不来回落 `/history` 轮询。

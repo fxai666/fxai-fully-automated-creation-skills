@@ -165,7 +165,7 @@ def main() -> int:
         arrived = wait_arrive(hwnd, site)
         if arrived:
             time.sleep(args.wait)          # 到了再多等它把内容渲染完
-        # 关键：截图前再激活一次，避免截到抢了前台的对话窗口
+        # 关键：截图前再激活一次，防止截到抢了前台的对话窗口
         api.activate_window(hwnd)
         time.sleep(0.6)
         title = api.window_title(hwnd)

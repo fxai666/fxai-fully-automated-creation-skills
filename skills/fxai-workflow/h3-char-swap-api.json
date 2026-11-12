@@ -1,7 +1,7 @@
 {
  "1": {
   "inputs": {
-   "unet_name": "minimax_h3_singularity_ref2va_int8.safetensors",
+   "unet_name": "prism_dmad_pdmd_int8.safetensors",
    "weight_dtype": "default"
   },
   "class_type": "UNETLoader",
@@ -367,7 +367,7 @@
   },
   "class_type": "ImageFromBatch",
   "_meta": {
-   "title": "⑤b 裁回本段真实帧数（补的尾巴不要）"
+   "title": "⑤b 裁回本段真实帧数（补的尾巴置空）"
   }
  },
  "27": {

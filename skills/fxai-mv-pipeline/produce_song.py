@@ -519,7 +519,8 @@ def build_segment_prompt(char_descs, sdesc, cam, camf, act, seg, next_seg=None, 
                          inst_beats=None, prompt_rules=None):
     """★ 按「该音频分段的真实人声状态」生成 Ref2VA 六段式提示词，支持多人物。
 
-char_descs: list[str]，每元素 = 一个人物的穿搭/外貌描述，
+char_descs: list[str]，每元素 = 一个人物的**身份词**（`人物` / `年轻女子`），
+            🔴 不传外观类目、不传具体颜色款式（铁律 17：类目归延续分析）；
             与多参考图片列表（人物图在前、场景图在后）一一对应：
             <Picture 1>~<Picture K> = 人物1~K，<Picture K+1> = 场景。
 seg: 来自 lyrics_align.classify_segments 的分段信息
@@ -542,26 +543,28 @@ seg: 来自 lyrics_align.classify_segments 的分段信息
             or "段首过渡（承接上一段尾帧）：人物双唇自然闭合、安静站定，只有轻微呼吸与肩线起伏，不做口型；")
 
     # —— subject_definitions（人物1~K + 场景K+1）——
+    # 🔴 铁律 17：主体定义只写「<Picture N> 中的<身份词>。」，类目清单归下面的延续分析
     subj_defs = []
     for i, cd in enumerate(char_descs, 1):
-        subj_defs.append("<Subject %d> 是 <Picture %d> 中的人物，%s。" % (i, i, cd))
-    subj_defs.append("<Subject %d> 是 <Picture %d> 中的场景，%s，作为人物所处的环境。"
-                     % (scene_idx, scene_idx, sdesc))
+        subj_defs.append("<Subject %d> 是 <Picture %d> 中的%s。"
+                         % (i, i, _av.person_identity(cd, default="人物")))
+    subj_defs.append("<Subject %d> 是 <Picture %d> 中的%s。"
+                     % (scene_idx, scene_idx, _av.subject_identity(sdesc, default="场景")))
     # ★ 道具参考（某件道具）：恒定追加在场景之后，<Picture/Subject> 编号 = scene_idx+1 起，
     #   与 audio_video.build_multiref_lines._row_imgs 把 prop_rels 追加在每行图片列表末尾保持一致。
     _prop_descs = prop_descs or []
     for _j, _pd in enumerate(_prop_descs, 1):
         _p = scene_idx + _j
-        subj_defs.append("<Subject %d> 是 <Picture %d> 中的道具参考图，%s，作为视频中该道具的形制与质感依据。"
-                         % (_p, _p, _pd))
-    # —— retention_analysis ——
+        subj_defs.append("<Subject %d> 是 <Picture %d> 中的%s。"
+                         % (_p, _p, _av.subject_identity(_pd, default="道具")))
+    # —— retention_analysis（保留类目清单写在这里）——
     retain = []
     for i, cd in enumerate(char_descs, 1):
-        retain.append("<Subject %d> (appears in [Shot 1]): fully_preserved - 保留人物身份与%s。" % (i, cd))
-    retain.append("<Subject %d> (appears in [Shot 1]): fully_preserved - 保留场景的整体环境氛围。" % scene_idx)
+        retain.append("<Subject %d> (appears in [Shot 1]): fully_preserved - %s" % (i, _av.KEEP_PERSON))
+    retain.append("<Subject %d> (appears in [Shot 1]): fully_preserved - %s" % (scene_idx, _av.KEEP_SCENE))
     for _j, _pd in enumerate(_prop_descs, 1):
         _p = scene_idx + _j
-        retain.append("<Subject %d> (appears in [Shot 1]): fully_preserved - 保留该道具的完整形制、材质与质感。" % _p)
+        retain.append("<Subject %d> (appears in [Shot 1]): fully_preserved - %s" % (_p, _av.KEEP_PROP))
 
     people = "、".join("<Subject %d>" % i for i in range(1, k + 1))
     pics = "、".join("<Picture %d>" % i for i in range(1, k + 1))

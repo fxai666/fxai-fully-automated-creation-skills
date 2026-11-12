@@ -230,8 +230,8 @@ def audit_shot_speech(shots, rate=None, breath=None):
                                   len(PUNCT_RE.sub("", txt.group(1))), rate, breath, txt.group(1)[:24]))
                 continue
             if k and re.search(r"<d>\s*\[Chinese\]", segs[k - 1][2]) and "静场" not in line:
-                bad.append("镜%d [%.2f-%.2f]s 紧跟在说话行后面却没写成显式静场（H3 会顺着上一句自己吐人声，"
-                           "要写「静场，只有……的一声，一句台词也不出／任何一个人都不出声」）：%s"
+                bad.append("镜%d [%.2f-%.2f]s 紧跟在说话行后面却没写成静场行（H3 会顺着上一句自己吐人声，"
+                           "这一行只写「At xx.xxx, 静场。」，别带任何可念的中文短语）：%s"
                            % (i, st, en, line.strip()[:34]))
     return bad
 
@@ -243,7 +243,8 @@ def audit_shot_speech(shots, rate=None, breath=None):
 # 本段只收一件事：画面里多出来的文字（叠加字幕条 + 乱码字形）。这两者是同一种失败——H3 的文字渲染能力不足。
 # H3 为 guidance-distilled 检查点，无独立 negative_prompt 参数，本段按普通文本参与生成，条目按一行最小化；
 # 时代感、画风、道具、构图写进六段正文，用正向锁定（写「只有什么 / 是什么」）。
-# 人物画质不写否定句：身份靠 03 册 5.6 的外貌句逐字照抄 role prompt + <Subject N> 稳定 ID 正向锁死，
+# 人物画质不写否定句：身份靠主体定义「<Subject N> 是 <Picture M> 中的<身份词>。」+ <Subject N> 稳定 ID 正向锁死
+# （铁律 17：不写外貌句、不照抄 role prompt，写了反而覆盖参考图），
 # 「脸别变形 / 手指数量正确」这类否定句对画质类失败没有约束力，反把「变形」「多余手指」当概念喂进去。  # std:allow
 #
 # 措辞口径两条（2026-10-23 修订）：
@@ -656,7 +657,7 @@ def inject_trigger_words(prompt, words):
     return line + "\n" + prompt
 
 
-def build_lines_data(shots, suppress_subtitles=True, no_humans=False, dynamic_action_check=True, world_constraint=None, auto_triggers=True):
+def build_lines_data(shots, suppress_subtitles=True, no_humans=False, dynamic_action_check=True, world_constraint=None, auto_triggers=True, allow_audio=False):
     '\nshots: list of dict\n    duration : int (秒)\n    prompt   : str (六段式提示词，无引用模式下不含 <Audio>)\n    images   : list[str] 相对 fxai/image/ 的路径，逗号分隔拼进第3元素\n返回 JSON 字符串\n\nsuppress_subtitles: 默认 True。在每条提示词末尾追加 negative_constraints 段，\n    把画面字幕/文字排除在生成之外（字幕统一后期烧录）。\nno_humans: 宠物/动物版短剧用 True。在每条提示词末尾追加 NO_HUMANS_BLOCK，\n    画面只保留拟人化动物角色，人类/真人/人群全部排除。\ndynamic_action_check: 默认 True。轻量校验每条镜头的「摘要/详细描述」是否含动态动词\n    （走/跑/敲/搭/烤/追/扔/拍手/蹦跳…）。H3 不会自动给背景动物编动作，缺动态描述时\n    背景动物会像贴图静止——此检查在组装阶段就提醒补上（见 SKILL.md 三之二）。\n'
 
 
@@ -682,8 +683,8 @@ def build_lines_data(shots, suppress_subtitles=True, no_humans=False, dynamic_ac
         dur = int(s["duration"])
         prompt = s["prompt"]
         imgs = s["images"]
-        # 无引用模式硬性校验：不应出现 <Audio
-        if "<Audio" in prompt:
+        # 无引用模式硬性校验：不应出现 <Audio（音色参考/原音频模式下允许，allow_audio=True）
+        if "<Audio" in prompt and not allow_audio:
             raise ValueError("无引用音频模式下提示词不得包含 <Audio>；请改用 audio_mode='音色参考' 并在提示词写 Audio 段")
         # 轻量校验：内心独白/OS 包进 <d> 会被 TTS 念出来，提醒改掉（不阻断）
         import re as _re
@@ -730,6 +731,42 @@ def build_lines_data(shots, suppress_subtitles=True, no_humans=False, dynamic_ac
 
 
 # ------------------------- 工作流组装 -------------------------
+def _adapt_loras_to_base(wf):
+    """PRISM 系底座自带 8 步蒸馏、且人物皮肤本就不油，挂着 turbo 与去油只会抹细节。
+
+    实测（科幻机器人镜，同 prompt/seed，2026-11-12）：
+      turbo 1.0 → 0：全局清晰度 +8.6%
+      去油 0.7  → 0：全局 +16.8%、脸部局部清晰度 65.8 → 143.3（翻倍）
+      动修 0.45 保留：脸部清晰度反而 +32%（压运动模糊），且是近中性项，不动
+    老 H3 底座（Singularity / ref2va pruned 等）必须留着 turbo 1.0 与去油 0.7，否则糊。
+    """
+    lora = wf.get("1177", {}).get("inputs", {}).get("lora_data")
+    unet = wf.get("1129", {}).get("inputs", {}).get("unet_name", "")
+    if not lora:
+        return
+    data = json.loads(lora)
+    prism = "prism" in unet.lower()
+    changed = []
+    for item in data:
+        name = item.get("lora_name", "")
+        if not (name.startswith("minimax_h3_ref2v_turbo_8step") or name.startswith("H3人脸去油")):
+            continue
+        want = 0.0 if prism else (1.0 if name.startswith("minimax_h3_ref2v_turbo_8step") else 0.7)
+        if prism and item.get("enabled"):
+            item["model_strength"] = 0.0
+            item["enabled"] = False
+            changed.append(name.split(".safetensors")[0])
+        elif not prism and not item.get("enabled"):
+            # 模板里这两条是「PRISM 关闭」态；换回老底座要按基线重新打开，否则必糊
+            item["model_strength"] = want
+            item["enabled"] = True
+            changed.append(name.split(".safetensors")[0] + "(恢复)")
+    if changed:
+        wf["1177"]["inputs"]["lora_data"] = json.dumps(data, ensure_ascii=False)
+        print("[LoRA] %s 底座：%s" % ("PRISM" if prism else "老 H3",
+                                    "已关闭 " + "、".join(changed) if prism else "已恢复 " + "、".join(changed)))
+
+
 def build_workflow(shots,
                    workflow_path=None,
                    width=1280, height=768, fps=24,
@@ -775,6 +812,7 @@ def build_workflow(shots,
 
     require_comfyui()
     wf = json.load(open(workflow_path or DEFAULT_WORKFLOW, encoding="utf-8"))
+    _adapt_loras_to_base(wf)
 
     # 单镜头重生成：开始=结束=同一索引（0-based）
     if single_shot is not None:
@@ -788,7 +826,8 @@ def build_workflow(shots,
     wf["1130"]["inputs"]["lines_data"] = build_lines_data(
         shots, suppress_subtitles=suppress_subtitles, no_humans=no_humans,
         dynamic_action_check=dynamic_action_check, world_constraint=world_constraint,
-        auto_triggers=auto_triggers)
+        auto_triggers=auto_triggers,
+        allow_audio=str(audio_mode or "系统生成") != "系统生成")
 
     # 2) 生成控制器：尺寸/帧率 + 结束索引=-1（核心）
     ctl = wf["993"]["inputs"]

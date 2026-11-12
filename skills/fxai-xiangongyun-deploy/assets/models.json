@@ -13,7 +13,38 @@
     "img": "千问2.1 文生图/图编辑/三视图/四视图/场景图（img-qwen21-* 工作流）",
     "music": "YuE2 中文歌曲生成（music-yue2 工作流）",
     "vocalsep": "人声分离 Mel-Band RoFormer 权重（vc-melband-vocalsep 工作流，节点由 fxai-toolkit 提供）",
-    "mv": "MiniMax H3 音视频生成 + 放大器 + 加速 LoRA（mv-minimax-* 工作流）"
+    "mv": "MiniMax H3 / PRISM 音视频生成 + 潜空间放大器（MiniMax* / H3角色替换 工作流）",
+    "vsr": "RelayVSR x2 视频超分（视频超分人脸精修RelayVSR 工作流，用 ComfyUI 核心原生节点）"
+  },
+  "final_version": {
+    "_comment": "2026-11-13 定稿：以仙宫云 user/default/workflows 的 13 条专用工作流为最终版本口径。deploy.py 只负责下面 models 数组里能从公共源下载的文件；此处记录完整依赖，缺的部分由平台镜像软链或本机直传补齐。旧底座与其余下线 LoRA 已从线上删除；去油 LoRA 以 H3人脸去油.safetensors 重新上线并保留，重装时以当前清单为准。",
+    "models_array_count": 12,
+    "platform_symlink_only": [
+      "text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "loras/Motion_Repair.safetensors",
+      "loras/h3_character_swap.safetensors"
+    ],
+    "platform_symlink_note": "qwen_2.5_vl_7b_fp8_scaled 被三个千问2.1工作流引用（魔搭已试 Comfy-Org/Qwen-Image-Edit-2511、-2.1、Qwen-Image 三个候选路径均 404，无已验证公共源）；Motion_Repair 与 h3_character_swap 是自研 LoRA，魔搭没有公开仓库。装新实例时从平台镜像软链或本机 models/loras/ 直传；source_url 须先探源确认返 206 后再写入。",
+    "node_internal_dirs": [
+      "models/insightface/",
+      "models/vosr2/",
+      "models/FlashVSR/"
+    ],
+    "node_internal_note": "FxAiFaceRestoreLiteV2 按目录读 insightface(buffalo_l/inswapper/hyperswap) + vosr2(ema_model/dinov2/Qwen-Image-vae-2d)，FxAiVideoUpscale 按目录读 FlashVSR；工作流 JSON 里不写这些文件名，扫描引用时不会命中；对账时须按保留项处理。",
+    "removed_2026_11_13": [
+      "diffusion_models/minimax_h3_singularity_ref2va_int8.safetensors",
+      "loras/minimax_h3_ref2v_turbo_8step_768p_bf16.safetensors",
+      "loras/H3人脸去油.safetensors",
+      "loras/H3电影感.safetensors",
+      "loras/SS_FaceSwap_MiniMax_H3_REF2VA.safetensors",
+      "loras/H3_speed_slider.safetensors",
+      "loras/MiniMax H3_Combat.safetensors",
+      "audio_encoders/sheetsage2_bf16.safetensors"
+    ],
+    "local_upload_only": [
+      "loras/H3人脸去油.safetensors"
+    ],
+    "local_upload_note": "去油 LoRA 为自研权重，公共源无已验证直链。2026-11-13 以 H3人脸去油.safetensors 重新上线（本机 131229656 B 直传，md5 e41dd88134dfce38e0b1cdc5d73c8312）；旧名 h3-人脸去油.safetensors 已同日删除，重装时以新名为准。"
   },
   "models": [
     {
@@ -81,22 +112,6 @@
       "status": "downloading"
     },
     {
-      "id": "yue2_sheetsage",
-      "group": "music",
-      "repo": "Comfy-Org/YuE2",
-      "path": "audio_encoders/sheetsage2_bf16.safetensors",
-      "target_dir": "audio_encoders",
-      "target_name": null,
-      "min_bytes": 1390000000,
-      "optional": 1,
-      "note": "SheetSage2 音频编码器，只有「YuE2 翻唱/续写」工作流才用得上",
-      "ms_repo": "Comfy-Org/YuE2",
-      "source": "ms",
-      "source_url": "https://www.modelscope.cn/models/Comfy-Org/YuE2/resolve/master/audio_encoders/sheetsage2_bf16.safetensors",
-      "source_bytes": 1386868122,
-      "status": "downloading"
-    },
-    {
       "id": "melband_fp32",
       "group": "vocalsep",
       "repo": "Kijai/MelBandRoFormer_comfy",
@@ -113,34 +128,20 @@
       "status": "downloading"
     },
     {
-      "id": "h3_singularity",
+      "id": "h3_prism",
       "group": "mv",
-      "repo": "WarmBloodAban/Minimax-h3_Singularity",
-      "path": "diffusion_models/Minimax-h3_Singularity_ref2va_v1.3_int8.safetensors",
+      "repo": "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM",
+      "path": "PRISM_DMAD_PDMD_int8.safetensors",
       "target_dir": "diffusion_models",
-      "target_name": "minimax_h3_singularity_ref2va_int8.safetensors",
-      "min_bytes": 34000000000,
+      "target_name": "prism_dmad_pdmd_int8.safetensors",
+      "min_bytes": 20284000000,
       "optional": 0,
-      "variants": {
-        "full": {
-          "path": "Minimax-h3_Singularity_ref2va_v1.3_int8.safetensors",
-          "min_bytes": 34000000000
-        },
-        "pruned": {
-          "path": "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors",
-          "min_bytes": 19600000000
-        },
-        "w4a8": {
-          "path": "minimax_h3_ref2va_pruned_w4a8_mixed.safetensors",
-          "min_bytes": 11000000000
-        }
-      },
-      "note": "MiniMax H3 Singularity ref2va 融合微调主模型（社区融合微调，非官方原版）",
-      "ms_repo": null,
+      "note": "PRISM UPD5 新底座（2026-11-12 起全线替换 Singularity 旧底座）。魔搭仓库文件在根目录；落盘统一小写名，工作流 UNETLoader 指向该小写名。PRISM 无剪枝变体，--variant 对它无效。",
+      "ms_repo": "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM",
       "source": "ms",
-      "source_url": "https://www.modelscope.cn/models/WarmBloodAban/Minimax-h3_Singularity/resolve/master/Minimax-h3_Singularity_ref2va_v1.3_int8.safetensors",
-      "source_bytes": 34004507622,
-      "status": "downloading"
+      "source_url": "https://www.modelscope.cn/models/OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM/resolve/master/PRISM_DMAD_PDMD_int8.safetensors",
+      "source_bytes": 20284678584,
+      "status": ""
     },
     {
       "id": "h3_text_encoder",
@@ -191,22 +192,6 @@
       "status": "downloading"
     },
     {
-      "id": "h3_turbo_lora",
-      "group": "mv",
-      "repo": "lightx2v/Minimax-h3-Turbo",
-      "path": "loras/minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
-      "target_dir": "loras",
-      "target_name": "minimax_h3_ref2v_turbo_8step_768p_bf16.safetensors",
-      "min_bytes": 1960000000,
-      "optional": 0,
-      "note": "Ref2V 8步 768p 加速 LoRA（工作流 FxAiLoraLoader 默认就挂它）",
-      "ms_repo": null,
-      "source": "ms",
-      "source_url": "https://www.modelscope.cn/models/lightx2v/Minimax-h3-Turbo/resolve/master/minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
-      "source_bytes": 1956193000,
-      "status": "downloading"
-    },
-    {
       "id": "h3_latent_upscaler",
       "group": "mv",
       "repo": "Asirus/Minimax-H3-Latent-Upscaler-BF16-MAXQUALITY",
@@ -221,6 +206,38 @@
       "source_url": "https://huggingface.co/Asirus/Minimax-H3-Latent-Upscaler-BF16-MAXQUALITY/resolve/main/minimax_h3_bf16_CONSERVATIVE_v5.safetensors",
       "source_bytes": 690593160,
       "status": "downloading"
+    },
+    {
+      "id": "relayvsr_unet",
+      "group": "vsr",
+      "repo": "Comfy-Org/RelayVSR",
+      "path": "diffusion_models/relayvsr_x2_lightx2v_int8_convrot.safetensors",
+      "target_dir": "diffusion_models",
+      "target_name": null,
+      "min_bytes": 5163200000,
+      "optional": 0,
+      "note": "RelayVSR x2 主模型（int8 repack，不是 lightx2v/RelayVSR_X2 里那个 10.1GB 官方 bf16 wan_x2）。魔搭文件在 diffusion_models/ 子目录，拼仓库根路径会拿到 145 字节的假成功 JSON。",
+      "ms_repo": "Comfy-Org/RelayVSR",
+      "source": "ms",
+      "source_url": "https://www.modelscope.cn/models/Comfy-Org/RelayVSR/resolve/master/diffusion_models/relayvsr_x2_lightx2v_int8_convrot.safetensors",
+      "source_bytes": 5163295248,
+      "status": ""
+    },
+    {
+      "id": "relayvsr_vae",
+      "group": "vsr",
+      "repo": "Comfy-Org/RelayVSR",
+      "path": "vae/relayvsr_flash_vae_x2_fp32.safetensors",
+      "target_dir": "vae",
+      "target_name": null,
+      "min_bytes": 127700000,
+      "optional": 0,
+      "note": "RelayVSR x2 专用 VAE，配 VSRDecode 使用；其它 VAE 与它不兼容。",
+      "ms_repo": "Comfy-Org/RelayVSR",
+      "source": "ms",
+      "source_url": "https://www.modelscope.cn/models/Comfy-Org/RelayVSR/resolve/master/vae/relayvsr_flash_vae_x2_fp32.safetensors",
+      "source_bytes": 127759464,
+      "status": ""
     }
   ]
 }

@@ -50,7 +50,7 @@ def chrome_windows(min_width: int = 0) -> list[dict]:
 def main_windows(min_width: int = 600, include_minimized: bool = True) -> list[dict]:
     """浏览器主窗口。
 
-    最小化的窗口客户区会被系统压到很小（几十像素），不能按宽度直接排除，
+    最小化的窗口客户区会被系统压到很小（几十像素），不可按宽度直接排除，
     否则「人把窗口最小化了」就会被误判成「没有浏览器窗口」。
     """
     wins = []

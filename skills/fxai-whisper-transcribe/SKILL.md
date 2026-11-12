@@ -16,12 +16,12 @@ description: 本地离线语音转文本（STT）。把录音/视频音轨转成
 **确定本次要做什么之后，只读对应的那一两册，其余一律不读。**
 
 ## 服务与地址
-- whisper 是常驻 HTTP 服务，端口 **8185**；懒加载，首次请求才加载模型，识别结束后空闲 `whisper.idle_timeout` 秒自动卸载释放显存。
+- 常驻 HTTP 服务，端口 **8185**；懒加载，首次请求才载模型，空闲 `idle_timeout` 秒自动卸载。
 - 地址读全局配置 `~/.workbuddy/fxai_global.json` 的 `whisper` 段：
   `local_url` / `cloud_url` / `prefer_local` / `default_language` / `default_beam` / `idle_timeout` / `timeout`。
-- 🔴 **本机 API 优先**（与 ComfyUI / TTS 同一套）：函数参数 `url` > 本机 `local_url`（探得通）> 线上 `cloud_url` > 本机地址兜底。
-  本机 8185 的 HTTP 服务只要在线就走它，探不通才走线上；`force_cloud=True`（CLI `--cloud`）可强制走线上。
-- 🔴 **全程 HTTP 接口，不起本地进程**：链路里任何一步都不 subprocess 调 whisper。本地 CLI `transcribe.py` **仅供排障**，技能链路一律走 `whisper_client`。
+- 🔴 **本机 API 优先**：参数 `url` > 本机 `local_url`（探得通）> 线上 `cloud_url` > 本机兜底。
+  本机 8185 在线就走它，探不通才走线上；`force_cloud=True`（`--cloud`）强制走线上。
+- 🔴 **全程 HTTP 接口，不起本地进程**：任何一步都不 subprocess 调 whisper；本地 CLI `transcribe.py` 仅供排障，链路一律走 `whisper_client`。
 - 服务探不通就报错提示人启动；本机服务由人启停，技能只发 HTTP，不代管开关机。
 
 ## 并发与排队（2026-10-31 实测口径）
@@ -33,7 +33,7 @@ description: 本地离线语音转文本（STT）。把录音/视频音轨转成
 |---|---|---|---|---|
 | 墙钟 / 单发 | 14.5s（1.00） | 16.8s（**1.15**） | 19.2s（**1.34**） | 22.1s（**1.55**） |
 
-- 档位 `--workers N` 或环境变量 `FXAI_WH_WORKERS`；不给就**按显存自动**（`(可用-3.1-1.5)÷1`，上限 4）。
+- 档位 `--workers N` 或 `FXAI_WH_WORKERS`；不给就**按显存自动**（上限 4）。
   `/health` 的 `workers` 是能同时转写的人数，`free` 是现在还能接几个。
 - 🔴 **`num_workers=1` 时多线程调 transcribe 是完全串行的**：实测双发墙钟 = 单发 ×2.00，
   且各自耗时都被拖长（21.7s / 29.0s）。想并发就必须让服务端按 worker 数放开，
@@ -97,11 +97,11 @@ $PY "<技能目录>/fxai-whisper-transcribe/whisper_client.py" out.wav --lang zh
 - 语言缺省读 `whisper.default_language`（zh）；`--lang auto` 让模型自判。
 - 返回：纯文本模式给 `str`；`timestamps=True` 给 `list[{start,end,text}]`。
 - 长音频（>10 分钟）GPU 数十秒、CPU 数分钟；给足超时（`whisper.timeout`，默认 600s）。
-- 服务状态看 `GET /health`：`state`（idle / loading / transcribing / unloading）、`busy`（是否正在识别）、`model_loaded`（模型是否在显存）。
+- 服务状态看 `GET /health`：`state`、`busy`、`model_loaded`。
 
 ## 字幕 / 对齐类技能的统一调法
 
-下游技能（`fxai-lyric-subtitle`、`fxai-mv-pipeline`、`fxai-slide-video`、`fxai-short-drama`）**一律走 `whisper_client`，不起本地进程**：
+下游（`fxai-lyric-subtitle`、`fxai-mv-pipeline`、`fxai-slide-video`、`fxai-short-drama`）**一律走 `whisper_client`**：
 
 ```python
 from whisper_client import write_transcript, transcribe_passes
@@ -111,16 +111,16 @@ write_transcript(audio, "seg.txt", bounds_only=True)                # 每段一�
 transcribe_passes(audio, [{"clip_seg": 9, "word_ts": True, "condition": False}, ...])
 ```
 
-- 输出格式与本地 CLI 完全一致（`[start->end] 文本`），下游 `parse_transcript` / `parse_words` 不用改。
-- 多版交叉（9/11/13s 硬切 + beam/句级差异版）用 `transcribe_passes`：**音频只上传一次**，服务端连跑多版；老服务端不支持时自动退化为逐版请求。
+- 输出格式与本地 CLI 一致（`[start->end] 文本`），下游 `parse_transcript` / `parse_words` 不用改
+- 多版交叉（9/11/13s 硬切 + beam/句级差异）用 `transcribe_passes`：**音频只传一次**，服务端连跑多版。
 - `condition=False` 用于歌曲（减少幻觉复读）；`clip_seg` 硬切时服务端自动关 VAD。
 
 ## 本地离线 CLI（不常驻）
-`transcribe.py` 直接吃音频文件、进程内跑 faster-whisper，**不依赖服务**；仅排障或服务起不来时手动用，下游技能不调它：
+`transcribe.py` 直接吃音频、进程内跑 faster-whisper，**不依赖服务**；仅排障用，下游不调它：
 
-- 环境：`<软件数据目录>/conda/env/whisper/python.exe`（独立 conda env，faster-whisper 已装，GPU 走 ctranslate2，不依赖 torch）。
-- 模型：whisper 程序目录 `<whisper_dir>/model`（全局配置 `whisper_dir`；用哪个模型由程序自己定，当前 large-v3 满血版）；未配置时回退 `HF_HOME` 或 `<软件数据目录>` 下的 `models--Systran--faster-whisper-large-v3` 快照，强制离线读取。
-- 用法：`$PY transcribe.py out.wav --lang zh --words --vad --out transcript.txt`。
+- 环境：`<软件数据目录>/conda/env/whisper/python.exe`（独立 conda env，faster-whisper 已装，GPU 走 ctranslate2）。
+- 模型：`<whisper_dir>/model`（全局配置 `whisper_dir`，当前 large-v3 满血版）；未配置回退 `HF_HOME` 或 `<软件数据目录>` 下的 `models--Systran--faster-whisper-large-v3` 快照，强制离线。
+- 用法：`$PY transcribe.py out.wav --lang zh`。
 - 字幕 / 歌词类技能不调它，一律走上面的 `write_transcript` / `transcribe_passes`。
 
 ## 与其他技能配合

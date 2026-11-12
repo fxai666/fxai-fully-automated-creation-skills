@@ -35,7 +35,7 @@ def plan_path(
     dy = y1 - y0
     dist = math.hypot(dx, dy)
 
-    # 步数：距离越远步越多，但带随机扰动，避免固定节奏
+    # 步数：距离越远步越多，但带随机扰动，防止固定节奏
     steps = int(max(8, min(64, dist / r.uniform(9.0, 15.0))))
     # 时长按 Fitts 律的直觉：距离大、时间长，但有个下限与上限
     duration = max(0.16, min(0.95, 0.11 + 0.115 * math.log2(1 + dist / 46.0)))

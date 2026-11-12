@@ -461,8 +461,8 @@ def pixel_of(data: bytes, w: int, x: int, y: int) -> tuple[int, int, int]:
 def is_locked() -> bool:
     """工作站是否处于锁定/登录界面。
 
-    锁屏后系统把输入桌面切换给 Winlogon，普通进程既不能 `SendInput`
-    （返回错误码 5，拒绝访问），也不能 `BitBlt` 截屏（直接失败）。
+    锁屏后系统把输入桌面切换给 Winlogon，普通进程既无法 `SendInput`
+    （返回错误码 5，拒绝访问），也无法 `BitBlt` 截屏（直接失败）。
     所有「点了没反应」「截图全黑/失败」的怪象，第一步都该先查这个。
     """
     d = user32.OpenInputDesktop(0, False, 0x0001)  # DESKTOP_READOBJECTS
@@ -473,7 +473,7 @@ def is_locked() -> bool:
 
 
 def assert_ready(action: str = "执行") -> None:
-    """动手前的环境自检：锁屏、显示器关闭时直接报错停下，不要空转。"""
+    """动手前的环境自检：锁屏、显示器关闭时直接报错停下，不得空转。"""
     if is_locked():
         raise RuntimeError(
             "工作站已锁定，无法%s：锁屏状态下 SendInput 会被拒绝、截屏会失败。"

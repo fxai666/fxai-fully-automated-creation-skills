@@ -1,548 +1,548 @@
 {
- "698": {
-  "inputs": {
-   "a": [
-    "743",
-    2
-   ],
-   "b": 1,
-   "operation": "add"
+  "698": {
+    "inputs": {
+      "a": [
+        "743",
+        2
+      ],
+      "b": 1,
+      "operation": "add"
+    },
+    "class_type": "FxAiMathInt",
+    "_meta": {
+      "title": "下一次索引"
+    }
   },
-  "class_type": "FxAiMathInt",
-  "_meta": {
-   "title": "下一次索引"
-  }
- },
- "730": {
-  "inputs": {
-   "源视频文件夹路径": [
-    "1152",
-    1
-   ],
-   "文件数量": [
-    "993",
-    6
-   ],
-   "名称前缀": "fxai",
-   "刷新标记": [
-    "1152",
-    0
-   ]
+  "730": {
+    "inputs": {
+      "源视频文件夹路径": [
+        "1152",
+        1
+      ],
+      "文件数量": [
+        "993",
+        6
+      ],
+      "名称前缀": "fxai",
+      "刷新标记": [
+        "1152",
+        0
+      ]
+    },
+    "class_type": "FxAiVideoMerger",
+    "_meta": {
+      "title": "凤希AI - 视频合并"
+    }
   },
-  "class_type": "FxAiVideoMerger",
-  "_meta": {
-   "title": "凤希AI - 视频合并"
-  }
- },
- "743": {
-  "inputs": {
-   "total": [
-    "993",
-    2
-   ],
-   "initial_value1": [
-    "993",
-    1
-   ],
-   "start_index": 0
+  "743": {
+    "inputs": {
+      "total": [
+        "993",
+        2
+      ],
+      "initial_value1": [
+        "993",
+        1
+      ],
+      "start_index": 0
+    },
+    "class_type": "FxAiForLoopStart",
+    "_meta": {
+      "title": "For循环-开始"
+    }
   },
-  "class_type": "FxAiForLoopStart",
-  "_meta": {
-   "title": "For循环-开始"
-  }
- },
- "993": {
-  "inputs": {
-   "启用场景分段": true,
-   "开始索引": 0,
-   "结束索引": 0,
-   "帧率": 24,
-   "宽度": 1280,
-   "高度": 768,
-   "长宽对齐基数": 32,
-   "过渡帧数": 1,
-   "采样次数": 2,
-   "自动关机": false,
-   "场景分段时长": [
-    "1130",
-    2
-   ]
+  "993": {
+    "inputs": {
+      "启用场景分段": true,
+      "开始索引": 0,
+      "结束索引": 0,
+      "帧率": 24,
+      "宽度": 1280,
+      "高度": 768,
+      "长宽对齐基数": 32,
+      "过渡帧数": 1,
+      "采样次数": 2,
+      "自动关机": false,
+      "场景分段时长": [
+        "1130",
+        2
+      ]
+    },
+    "class_type": "FxAIGeneratorController",
+    "_meta": {
+      "title": "凤希AI - 生成控制器"
+    }
   },
-  "class_type": "FxAIGeneratorController",
-  "_meta": {
-   "title": "凤希AI - 生成控制器"
-  }
- },
- "1022": {
-  "inputs": {
-   "等待秒数": 60,
-   "启用关机": [
-    "993",
-    10
-   ],
-   "触发输入": [
-    "730",
-    0
-   ]
+  "1022": {
+    "inputs": {
+      "等待秒数": 60,
+      "启用关机": [
+        "993",
+        10
+      ],
+      "触发输入": [
+        "730",
+        0
+      ]
+    },
+    "class_type": "FxAiAutoShutdown",
+    "_meta": {
+      "title": "凤希AI - 自动关机(GameOver)"
+    }
   },
-  "class_type": "FxAiAutoShutdown",
-  "_meta": {
-   "title": "凤希AI - 自动关机(GameOver)"
-  }
- },
- "1071": {
-  "inputs": {
-   "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+  "1071": {
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
   },
-  "class_type": "VAELoader",
-  "_meta": {
-   "title": "加载VAE"
-  }
- },
- "1078": {
-  "inputs": {
-   "model": [
-    "1171",
-    0
-   ],
-   "conditioning": [
-    "1155",
-    0
-   ]
+  "1078": {
+    "inputs": {
+      "model": [
+        "1171",
+        0
+      ],
+      "conditioning": [
+        "1155",
+        0
+      ]
+    },
+    "class_type": "BasicGuider",
+    "_meta": {
+      "title": "基本引导器"
+    }
   },
-  "class_type": "BasicGuider",
-  "_meta": {
-   "title": "基本引导器"
-  }
- },
- "1081": {
-  "inputs": {
-   "scheduler": "simple",
-   "steps": [
-    "1173",
-    1
-   ],
-   "denoise": 1,
-   "model": [
-    "1171",
-    0
-   ]
+  "1081": {
+    "inputs": {
+      "scheduler": "beta57",
+      "steps": [
+        "1173",
+        1
+      ],
+      "denoise": 1,
+      "model": [
+        "1171",
+        0
+      ]
+    },
+    "class_type": "BasicScheduler",
+    "_meta": {
+      "title": "基本调度器"
+    }
   },
-  "class_type": "BasicScheduler",
-  "_meta": {
-   "title": "基本调度器"
-  }
- },
- "1083": {
-  "inputs": {
-   "noise": [
-    "1086",
-    0
-   ],
-   "guider": [
-    "1078",
-    0
-   ],
-   "sampler": [
-    "1092",
-    0
-   ],
-   "sigmas": [
-    "1081",
-    0
-   ],
-   "latent_image": [
-    "1155",
-    1
-   ]
+  "1083": {
+    "inputs": {
+      "noise": [
+        "1086",
+        0
+      ],
+      "guider": [
+        "1078",
+        0
+      ],
+      "sampler": [
+        "1092",
+        0
+      ],
+      "sigmas": [
+        "1081",
+        0
+      ],
+      "latent_image": [
+        "1155",
+        1
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "自定义采样器（高级）"
+    }
   },
-  "class_type": "SamplerCustomAdvanced",
-  "_meta": {
-   "title": "自定义采样器（高级）"
-  }
- },
- "1086": {
-  "inputs": {
-   "noise_seed": 42
+  "1086": {
+    "inputs": {
+      "noise_seed": 42
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "随机噪波"
+    }
   },
-  "class_type": "RandomNoise",
-  "_meta": {
-   "title": "随机噪波"
-  }
- },
- "1090": {
-  "inputs": {
-   "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
-   "type": "minimax",
-   "device": "default"
+  "1090": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
   },
-  "class_type": "CLIPLoader",
-  "_meta": {
-   "title": "加载CLIP"
-  }
- },
- "1091": {
-  "inputs": {
-   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  "1091": {
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
   },
-  "class_type": "VAELoader",
-  "_meta": {
-   "title": "加载VAE"
-  }
- },
- "1092": {
-  "inputs": {
-   "sampler_name": "res_multistep"
+  "1092": {
+    "inputs": {
+      "sampler_name": "res_multistep"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "K采样器选择"
+    }
   },
-  "class_type": "KSamplerSelect",
-  "_meta": {
-   "title": "K采样器选择"
-  }
- },
- "1126": {
-  "inputs": {
-   "音色剪切时长": 2,
-   "场景数据": [
-    "1130",
-    1
-   ],
-   "行索引": [
-    "743",
-    2
-   ]
+  "1126": {
+    "inputs": {
+      "音色剪切时长": 2,
+      "场景数据": [
+        "1130",
+        1
+      ],
+      "行索引": [
+        "743",
+        2
+      ]
+    },
+    "class_type": "FxAiScreenLoad",
+    "_meta": {
+      "title": "凤希AI - 影视剧场数据解析"
+    }
   },
-  "class_type": "FxAiScreenLoad",
-  "_meta": {
-   "title": "凤希AI - 影视剧场数据解析"
-  }
- },
- "1129": {
-  "inputs": {
-   "unet_name": "minimax_h3_singularity_ref2va_int8.safetensors",
-   "weight_dtype": "default"
+  "1129": {
+    "inputs": {
+      "unet_name": "prism_dmad_pdmd_int8.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
   },
-  "class_type": "UNETLoader",
-  "_meta": {
-   "title": "UNet加载器"
-  }
- },
- "1130": {
-  "inputs": {
-   "lines_data": "[[10,\"subject_definitions:\\n<Subject 1> 是 <Picture 1> 中的女性，穿着浅蓝灰色科技感立领软壳外套（领口与袖口带简洁银色线条）内搭白色圆领T恤和米白色休闲长裤，黑色头发扎成低马尾，戴着细款银色小耳钉，右手腕戴一条纤细银色智能腕带，带着俏皮明亮的微笑表情，站在书桌旁。\\n<Subject 2> 是 <Picture 2> 中的男性，穿着深灰色现代科技风立领夹克内搭黑色高领打底和深色休闲长裤，戴着黑框眼镜，右手腕戴着一只表盘泛淡蓝光晕的智能时梭腕表，带着轻松笃定的表情，坐在书桌前的转椅上，位于 <Subject 1> 的左侧。\\n<Subject 3> 是 <Picture 3> 中温暖极简的中式书房工作台环境，白天的自然光，有一张宽大的浅木色书桌（上面放着亮着淡蓝白界面的显示器、键盘、鼠标、技术书和一个水杯）、一把深色转椅、一把可移动的木椅、一个中式木柜（柜面摆着木框罗盘样式的仪器和玉质小锁）、一个书架（有书和一盆小绿植）、角落有米白色布艺沙发和矮茶几、一盏暖光落地灯。\\n<Audio 1> 是 <Subject 1> (S1) 的音色参考。\\n<Audio 2> 是 <Subject 2> (S2) 的音色参考。\\n\\nsummary:\\n[reference generation + audio reference] 目标视频开场在时空台书房里，夫妻并肩站在书桌前，面前的裂缝检视屏弹出一条派单任务（一道发光的裂缝折痕图标）；凤希俏皮地说\\\"来活了，你第一单\\\"，老李轻松笃定地回应\\\"修裂缝跟修电脑一个理儿\\\"。对话使用 <Audio 1> 和 <Audio 2> 作为音色参考，保证真实温暖的表达。\\n\\nretention_analysis:\\n<Subject 1> (出现在 [Shot 1]): fully_preserved - 浅蓝灰科技感立领软壳外套、白色圆领T恤、米白休闲裤、低马尾、银耳钉、银色智能腕带、俏皮明亮的微笑表情，站在书桌旁。\\n<Subject 2> (出现在 [Shot 1]): fully_preserved - 深灰科技风立领夹克、黑色高领打底、深色休闲裤、黑框眼镜、智能时梭腕表、轻松笃定的表情，坐在转椅上位于 <Subject 1> 左侧。\\n<Subject 3> (出现在 [Shot 1]): fully_preserved - 浅木色书桌、亮着淡蓝白界面的显示器、键盘、鼠标、技术书、水杯、转椅、木椅、中式木柜、罗盘仪器、玉质小锁、书架、布艺沙发。\\n<Audio 1>: reference - 目标说话人 (S1) 跟随 <Audio 1> 的音色和俏皮明亮的表达方式。\\n<Audio 2>: reference - 目标说话人 (S2) 跟随 <Audio 2> 的音色和轻松笃定的表达方式。\\n\\ndetailed_description:\\n目标视频是温暖的中式居家科幻风格，明亮的自然日光，轻松俏皮又带点新鲜感的氛围。\\n[Shot 1] 中近景镜头，缓慢推近，展示白天的时空台书房，夫妻已经并肩站在宽大的书桌前，S1 站在书桌旁，S2 坐在 S1 左侧的转椅上，面前的裂缝检视屏亮着，显示一条刚弹出的裂缝派单任务——屏幕上有一道发光的淡蓝色裂缝折痕图标和一行任务编号，画面清晰明亮。\\n0.00 秒到 2.00 秒，屏幕弹出派单任务，S1 歪头看向屏幕，带着俏皮明亮的微笑，同时 S2 也看向屏幕、眼神带着新鲜劲。\\n2.00 秒到 5.00 秒，<Subject 1> (S1) 俏皮地开口，使用 <Audio 1> 的音色参考，<d>[Chinese] 来活了！你第一单，头一回吧？</d>\\n5.00 秒到 8.50 秒，<Subject 2> (S2) 转头看向 <Subject 1> (S1)，带着轻松笃定的微笑回答，使用 <Audio 2> 的音色参考，<d>[Chinese] 头一回咋了？修裂缝跟修电脑一个理儿。</d>\\n8.50 秒到 10.00 秒，<Subject 2> (S2) 抬手转了转右手腕上的智能时梭腕表，S1 带笑看着他，两人一起看向屏幕，画面定格在期待又新鲜的氛围。\\n\\noverall_soundscape:\\n整个镜头保持安静稳定的白天书房环境音，伴有显示器弹出的轻柔电子提示音（派单到达的一声轻响）。0.00 秒到 2.00 秒只有平静的房间环境音和那一声电子提示，没有爆破音、咔哒声、爆裂声或任何随机噪音。除了两位说话人自己说话时段的清晰对白外，听不到其他人声。\\n\\nnon_diegetic_music:\\n轻柔的吉他旋律从 0.00 秒开始，以低音量贯穿整个镜头，温暖欢快，盖住低频环境噪音但从不压过对白。\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"subject_definitions:\\n<Subject 1> 是 <Picture 1> 中的女性，穿着浅蓝色宽松棉质针织衫和米白色休闲长裤，黑色头发扎成低马尾，戴着细款银色小耳钉，带着惊喜开心的微笑表情，坐在书桌旁的木椅上。\\n<Subject 2> 是 <Picture 2> 中的男性，穿着浅灰色棉质卫衣内搭白色T恤和深色休闲长裤，戴着黑框眼镜，带着感慨温暖的微笑表情，坐在书桌旁的转椅上，位于 <Subject 1> 的左侧。\\n<Subject 3> 是 <Picture 3> 中温暖极简的中式书房环境，白天的自然光，有一张宽大的浅木色书桌（上面放着显示器、键盘、鼠标、几本技术书和一个水杯）、一把深色转椅、一把可移动的木椅、一个书架（上面有书和一盆小绿植）、半开的窗帘透进明亮的自然光。\\n<Audio 1> 是 <Subject 1> (S1) 的音色参考。\\n<Audio 2> 是 <Subject 2> (S2) 的音色参考。\\n\\nsummary:\\n[reference generation + audio reference] 镜头聚焦在电脑显示器上，屏幕显示\\\"凤希AI伴侣平台\\\"的用户留言界面，一条用户留言被高亮显示（用户头像、用户名和留言文字，写着\\\"靠你这个，我自己接了单！\\\"）；男士带笑地指着屏幕讲这条留言，女士惊喜地回应\\\"真的？这可太好了\\\"。对话使用 <Audio 1> 和 <Audio 2> 作为音色参考，保证真实温暖的表达。\\n\\nretention_analysis:\\n<Subject 1> (出现在 [Shot 1]): fully_preserved - 浅蓝针织衫、米白休闲裤、低马尾、银耳钉、惊喜开心的微笑表情，坐在书桌旁木椅上。\\n<Subject 2> (出现在 [Shot 1]): fully_preserved - 浅灰卫衣、白色T恤、深色休闲裤、黑框眼镜、感慨温暖的微笑表情，坐在转椅上位于 <Subject 1> 左侧。\\n<Subject 3> (出现在 [Shot 1]): fully_preserved - 浅木色书桌、显示器、键盘、鼠标、技术书、转椅、木椅、书架、自然日光。\\n<Audio 1>: reference - 目标说话人 (S1) 跟随 <Audio 1> 的音色和惊喜开心的表达方式。\\n<Audio 2>: reference - 目标说话人 (S2) 跟随 <Audio 2> 的音色和感慨温暖的表达方式。\\n\\ndetailed_description:\\n目标视频是温暖的中式居家风格，明亮的自然日光，惊喜又满足的氛围。\\n[Shot 1] 特写镜头聚焦在书房里的电脑显示器上，屏幕充满画面，显示\\\"凤希AI伴侣平台\\\"的用户留言界面——中间一条用户留言被高亮显示：用户头像、用户名，留言文字写着\\\"靠你这个，我自己接了单！\\\"，光标停留在留言旁边，屏幕边缘反射着明亮的房间光线。夫妻坐在书桌旁，S1 在木椅上，S2 在 S1 左侧的转椅上，两人的侧脸部分入镜，一起看着屏幕。\\n0.00 秒到 2.00 秒，那条用户留言显示在屏幕上并微微高亮。\\n2.00 秒到 5.50 秒，<Subject 2> (S2) 侧脸部分入镜，指着屏幕，带着感慨的微笑说，使用 <Audio 2> 的音色参考，<d>[Chinese] 你看这条留言，说\\\"靠这个，自己接了单\\\"。</d>\\n5.50 秒到 8.00 秒，<Subject 1> (S1) 侧脸部分入镜，惊喜地回应，使用 <Audio 1> 的音色参考，<d>[Chinese] 真的？这可太好了！</d>\\n8.00 秒到 10.00 秒，屏幕上的留言定格，<Subject 1> (S1) 轻轻发出惊喜的\\\"哇\\\"声，定格在惊喜温暖的画面。\\n\\noverall_soundscape:\\n整个镜头保持安静稳定的白天书房环境音，伴有轻柔的鼠标点击声。0.00 秒到 2.00 秒只有这个平静的房间环境音，没有爆破音、咔哒声、爆裂声或任何随机噪音。除了两位说话人自己说话时段的清晰对白外，听不到其他人声。\\n\\nnon_diegetic_music:\\n轻柔的吉他旋律从 0.00 秒开始，以低音量贯穿整个镜头，温暖欢快，盖住低频环境噪音但从不压过对白。\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"]]",
-   "lines_container": ""
+  "1130": {
+    "inputs": {
+      "lines_data": "[[10,\"subject_definitions:\\n<Subject 1> 是 <Picture 1> 中的女性。\n<Subject 2> 是 <Picture 2> 中的男性。\n<Subject 3> 是 <Picture 3> 中的温暖极简的中式书房工作台环境。\n<Audio 1> 是 <Subject 1> (S1) 的音色参考。\\n<Audio 2> 是 <Subject 2> (S2) 的音色参考。\\n\\nsummary:\\n[reference generation + audio reference] 目标视频开场在时空台书房里，夫妻并肩站在书桌前，面前的裂缝检视屏弹出一条派单任务（一道发光的裂缝折痕图标）；凤希俏皮地说\\\"来活了，你第一单\\\"，老李轻松笃定地回应\\\"修裂缝跟修电脑一个理儿\\\"。对话使用 <Audio 1> 和 <Audio 2> 作为音色参考，保证真实温暖的表达。\\n\\nretention_analysis:\\n<Subject 1> (出现在 [Shot 1]): fully_preserved - 保留人物身份、发型发色、服装样式与颜色、裤装、鞋履。\\n<Subject 2> (出现在 [Shot 1]): fully_preserved - 保留人物身份、发型发色、服装样式与颜色、裤装、鞋履。\\n<Subject 3> (出现在 [Shot 1]): fully_preserved - 保留场景的建筑、陈设与物品。\\n<Audio 1>: reference - 目标说话人 (S1) 跟随 <Audio 1> 的音色和俏皮明亮的表达方式。\\n<Audio 2>: reference - 目标说话人 (S2) 跟随 <Audio 2> 的音色和轻松笃定的表达方式。\\n\\ndetailed_description:\\n目标视频是温暖的中式居家科幻风格，明亮的自然日光，轻松俏皮又带点新鲜感的氛围。\\n[Shot 1] 中近景镜头，缓慢推近，展示白天的时空台书房，夫妻已经并肩站在宽大的书桌前，S1 站在书桌旁，S2 坐在 S1 左侧的转椅上，面前的裂缝检视屏亮着，显示一条刚弹出的裂缝派单任务——屏幕上有一道发光的淡蓝色裂缝折痕图标和一行任务编号，画面清晰明亮。\\n0.00 秒到 2.00 秒，屏幕弹出派单任务，S1 歪头看向屏幕，带着俏皮明亮的微笑，同时 S2 也看向屏幕、眼神带着新鲜劲。\\n2.00 秒到 5.00 秒，<Subject 1> (S1) 俏皮地开口，使用 <Audio 1> 的音色参考，<d>[Chinese] 来活了！你第一单，头一回吧？</d>\\n5.00 秒到 8.50 秒，<Subject 2> (S2) 转头看向 <Subject 1> (S1)，带着轻松笃定的微笑回答，使用 <Audio 2> 的音色参考，<d>[Chinese] 头一回咋了？修裂缝跟修电脑一个理儿。</d>\\n8.50 秒到 10.00 秒，<Subject 2> (S2) 抬手转了转右手腕上的智能时梭腕表，S1 带笑看着他，两人一起看向屏幕，画面定格在期待又新鲜的氛围。\\n\\noverall_soundscape:\\n整个镜头保持安静稳定的白天书房环境音，伴有显示器弹出的轻柔电子提示音（派单到达的一声轻响）。0.00 秒到 2.00 秒只有平静的房间环境音和那一声电子提示，没有爆破音、咔哒声、爆裂声或任何随机噪音。除了两位说话人自己说话时段的清晰对白外，听不到其他人声。\\n\\nnon_diegetic_music:\\n轻柔的吉他旋律从 0.00 秒开始，以低音量贯穿整个镜头，温暖欢快，盖住低频环境噪音但从不压过对白。\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"subject_definitions:\\n<Subject 1> 是 <Picture 1> 中的女性。\n<Subject 2> 是 <Picture 2> 中的男性。\n<Subject 3> 是 <Picture 3> 中的温暖极简的中式书房环境。\n<Audio 1> 是 <Subject 1> (S1) 的音色参考。\\n<Audio 2> 是 <Subject 2> (S2) 的音色参考。\\n\\nsummary:\\n[reference generation + audio reference] 镜头聚焦在电脑显示器上，屏幕显示\\\"凤希AI伴侣平台\\\"的用户留言界面，一条用户留言被高亮显示（用户头像、用户名和留言文字，写着\\\"靠你这个，我自己接了单！\\\"）；男士带笑地指着屏幕讲这条留言，女士惊喜地回应\\\"真的？这可太好了\\\"。对话使用 <Audio 1> 和 <Audio 2> 作为音色参考，保证真实温暖的表达。\\n\\nretention_analysis:\\n<Subject 1> (出现在 [Shot 1]): fully_preserved - 保留人物身份、发型发色、服装样式与颜色、裤装、鞋履。\\n<Subject 2> (出现在 [Shot 1]): fully_preserved - 保留人物身份、发型发色、服装样式与颜色、裤装、鞋履。\\n<Subject 3> (出现在 [Shot 1]): fully_preserved - 保留场景的建筑、陈设与物品。\\n<Audio 1>: reference - 目标说话人 (S1) 跟随 <Audio 1> 的音色和惊喜开心的表达方式。\\n<Audio 2>: reference - 目标说话人 (S2) 跟随 <Audio 2> 的音色和感慨温暖的表达方式。\\n\\ndetailed_description:\\n目标视频是温暖的中式居家风格，明亮的自然日光，惊喜又满足的氛围。\\n[Shot 1] 特写镜头聚焦在书房里的电脑显示器上，屏幕充满画面，显示\\\"凤希AI伴侣平台\\\"的用户留言界面——中间一条用户留言被高亮显示：用户头像、用户名，留言文字写着\\\"靠你这个，我自己接了单！\\\"，光标停留在留言旁边，屏幕边缘反射着明亮的房间光线。夫妻坐在书桌旁，S1 在木椅上，S2 在 S1 左侧的转椅上，两人的侧脸部分入镜，一起看着屏幕。\\n0.00 秒到 2.00 秒，那条用户留言显示在屏幕上并微微高亮。\\n2.00 秒到 5.50 秒，<Subject 2> (S2) 侧脸部分入镜，指着屏幕，带着感慨的微笑说，使用 <Audio 2> 的音色参考，<d>[Chinese] 你看这条留言，说\\\"靠这个，自己接了单\\\"。</d>\\n5.50 秒到 8.00 秒，<Subject 1> (S1) 侧脸部分入镜，惊喜地回应，使用 <Audio 1> 的音色参考，<d>[Chinese] 真的？这可太好了！</d>\\n8.00 秒到 10.00 秒，屏幕上的留言定格，<Subject 1> (S1) 轻轻发出惊喜的\\\"哇\\\"声，定格在惊喜温暖的画面。\\n\\noverall_soundscape:\\n整个镜头保持安静稳定的白天书房环境音，伴有轻柔的鼠标点击声。0.00 秒到 2.00 秒只有这个平静的房间环境音，没有爆破音、咔哒声、爆裂声或任何随机噪音。除了两位说话人自己说话时段的清晰对白外，听不到其他人声。\\n\\nnon_diegetic_music:\\n轻柔的吉他旋律从 0.00 秒开始，以低音量贯穿整个镜头，温暖欢快，盖住低频环境噪音但从不压过对白。\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"],[10,\"\",\"scene/018.png,scene/019.png,scene/020.png,scene/021.png,scene/022.png,scene/023.png\"]]",
+      "lines_container": ""
+    },
+    "class_type": "FxAiScreenManager",
+    "_meta": {
+      "title": "凤希AI - 影视剧场流场景管理 - 学习交流Q群：775649071"
+    }
   },
-  "class_type": "FxAiScreenManager",
-  "_meta": {
-   "title": "凤希AI - 影视剧场流场景管理 - 学习交流Q群：775649071"
-  }
- },
- "1131": {
-  "inputs": {
-   "anything": [
-    "1152",
-    0
-   ]
+  "1131": {
+    "inputs": {
+      "anything": [
+        "1152",
+        0
+      ]
+    },
+    "class_type": "FxAiCleanGpu",
+    "_meta": {
+      "title": "清理显存占用"
+    }
   },
-  "class_type": "FxAiCleanGpu",
-  "_meta": {
-   "title": "清理显存占用"
-  }
- },
- "1152": {
-  "inputs": {
-   "flow": [
-    "743",
-    0
-   ],
-   "initial_value1": [
-    "698",
-    0
-   ],
-   "initial_value2": [
-    "1160",
-    2
-   ]
+  "1152": {
+    "inputs": {
+      "flow": [
+        "743",
+        0
+      ],
+      "initial_value1": [
+        "698",
+        0
+      ],
+      "initial_value2": [
+        "1160",
+        2
+      ]
+    },
+    "class_type": "FxAiForLoopEnd",
+    "_meta": {
+      "title": "For循环-结束"
+    }
   },
-  "class_type": "FxAiForLoopEnd",
-  "_meta": {
-   "title": "For循环-结束"
-  }
- },
- "1155": {
-  "inputs": {
-   "宽度": [
-    "993",
-    8
-   ],
-   "高度": [
-    "993",
-    9
-   ],
-   "帧数": [
-    "1126",
-    2
-   ],
-   "音频模式": "音色参考",
-   "提示词": [
-    "1126",
-    0
-   ],
-   "CLIP模型": [
-    "1090",
-    0
-   ],
-   "视频VAE": [
-    "1091",
-    0
-   ],
-   "音频VAE": [
-    "1071",
-    0
-   ],
-   "参考图片列表": [
-    "1126",
-    1
-   ],
-   "参考音频列表": [
-    "1126",
-    3
-   ]
+  "1155": {
+    "inputs": {
+      "宽度": [
+        "993",
+        8
+      ],
+      "高度": [
+        "993",
+        9
+      ],
+      "帧数": [
+        "1126",
+        2
+      ],
+      "音频模式": "音色参考",
+      "提示词": [
+        "1126",
+        0
+      ],
+      "CLIP模型": [
+        "1090",
+        0
+      ],
+      "视频VAE": [
+        "1091",
+        0
+      ],
+      "音频VAE": [
+        "1071",
+        0
+      ],
+      "参考图片列表": [
+        "1126",
+        1
+      ],
+      "参考音频列表": [
+        "1126",
+        3
+      ]
+    },
+    "class_type": "FxAiMiniMaxImageToVideoV2",
+    "_meta": {
+      "title": "凤希AI - MiniMax图生视频V2"
+    }
   },
-  "class_type": "FxAiMiniMaxImageToVideoV2",
-  "_meta": {
-   "title": "凤希AI - MiniMax图生视频V2"
-  }
- },
- "1157": {
-  "inputs": {
-   "av_latent": [
-    "1083",
-    1
-   ]
+  "1157": {
+    "inputs": {
+      "av_latent": [
+        "1083",
+        1
+      ]
+    },
+    "class_type": "LTXVSeparateAVLatent",
+    "_meta": {
+      "title": "分离 AV 潜空间"
+    }
   },
-  "class_type": "LTXVSeparateAVLatent",
-  "_meta": {
-   "title": "分离 AV 潜空间"
-  }
- },
- "1158": {
-  "inputs": {
-   "model": [
-    "1171",
-    0
-   ],
-   "conditioning": [
-    "1155",
-    0
-   ]
+  "1158": {
+    "inputs": {
+      "model": [
+        "1171",
+        0
+      ],
+      "conditioning": [
+        "1155",
+        0
+      ]
+    },
+    "class_type": "BasicGuider",
+    "_meta": {
+      "title": "基本引导器"
+    }
   },
-  "class_type": "BasicGuider",
-  "_meta": {
-   "title": "基本引导器"
-  }
- },
- "1159": {
-  "inputs": {
-   "noise": [
-    "1086",
-    0
-   ],
-   "guider": [
-    "1158",
-    0
-   ],
-   "sampler": [
-    "1166",
-    0
-   ],
-   "sigmas": [
-    "1175",
-    0
-   ],
-   "latent_image": [
-    "1167",
-    0
-   ]
+  "1159": {
+    "inputs": {
+      "noise": [
+        "1086",
+        0
+      ],
+      "guider": [
+        "1158",
+        0
+      ],
+      "sampler": [
+        "1166",
+        0
+      ],
+      "sigmas": [
+        "1175",
+        0
+      ],
+      "latent_image": [
+        "1167",
+        0
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "自定义采样器（高级）"
+    }
   },
-  "class_type": "SamplerCustomAdvanced",
-  "_meta": {
-   "title": "自定义采样器（高级）"
-  }
- },
- "1160": {
-  "inputs": {
-   "视频序号": [
-    "743",
-    2
-   ],
-   "保存目录": "sucai",
-   "图片序列": [
-    "1168",
-    0
-   ],
-   "音频": [
-    "1162",
-    0
-   ]
+  "1160": {
+    "inputs": {
+      "视频序号": [
+        "743",
+        2
+      ],
+      "保存目录": "sucai",
+      "图片序列": [
+        "1168",
+        0
+      ],
+      "音频": [
+        "1162",
+        0
+      ]
+    },
+    "class_type": "FxAiMiniMaxVideoSaveV2",
+    "_meta": {
+      "title": "凤希AI - MiniMax视频保存V2"
+    }
   },
-  "class_type": "FxAiMiniMaxVideoSaveV2",
-  "_meta": {
-   "title": "凤希AI - MiniMax视频保存V2"
-  }
- },
- "1161": {
-  "inputs": {
-   "模型": "minimax_h3_bf16_conservative.safetensors",
-   "放大倍数": 2,
-   "时间分块": "bf16",
-   "释放显存": "fp32",
-   "latent": [
-    "1157",
-    0
-   ]
+  "1161": {
+    "inputs": {
+      "模型": "minimax_h3_bf16_conservative.safetensors",
+      "放大倍数": 2,
+      "时间分块": "bf16",
+      "释放显存": "fp32",
+      "latent": [
+        "1157",
+        0
+      ]
+    },
+    "class_type": "FxAiMiniMaxUpscaler",
+    "_meta": {
+      "title": "凤希AI - MiniMax放大器"
+    }
   },
-  "class_type": "FxAiMiniMaxUpscaler",
-  "_meta": {
-   "title": "凤希AI - MiniMax放大器"
-  }
- },
- "1162": {
-  "inputs": {
-   "samples": [
-    "1159",
-    0
-   ],
-   "vae": [
-    "1071",
-    0
-   ]
+  "1162": {
+    "inputs": {
+      "samples": [
+        "1159",
+        0
+      ],
+      "vae": [
+        "1071",
+        0
+      ]
+    },
+    "class_type": "VAEDecodeAudio",
+    "_meta": {
+      "title": "VAE解码（音频）"
+    }
   },
-  "class_type": "VAEDecodeAudio",
-  "_meta": {
-   "title": "VAE解码（音频）"
-  }
- },
- "1166": {
-  "inputs": {
-   "sampler_name": "euler_ancestral"
+  "1166": {
+    "inputs": {
+      "sampler_name": "euler_ancestral"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "K采样器选择"
+    }
   },
-  "class_type": "KSamplerSelect",
-  "_meta": {
-   "title": "K采样器选择"
-  }
- },
- "1167": {
-  "inputs": {
-   "video_latent": [
-    "1161",
-    0
-   ],
-   "audio_latent": [
-    "1157",
-    1
-   ]
+  "1167": {
+    "inputs": {
+      "video_latent": [
+        "1161",
+        0
+      ],
+      "audio_latent": [
+        "1157",
+        1
+      ]
+    },
+    "class_type": "LTXVConcatAVLatent",
+    "_meta": {
+      "title": "拼接 AV 潜空间"
+    }
   },
-  "class_type": "LTXVConcatAVLatent",
-  "_meta": {
-   "title": "拼接 AV 潜空间"
-  }
- },
- "1168": {
-  "inputs": {
-   "samples": [
-    "1159",
-    0
-   ],
-   "vae": [
-    "1091",
-    0
-   ]
+  "1168": {
+    "inputs": {
+      "samples": [
+        "1159",
+        0
+      ],
+      "vae": [
+        "1091",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
   },
-  "class_type": "VAEDecode",
-  "_meta": {
-   "title": "VAE解码"
-  }
- },
- "1170": {
-  "inputs": {
-   "shift_video": 12,
-   "shift_audio": 3,
-   "model": [
-    "1177",
-    0
-   ]
+  "1170": {
+    "inputs": {
+      "shift_video": 12,
+      "shift_audio": 3,
+      "model": [
+        "1177",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3SigmaShift",
+    "_meta": {
+      "title": "MiniMax H3 Sigma Shift"
+    }
   },
-  "class_type": "MiniMaxH3SigmaShift",
-  "_meta": {
-   "title": "MiniMax H3 Sigma Shift"
-  }
- },
- "1171": {
-  "inputs": {
-   "attention": "comfy kitchen attention",
-   "model": [
-    "1170",
-    0
-   ]
+  "1171": {
+    "inputs": {
+      "attention": "comfy kitchen attention",
+      "model": [
+        "1170",
+        0
+      ]
+    },
+    "class_type": "ModelAttentionBackend",
+    "_meta": {
+      "title": "ModelAttentionBackend"
+    }
   },
-  "class_type": "ModelAttentionBackend",
-  "_meta": {
-   "title": "ModelAttentionBackend"
-  }
- },
- "1173": {
-  "inputs": {
-   "速度档位": "不加速",
-   "采样步数": 8,
-   "模型": [
-    "1129",
-    0
-   ]
+  "1173": {
+    "inputs": {
+      "速度档位": "不加速",
+      "采样步数": 8,
+      "模型": [
+        "1129",
+        0
+      ]
+    },
+    "class_type": "FxAiMiniMaxBlockCache",
+    "_meta": {
+      "title": "凤希AI - MiniMax块缓存加速"
+    }
   },
-  "class_type": "FxAiMiniMaxBlockCache",
-  "_meta": {
-   "title": "凤希AI - MiniMax块缓存加速"
-  }
- },
- "1174": {
-  "inputs": {
-   "sigmas": "0.9231, 0.8780, 0.8000, 0.6316, 0.3158, 0.0000"
+  "1174": {
+    "inputs": {
+      "sigmas": "0.9231, 0.8780, 0.8000, 0.6316, 0.3158, 0.0000"
+    },
+    "class_type": "ManualSigmas",
+    "_meta": {
+      "title": "5 step Sigmas"
+    }
   },
-  "class_type": "ManualSigmas",
-  "_meta": {
-   "title": "5 step Sigmas"
-  }
- },
- "1175": {
-  "inputs": {
-   "sigmas": "0.9035, 0.8000, 0.6316, 0.3158, 0.0000"
+  "1175": {
+    "inputs": {
+      "sigmas": "0.9035, 0.6316, 0.3158, 0.0000"
+    },
+    "class_type": "ManualSigmas",
+    "_meta": {
+      "title": "4 step Sigmas"
+    }
   },
-  "class_type": "ManualSigmas",
-  "_meta": {
-   "title": "4 step Sigmas"
-  }
- },
- "1176": {
-  "inputs": {
-   "sigmas": "0.9035, 0.6316, 0.3158, 0.0000"
+  "1176": {
+    "inputs": {
+      "sigmas": "0.9035, 0.6316, 0.3158, 0.0000"
+    },
+    "class_type": "ManualSigmas",
+    "_meta": {
+      "title": "3 step Sigmas"
+    }
   },
-  "class_type": "ManualSigmas",
-  "_meta": {
-   "title": "3 step Sigmas"
+  "1177": {
+    "inputs": {
+      "lora_data": "[{\"lora_name\": \"minimax_h3_ref2v_turbo_8step_768p_bf16.safetensors\", \"model_strength\": 0.0, \"clip_strength\": -1, \"trigger_words\": [], \"enabled\": false, \"invert\": false, \"fade_start\": 1.0, \"fade_end\": 1.0}, {\"lora_name\": \"H3人脸去油.safetensors\", \"model_strength\": 0.0, \"clip_strength\": -1, \"trigger_words\": [], \"enabled\": false, \"invert\": false, \"fade_start\": 1.0, \"fade_end\": 1.0}, {\"lora_name\": \"Motion_Repair.safetensors\", \"model_strength\": 0.45, \"clip_strength\": -1, \"trigger_words\": [], \"enabled\": true, \"invert\": false, \"fade_start\": 1.0, \"fade_end\": 1.0}]",
+      "lora_wrap": "",
+      "model": [
+        "1173",
+        0
+      ]
+    },
+    "class_type": "FxAiLoraLoader",
+    "_meta": {
+      "title": "凤希AI - LoRa加载器"
+    }
   }
- },
- "1177": {
-  "inputs": {
-   "lora_data": "[{\"lora_name\":\"minimax_h3_ref2v_turbo_8step_768p_bf16.safetensors\",\"model_strength\":1.0,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1.0,\"fade_end\":1.0},{\"lora_name\":\"h3-人脸去油.safetensors\",\"model_strength\":0.7,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1.0,\"fade_end\":1.0},{\"lora_name\":\"Motion_Repair.safetensors\",\"model_strength\":0.45,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1.0,\"fade_end\":1.0}]",
-   "lora_wrap": "",
-   "model": [
-    "1173",
-    0
-   ]
-  },
-  "class_type": "FxAiLoraLoader",
-  "_meta": {
-   "title": "凤希AI - LoRa加载器"
-  }
- }
 }

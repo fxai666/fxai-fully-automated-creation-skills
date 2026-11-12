@@ -784,7 +784,7 @@ class Runner:
             raise ValueError("未知步骤类型：%r" % op)
 
         self.log("step_ok", idx=idx, op=op, ms=int((time.time() - t0) * 1000))
-        # 与下一步之间要不要停、停多久：看两步在做什么，不看步骤序号
+        # 与下一步之间是否停、停多久：看两步在做什么，不看步骤序号
         self.settle_to(nxt, op, st)
 
     def run(self, steps: list[dict]) -> dict:

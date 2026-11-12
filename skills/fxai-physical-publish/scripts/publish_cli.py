@@ -123,7 +123,7 @@ def cmd_snap(args) -> int:
 # ------------------------------------------------------------------ mark
 def _wait_key(vk: int, timeout_s: float = 300.0) -> bool:
     t0 = time.time()
-    # 先等它松开，避免上一次按键被误判
+    # 先等它松开，防止上一次按键被误判
     while api.key_state(vk) and time.time() - t0 < 5:
         time.sleep(0.05)
     while time.time() - t0 < timeout_s:

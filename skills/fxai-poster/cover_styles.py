@@ -476,7 +476,7 @@ def _kick_html(kick, side):
 
 def _vert_title_land(bg, t1, sub="", w=1920, h=1080, en="", kick="", brand="",
                      gold="#d8c39a", paper="#f7f2e9", side="left"):
-    """横版：模糊底只取上部天空（避免人像重影）+ 主体放大出血靠右，文字全走左侧空区。"""
+    """横版：模糊底只取上部天空（防止人像重影）+ 主体放大出血靠右，文字全走左侧空区。"""
     f = h / 1080.0
     compact = h < 520
     vals = dict(SRC=_uri(bg), BLUR=round(62 * f), BODY=BODY,

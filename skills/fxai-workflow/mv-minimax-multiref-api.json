@@ -198,7 +198,7 @@
  },
  "998": {
   "inputs": {
-   "unet_name": "minimax_h3_singularity_ref2va_int8.safetensors",
+   "unet_name": "prism_dmad_pdmd_int8.safetensors",
    "weight_dtype": "default"
   },
   "class_type": "UNETLoader",
@@ -389,7 +389,7 @@
  },
  "1039": {
   "inputs": {
-   "lines_data": "[[10,\"subject_definitions:\\n<Subject 1> 是 <Picture 1> 中的女性，身穿浅杏色棉质连衣裙，系着米色针织披肩在前胸打结，黑色长发半扎成低丸子头，佩戴垂坠耳环。\\n<Subject 2> 是 <Picture 2> 中的场景背景图，作为人物演唱的环境。\\n<Audio 1> 是音乐视频中的原声演唱音轨，作为 <Subject 1> (S1) 的音色参考和目标视频的完整最终音轨。\\n\\nsummary:\\n[reference generation + audio reuse] 目标视频展示 <Subject 1> 在 <Subject 2> 中演唱。视频使用 <Picture 1> 作为人物外观参考，<Picture 2> 作为场景背景参考，<Audio 1> 作为原声音频。\\n\\nretention_analysis:\\n<Subject 1> (appears in [Shot 1]): fully_preserved - 保留女性身份、浅杏色连衣裙、米色针织披肩、发型和耳环。\\n<Subject 2> (appears in [Shot 1]): fully_preserved - 保留场景背景的整体环境氛围。\\n<Audio 1>: fully_copy - <Audio 1> 作为目标视频的完整最终音轨直接复用。\\n\\ndetailed_description:\\n目标视频采用电影感、自然主义的音乐视频风格。\\n[Shot 1] 中景镜头建立 <Subject 2> 作为场景背景。<Subject 1> (S1)，身穿浅杏色连衣裙和米色披肩的女性，站在画面略偏中心位置，面向镜头，表情温柔专注。从0-2秒，她轻轻吸气，眼睛略微向上看，仿佛在回忆旋律。从2-5秒，她开始演唱，嘴唇与 <Audio 1> 中的歌声同步，身体随节奏轻轻摇摆。从5-8秒，她右手轻微抬起，做出精致而富有表现力的手势，目光转向远处，通过歌声传达情感。从8-10秒，她的手慢慢放下，表情柔和为平静、安定的微笑，随着乐句最后音符的消逝，她的姿势自然放松结束镜头。\\noverall_soundscape:\\n来自 <Audio 1> 的复制环境声音在整个视频中持续，叠加在歌声之下。\\nnon_diegetic_music:\\n无\",\"avatar/007.png,scene/002.jpg\"]]",
+   "lines_data": "[[10,\"subject_definitions:\\n<Subject 1> 是 <Picture 1> 中的女性。\n<Subject 2> 是 <Picture 2> 中的场景背景图。\n<Audio 1> 是音乐视频中的原声演唱音轨，作为 <Subject 1> (S1) 的音色参考和目标视频的完整最终音轨。\\n\\nsummary:\\n[reference generation + audio reuse] 目标视频展示 <Subject 1> 在 <Subject 2> 中演唱。视频使用 <Picture 1> 作为人物外观参考，<Picture 2> 作为场景背景参考，<Audio 1> 作为原声音频。\\n\\nretention_analysis:\\n<Subject 1> (appears in [Shot 1]): fully_preserved - 保留人物身份、发型发色、服装样式与颜色、裤装、鞋履。\n<Subject 2> (appears in [Shot 1]): fully_preserved - 保留场景的建筑、陈设与物品。\\n<Audio 1>: fully_copy - <Audio 1> 作为目标视频的完整最终音轨直接复用。\\n\\ndetailed_description:\\n目标视频采用电影感、自然主义的音乐视频风格。\\n[Shot 1] 中景镜头建立 <Subject 2> 作为场景背景。<Subject 1> (S1)，身穿浅杏色连衣裙和米色披肩的女性，站在画面略偏中心位置，面向镜头，表情温柔专注。从0-2秒，她轻轻吸气，眼睛略微向上看，仿佛在回忆旋律。从2-5秒，她开始演唱，嘴唇与 <Audio 1> 中的歌声同步，身体随节奏轻轻摇摆。从5-8秒，她右手轻微抬起，做出精致而富有表现力的手势，目光转向远处，通过歌声传达情感。从8-10秒，她的手慢慢放下，表情柔和为平静、安定的微笑，随着乐句最后音符的消逝，她的姿势自然放松结束镜头。\\noverall_soundscape:\\n来自 <Audio 1> 的复制环境声音在整个视频中持续，叠加在歌声之下。\\nnon_diegetic_music:\\n无\",\"avatar/007.png,scene/002.jpg\"]]",
    "lines_container": ""
   },
   "class_type": "FxAiScreenManager",
@@ -443,7 +443,7 @@
  },
  "1047": {
   "inputs": {
-   "sigmas": "0.9035, 0.8000, 0.6316, 0.3158, 0.0000"
+   "sigmas": "0.9035, 0.6316, 0.3158, 0.0000"
   },
   "class_type": "ManualSigmas",
   "_meta": {
@@ -580,7 +580,7 @@
  },
  "1058": {
   "inputs": {
-   "lora_data": "[{\"lora_name\":\"minimax_h3_ref2v_turbo_8step_768p_bf16.safetensors\",\"model_strength\":1.0,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1.0,\"fade_end\":1.0},{\"lora_name\":\"h3-人脸去油.safetensors\",\"model_strength\":0.7,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1.0,\"fade_end\":1.0},{\"lora_name\":\"Motion_Repair.safetensors\",\"model_strength\":0.45,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1.0,\"fade_end\":1.0}]",
+   "lora_data": "[{\"lora_name\":\"minimax_h3_ref2v_turbo_8step_768p_bf16.safetensors\",\"model_strength\":1.0,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1.0,\"fade_end\":1.0},{\"lora_name\":\"H3人脸去油.safetensors\",\"model_strength\":0.7,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1.0,\"fade_end\":1.0},{\"lora_name\":\"Motion_Repair.safetensors\",\"model_strength\":0.45,\"clip_strength\":-1,\"trigger_words\":[],\"enabled\":true,\"invert\":false,\"fade_start\":1.0,\"fade_end\":1.0}]",
    "lora_wrap": "",
    "model": [
     "1003",

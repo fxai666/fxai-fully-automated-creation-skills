@@ -67,14 +67,14 @@ def build_shots(manifest):
 [reference generation] 目标视频展示场景，角色说话。
 
 延续分析
-<Subject 1> (出现在 [Shot 1]): fully_preserved - 角色外观。
-<Subject 2> (出现在 [Shot 1]): fully_preserved - 场景环境。
+<Subject 1> (出现在 [Shot 1]): fully_preserved - 保留人物身份、发型发色、服装样式与颜色、裤装、鞋履。
+<Subject 2> (出现在 [Shot 1]): fully_preserved - 保留场景的建筑、陈设与物品。
 
 详细描述
 目标视频是场景，自然光，氛围轻松。
 [Shot 1] 中景镜头，固定机位，<Subject 1> (S1) 站在画面正中，<Subject 2> 在身后铺开。
 <Subject 1> (S1) 对着画面左侧画外沉声道：<d>[Chinese] 第一句台词。</d>。
-At 00:02.500, 静场，只有窗外的车声，一句台词也不出。
+At 00:02.500, 静场。
 At 00:03.500, <Subject 1> (S1) 对着画面左侧画外接着说：<d>[Chinese] 第二句台词。</d>。
 
 整体音效

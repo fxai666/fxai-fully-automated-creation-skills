@@ -55,7 +55,7 @@ python scripts/export_figures.py --dir <项目>/image
 
 ### 1.3b 配图配色线路（2026-11-11 定 · 深色底一律弃用）
 
-用户口径：「公众号里面我们的线路更新一下，配图这些不要用深色的，要用有色彩的配图方式」。旧 `make_cover.py` 的深墨蓝底（#16233b 渐变）、深墨大色块、底部深墨横条、暗角全部作废。
+配图一律走明亮彩色线路：深墨蓝底（#16233b 渐变）、深墨大色块、底部深墨横条、暗角全部弃用。
 
 | 维度 | 现在的做法 |
 |---|---|
@@ -68,7 +68,7 @@ python scripts/export_figures.py --dir <项目>/image
 - 唯一公共件 **`scripts/figure_lib.py`**：六套主色系 `PALETTES` + `background / glow / shadow / blob / star / confetti / curve / stamp / footer / font / save`。项目脚本放 `_tmp/`，`from figure_lib import *` 后只画具体画面。
 - `make_cover.py` 走彩色线路（文字型封面兜底），CLI 参数 `--title / --subtitle / --tag / --motif / --accent` 保持不变，输出不出深墨蓝底。插画型封面直接走 `figure_lib`。
 - 规格不变：封面 1152×512、正文图 1152×760；PNG 母版留 `image/`，发布版一律 `export_figures.py` 导 JPG（q95 / 4:4:4），`qc.py post` 过门。
-- 字体一律 Noto Sans SC / Bold（SIL OFL 1.1，白名单 A）；浅色画面纯白主体占比过大反而判 FAIL，补彩色重元素，不要回退深色。
+- 字体一律 Noto Sans SC / Bold（SIL OFL 1.1，白名单 A）；浅色画面纯白主体占比过大反而判 FAIL，补彩色重元素；深色底一律弃用。
 
 **生成侧（ComfyUI）**
 - 工作流宽高 512~4096 且 32 的倍数。
@@ -92,12 +92,55 @@ python scripts/export_figures.py --dir <项目>/image
 </section>
 ```
 
+## 1.4b 正文排版硬规则（提交时强制校验，不是建议）
+
+微信图文编辑器渲染时会对正文再做一轮清洗，下面三条会直接把排版搞坏：
+
+| 触发写法 | 微信会做什么 | 后果 |
+|---|---|---|
+| `<pre>` + 纯文本 `\n` 换行 | 剥掉 `<pre>` 和 `white-space` | **所有行折叠成空格，整段挤成一行** |
+| `style` 里出现引号（如 `font-family:Consolas,Monaco,"Courier New",monospace`） | 引号提前闭合属性，拆成 `courier="courier" new="new" px="px"` 假属性 | 该段样式全废 |
+| `word-break:break-all` | 任意字符处断行 | `<Subject 2>` 被切成 `Subje / ct 2`，读者以为写错 |
+
+**代码块 / 提示词 / 台词例子**一律这么写（换行靠 DOM 结构，不靠空白）：
+
+```html
+<section style="font-size:13px;line-height:1.85;background:#f7f8fc;border:1px solid #e6e9f2;border-radius:8px;padding:16px 18px;font-family:monospace;">
+<section style="margin:0;min-height:1em;word-wrap:break-word;word-break:normal;">主体定义</section>
+<section style="margin:0;min-height:1em;word-wrap:break-word;word-break:normal;">&lt;Subject 1&gt; 是 &lt;Picture 1&gt; 中的…</section>
+<section style="margin:0;min-height:1em;word-wrap:break-word;word-break:normal;">&nbsp;</section>
+<section style="margin:0;min-height:1em;word-wrap:break-word;word-break:normal;">摘要</section>
+</section>
+```
+
+要点：**一行一个 `<section>`**；空行用 `&nbsp;` 占位；`<` `>` 一律转义成 `&lt;` `&gt;`（只转义一次）；折行只用 `word-wrap:break-word` + `word-break:normal`；字体只写 `monospace`，不带引号、不用字体栈。
+
+### 闸门在哪
+
+`scripts/html_guard.py` 在**所有**图文提交路径上强制执行，绕过不了：
+
+- `draft-add` / `draft-update`（news 形态）/ `publish`（无 `--media-id` 时）→ 都先过 `guard_content()`；
+- **能自动修的当场修**，回包多一个 `html_fixed` 字段列出改了哪几项（不出现＝原文就合规）；
+- **修不掉的直接拒绝提交**，返回 `ok:false` + `violations[]`，每条带 `problem` 与 `fix`，不会白建一条坏草稿。
+
+提交前想先自查（不碰接口）：
+
+```bash
+python scripts/wx_api.py check-html --content article/正文.html
+python scripts/wx_api.py check-html --content article/正文.html --fix-out article/正文.修好.html
+```
+
+`ok:false` 时退出码为 1，可直接用于流水线拦截。
+
 ## 1.5 命令
 
 ```bash
 # 建图文草稿（正文里的本地图会自动上传）
 python scripts/wx_api.py draft-add --title "标题" --content article/正文.html \
  --cover image/封面.jpg --digest "摘要" --author "凤希AI" --comments 1
+
+# 只校验正文排版兼容性，不提交（1.4b）
+python scripts/wx_api.py check-html --content article/正文.html
 # 拿返回的 media_id 发布【默认不跑这一条】
 # 只有用户明确要求「发布 / 群发 / 推送 / 自动发」才执行，且先确认走 publish 还是 mass。
 python scripts/wx_api.py publish --media-id <media_id>

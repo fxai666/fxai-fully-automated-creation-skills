@@ -60,7 +60,7 @@ def canvas_scale(W, H):
 
     只按宽度缩会把横屏（1280×768）算出 1.67 倍，字大得压画面；
     按对角线算，1280×768 与 768×1280 同为 1.0，1080×1920 为 1.44。
-    🔴 叠字已改成固定字号档（`tier_for`），新代码不要再用这个乘字号。
+    🔴 叠字已改成固定字号档（`tier_for`），新代码不得再用这个乘字号。
     """
     import math
     return math.sqrt(float(W) * H) / math.sqrt(float(BASE_W) * BASE_H)
@@ -187,7 +187,7 @@ def vclusters(text):
 
 
 def vcell(font):
-    """竖排一格的高度（字距按字号算，不按 bbox，避免不同字大小不一）。"""
+    """竖排一格的高度（字距按字号算，不按 bbox，防止不同字大小不一）。"""
     return int(font.size * 1.16)
 
 

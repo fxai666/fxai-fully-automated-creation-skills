@@ -2,7 +2,7 @@
 """区域局部校验（ROI probe）与布局漂移自动重定位。
 
 用户 2026-11-11 口径：
-  记录坐标之后，第二次不要再整屏截图；按已有坐标范围**只截那一小块**，
+  记录坐标之后，第二次不得再整屏截图；按已有坐标范围**只截那一小块**，
   确认它还是不是目标控件（发布按钮 / 那两个字）。没有命中才全屏重新扫描、
   重新取实际坐标并回写台账。这样上方增删行带来的布局变化能被自动吸收。
 
@@ -26,7 +26,7 @@ if _SCRIPTS not in sys.path:
 
 
 def _presets() -> dict:
-    # 延迟导入：避免 human 包加载期与 locate.py 形成循环
+    # 延迟导入：防止 human 包加载期与 locate.py 形成循环
     from locate import PRESETS
     return PRESETS
 
@@ -257,7 +257,7 @@ def guard(
         info = learn(site, name, rect, color, cfg.get("text", ""), int(cfg.get("pad", 12)), png)
         return {"ok": True, "action": "learned", "detail": info["png"], "rect": list(rect)}
 
-    # 截图前把鼠标挪开，避免 hover 态把按钮颜色改掉
+    # 截图前把鼠标挪开，防止 hover 态把按钮颜色改掉
     api.move_absolute(max(0, rect[0] - 60), max(0, rect[1] - 60))
     time.sleep(0.12)
     res = check(site, name, rect, png)

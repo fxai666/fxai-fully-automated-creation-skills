@@ -24,22 +24,22 @@
 
 ```text
 subject_definitions:
-<Subject 1> 是 <Picture 1> 中的人物，清冷疏离的年轻女子，利落短发，淡妆，过膝白色长风衣。
-<Subject 2> 是 <Picture 2> 中的场景背景图，雪夜天台，明月悬于楼阁之上，清冷孤寂的电影级光影，作为人物演唱的环境。
+<Subject 1> 是 <Picture 1> 中的人物。
+<Subject 2> 是 <Picture 2> 中的场景。
 <Audio 1> 是音乐视频中的原声演唱音轨，作为 <Subject 1> (S1) 的音色参考和目标视频的完整最终音轨。
 
 summary:
 [reference generation + audio reuse] 目标视频展示 <Subject 1> 在 <Subject 2> 中演唱。<Picture 1> 作为人物外观参考，<Picture 2> 作为场景背景参考，<Audio 1> 作为原声音频。
 
 retention_analysis:
-<Subject 1> (appears in [Shot 1]): fully_preserved - 保留人物身份与清冷疏离的年轻女子，利落短发，淡妆，过膝白色长风衣。
-<Subject 2> (appears in [Shot 1]): fully_preserved - 保留场景背景的整体环境氛围。
+<Subject 1> (appears in [Shot 1]): fully_preserved - 保留人物身份、发型发色、服装样式与颜色、裤装、鞋履。
+<Subject 2> (appears in [Shot 1]): fully_preserved - 保留场景的建筑、陈设与物品。
 <Audio 1>: fully_copy - <Audio 1> 作为目标视频的完整最终音轨直接复用。
 
 detailed_description:
 camera motion
 目标视频采用电影感、自然主义的音乐视频风格。
-[Shot 1] 中景镜头建立 <Subject 2> 作为场景背景。<Subject 1> (S1) 清冷疏离的年轻女子，利落短发，淡妆，过膝白色长风衣，站在画面略偏中心位置，面向镜头，表情温柔专注。镜头以缓慢的轻微推近（slow push-in）跟随人物，幅度小、速度慢。她轻轻吸气，仿佛在回忆旋律；At 00:02.000, 她开始演唱，嘴唇与 <Audio 1> 中的歌声精准同步开合，身体随节拍轻轻摇摆，右手随乐句做出柔和而富有表现力的手势；结尾随最后一个音符自然放松，定格为柔和宁静的微笑。
+[Shot 1] 中景镜头建立 <Subject 2> 作为场景背景。<Subject 1> (S1) 站在画面略偏中心位置，面向镜头，表情温柔专注。镜头以缓慢的轻微推近（slow push-in）跟随人物，幅度小、速度慢。她轻轻吸气，仿佛在回忆旋律；At 00:02.000, 她开始演唱，嘴唇与 <Audio 1> 中的歌声精准同步开合，身体随节拍轻轻摇摆，右手随乐句做出柔和而富有表现力的手势；结尾随最后一个音符自然放松，定格为柔和宁静的微笑。
 
 overall_soundscape:
 来自 <Audio 1> 的复制环境声音与歌声贯穿全程。
@@ -47,6 +47,25 @@ overall_soundscape:
 non_diegetic_music:
 无
 ```
+
+### 3.2.1 🔴 主体定义只指认，类目归延续分析（铁律 17，全局统一）
+
+上文那句主体定义**只有一句身份词**，这是硬要求不是风格偏好：
+
+- 主体定义：`<Subject N> 是 <Picture M> 中的<身份词>。` —— 到句号为止，**句号后不追加任何内容**。
+  身份词可以具体（古装年轻女子 / 临水木构戏台），但止于「是什么」。
+- 保留类目**全部写进延续分析**：人物 `保留人物身份、发型发色、服装样式与颜色、裤装、鞋履。`；
+  场景 `保留场景的建筑、陈设与物品。`；道具 `保留道具的形制、材质与颜色。`
+- **两段都不写**具体颜色（月白、鸦青、浅杏色）、款式（窄袖、束腰短甲、半扎低丸子头）、材质（棉质、烟罗纱）、
+  具名物件细节（断纹素银簪、扇骨九节第三节旧裂纹）。
+- **详细描述里不复述外观**，只写 `<Subject 1> (S1)` 编号 + 动作。
+
+原因与完整禁用词表见 04 册「铁律 17 展开」。一句话：新底座服从文字，字里写什么就以为什么，
+参考图的服装会被文字覆盖（实测同一参考图，写细节版深色像素 44.8%、只留身份词版 25.2%）。
+
+> 场景定义的极简 ≠ 不写场景里发生的事。**场景外观**交给参考图（不描写）；
+> **这一段文案该有的动作与道具交互**仍要写进 `detailed_description`（「指着柱状图」「端起马克杯」），
+> 那是动作不是外观——写动作是对的，写「暖黄台灯、米色瓷砖」是错的。
 
 ## 3.3 🔴 主体归属：台词与音频只挂人物，场景不挂
 
@@ -115,16 +134,29 @@ Ref2VA 送进去的参考图一定有「人物在前、场景在后」两组，�
 ```python
 import audio_video as av
 # 多参考：人物图 char_rel + 场景图 scene_ref，提示词由 char_desc/scene_desc 驱动
-p = av.build_ref2va_prompt(char_descs=["清冷疏离的年轻女子，利落短发，淡妆，过膝白色长风衣"],
-                          scene_desc="雪夜天台，明月悬于楼阁之上，清冷孤寂的电影级光影",
+# ★ char_desc / scene_desc 只传「身份词」（铁律 17），类目清单由函数写进延续分析
+p = av.build_ref2va_prompt(char_descs=["古装年轻女子"],
+                          scene_desc="临水木构戏台",
                           kind="sing")     # MV 演唱
-p = av.build_ref2va_prompt(char_descs=["年轻女子，米色针织衫，自然淡妆"],
-                          scene_desc="书房，暖黄台灯，桌上放着马克杯与摊开的笔记本",
+p = av.build_ref2va_prompt(char_descs=["人物"],
+                          scene_desc="室内场景",
                           kind="speak")    # 数字人口播
 ```
 
 `kind` 决定音频身份与动作措辞（`sing` 演唱 / `speak` 讲话），六段结构与图片顺序完全一致。
-`scene_desc` 里带上**这段文案该有的场景与道具**（见 SKILL.md 第 1.5 节）。
+函数输出：
+
+```text
+subject_definitions:
+<Subject 1> 是 <Picture 1> 中的古装年轻女子。
+<Subject 2> 是 <Picture 2> 中的临水木构戏台。
+
+retention_analysis:
+<Subject 1> (appears in [Shot 1]): fully_preserved - 保留人物身份、发型发色、服装样式与颜色、裤装、鞋履。
+<Subject 2> (appears in [Shot 1]): fully_preserved - 保留场景的建筑、陈设与物品。
+```
+
+不传时走默认身份词（`人物` / `场景`）。传成旧写法「身份词，脸、发型…」也能用——函数只取第一个逗号前的身份词。
 
 > 🔴 **`kind="speak"` 的说话写法照 01 册 2.3「入画即开口，全程不停嘴」**——
 > 入画第一帧就在说、入场/位移句自带「讲」、位移句排在说话句之后。**本册不复写第二遍。**

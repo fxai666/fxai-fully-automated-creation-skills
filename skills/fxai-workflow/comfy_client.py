@@ -155,7 +155,7 @@ def default_max_side(url="", quiet=False):
     """未显式指定长边时的默认档位：本机按显存，线上按 1280。
 
     ≤16G（含读不到显存）→ 960；≥20G（24G 卡）→ 1280；非本机（仙宫云等）→ 1280。
-    读不到显存时**取保守档 960**：宁可少一点分辨率，也不能让 16G 卡去跑 1280 炸片。
+    读不到显存时**取保守档 960**：宁可少一点分辨率，也不让 16G 卡去跑 1280 炸片。
     """
     base = comfy_url(url)
     host = (urllib.parse.urlparse(base).hostname or "").lower()
@@ -222,7 +222,7 @@ WORKFLOWS = {
         "uvr": "vc-uvr-vocalsep-api.json",
     },
     # 人脸精修（本机 ComfyUI · 分段→FxAiFaceRestoreLiteV2 全脸轻量链→合并，视频整片逐段精修）
-    # lite = 自研超分 VOSR2 轻量链（超分倍数 4），调用入口见 fxai-face-edit/scripts/face_restore.py
+    # lite = 自研超分轻量链（超分倍数 4），调用入口见 fxai-face-edit/scripts/face_restore.py
     "facerestore": {"lite": "face-restore-lite.json"},
     # 角色替换（本机 ComfyUI · 分段→MiniMax H3 图生视频换人→合并，整片换人/换服装）
     # h3 = MiniMax H3 singularity 底座 + turbo8step / character_swap / Motion_Repair 三条 LoRA
@@ -506,8 +506,39 @@ def _pick_model(want, cands):
     return None, top[:6] or difflib.get_close_matches(str(want), [str(c) for c in cands], n=6, cutoff=0.4)
 
 
-def _fmt_model_fix(changes, unresolved, tag=""):
-    '''把改动/未决项格式化成给人看的日志行。'''
+def _rebuild_instance_hint(url=None, pre="  "):
+    '''V1.9 起模型与工作流整套换版：服务端缺模型时，强制提示「必须用新镜像重新创建实例」。
+
+    模型与节点装在云端实例的系统盘里，技能包升级改不到旧实例；重下模型、改工作流里的
+    模型名、重启 ComfyUI 都补不齐。这里只提示与给出创建入口，绝不自动创建 ——
+    deploy-image 会实时扣费，必须使用者点头才真建（见 fxai-xiangongyun-deploy 铁律 2）。
+    '''
+    u = str(url or "")
+    if not u:
+        try:
+            u = str(comfy_url() or "")
+        except Exception:
+            u = ""
+    cloud = ".x-gpu.com" in u
+    tail = "（仙宫云同样必须重新创建实例）" if cloud else ""
+    return "\n".join([
+        "",
+        "%s🚨 [V1.9 必读] 提交用到的模型在服务端找不到对应项 —— 若这台是 V1.9 之前用旧镜像创建的实例，" % pre,
+        "%s   那就是旧实例缺新模型：重下模型 / 改工作流模型名 / 重启 ComfyUI 都补不齐。" % pre,
+        "%s   ✅ 必须用 V1.9 对应的新镜像重新创建一个新的实例%s，" % (pre, tail),
+        "%s      建好把新实例 ID 写进全局配置（xgy_guard.py use <新实例ID>），comfy_url 指向新实例再出片。" % pre,
+        "%s      入口：fxai-xiangongyun-deploy → xgy_api.py deploy-image <新镜像ID> --yes" % pre,
+        "%s      ⚠️ 建实例会实时扣费，须用户确认后才真建；本提示不会自动创建。" % pre,
+        "%s      本机部署不受此约束：按 fxai-xiangongyun-deploy/assets/models.json 补齐模型即可。" % pre,
+    ])
+
+
+def _fmt_model_fix(changes, unresolved, tag="", url=None):
+    '''把改动/未决项格式化成给人看的日志行。
+
+    unresolved（服务器上找不到对应模型）时追加「旧镜像必须重建实例」的强制提示，
+    让「提交返回模型没有了」这一刻就能看到该做什么，不靠人去翻规范。
+    '''
     pre = ("  [%s] " % tag) if tag else "  "
     out = []
     for nid, cls, field, old, new in changes:
@@ -516,6 +547,8 @@ def _fmt_model_fix(changes, unresolved, tag=""):
         out.append("%s[模型适配] ⚠️ %s#%s %s 在服务器上找不到对应项：%s\n"
                    "%s           服务器候选：%s"
                    % (pre, cls, nid, field, old, pre, ", ".join(cands[:8]) or "(无)"))
+    if unresolved:
+        out.append(_rebuild_instance_hint(url, pre))
     return "\n".join(out)
 
 
@@ -547,7 +580,7 @@ def repair_models(wf, url=None, quiet=False, tag=""):
             else:
                 unresolved.append((nid, cls, field, val, cands))
     if (changes or unresolved) and not quiet:
-        print(_fmt_model_fix(changes, unresolved, tag), flush=True)
+        print(_fmt_model_fix(changes, unresolved, tag, url=url), flush=True)
     return changes, unresolved
 
 
@@ -585,7 +618,7 @@ def repair_from_node_errors(wf, resp, url=None, quiet=False, tag=""):
             else:
                 unresolved.append((nid, cls, field, old, cands))
     if (changes or unresolved) and not quiet:
-        print(_fmt_model_fix(changes, unresolved, tag), flush=True)
+        print(_fmt_model_fix(changes, unresolved, tag, url=url), flush=True)
     return changes, unresolved
 
 
@@ -1619,7 +1652,7 @@ def run_workflow(wf, timeout=1800, poll=6, tag="run", kind=None, url=None,
                     if un:
                         if lis is not None:
                             lis.close()
-                        raise RuntimeError(_fmt_model_fix([], un, tag)) from None
+                        raise RuntimeError(_fmt_model_fix([], un, tag, url=url)) from None
             # ★ 5xx：按显存实况与错误日志判因，命中显存类就卸载全部模型并立即重投。
             # 自愈成功不占网络抖动重试额度；判为服务不健康时停手，把重启交回给人。
             if e.code >= 500 and not heal_used and heal_rounds < 1:
