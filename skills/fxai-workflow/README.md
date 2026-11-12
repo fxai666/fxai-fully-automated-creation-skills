@@ -226,16 +226,16 @@ python xgy_guard.py stop <comfy_url> --keep-gpu   # 普通关机
 
 判据落在代码里，不靠人记：`comfy_client._fmt_model_fix()` 在 `unresolved`
 （服务端连可替换的候选都没有）或 `/prompt` 被 `value_not_in_list` 拒且纠正不了时，
-自动打印「必须用 V1.9 新镜像重新创建实例」的指引；`repair_models` /
+自动打印「必须新建实例（镜像 ID 不变）」的指引；`repair_models` /
 `repair_from_node_errors` / `submit_workflow` 三处都走同一份提示。
 
 | 现象 | 判定 | 动作 |
 |---|---|---|
 | 提交返回模型不存在，服务端**有**同族新名字 | 模型改名 | `repair_models` 自动换名重发，不用管 |
-| 提交返回模型不存在，服务端**连候选都没有**，且地址是云端实例 | 旧镜像实例缺 V1.9 新模型 | **提示用户用 V1.9 对应的新镜像重新创建新实例**（仙宫云同样必须重建），确认后才真建 |
+| 提交返回模型不存在，服务端**连候选都没有**，且地址是云端实例 | 旧实例缺 V1.9 新模型 | **提示用户用同一个镜像 ID 新建实例**（内容已覆盖为 V1.9；仙宫云同样必须重建），确认后才真建 |
 | 同上，但地址是本机 | 本机整合包模型没补齐 | 按 `fxai-xiangongyun-deploy/assets/models.json` 补模型 |
 
-🔴 **建实例会实时扣费**：技能只提示并给出 `deploy-image <新镜像ID> --yes` 入口，
+🔴 **建实例会实时扣费**：技能只提示并给出 `deploy-image 9463d4ca-2f86-45cf-b0a3-a81ba6f3b27c --yes` 入口（镜像 ID 固定不变，覆盖更新），
 **绝不自动创建**；使用者看过请求体并明确同意后才加 `--yes`（见 `fxai-xiangongyun-deploy` 铁律 2 / 13）。
 新实例建好后 `xgy_guard.py use <新实例ID>` 写进全局配置，再把 `comfy_url` 指向新实例的 8188 地址。
 

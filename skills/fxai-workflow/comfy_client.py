@@ -506,8 +506,14 @@ def _pick_model(want, cands):
     return None, top[:6] or difflib.get_close_matches(str(want), [str(c) for c in cands], n=6, cutoff=0.4)
 
 
+IMAGE_ID = "9463d4ca-2f86-45cf-b0a3-a81ba6f3b27c"
+
+
 def _rebuild_instance_hint(url=None, pre="  "):
-    '''V1.9 起模型与工作流整套换版：服务端缺模型时，强制提示「必须用新镜像重新创建实例」。
+    '''V1.9 起模型与工作流整套换版：服务端缺模型时，强制提示「必须新建实例」。
+
+    镜像 ID 固定不变（凤希用新版覆盖同一 ID），但旧实例是创建时的镜像快照、不会跟着变，
+    所以「ID 没变」不改变结论：只能新建实例才能拿到新镜像层里的模型。
 
     模型与节点装在云端实例的系统盘里，技能包升级改不到旧实例；重下模型、改工作流里的
     模型名、重启 ComfyUI 都补不齐。这里只提示与给出创建入口，绝不自动创建 ——
@@ -520,14 +526,14 @@ def _rebuild_instance_hint(url=None, pre="  "):
         except Exception:
             u = ""
     cloud = ".x-gpu.com" in u
-    tail = "（仙宫云同样必须重新创建实例）" if cloud else ""
+    tail = "（仙宫云同样必须新建）" if cloud else ""
     return "\n".join([
         "",
         "%s🚨 [V1.9 必读] 提交用到的模型在服务端找不到对应项 —— 若这台是 V1.9 之前用旧镜像创建的实例，" % pre,
         "%s   那就是旧实例缺新模型：重下模型 / 改工作流模型名 / 重启 ComfyUI 都补不齐。" % pre,
-        "%s   ✅ 必须用 V1.9 对应的新镜像重新创建一个新的实例%s，" % (pre, tail),
+        "%s   ✅ 必须新建一台实例 —— 镜像 ID 不变（凤希用新版覆盖同一 ID），但旧实例不会跟着变%s，" % (pre, tail),
         "%s      建好把新实例 ID 写进全局配置（xgy_guard.py use <新实例ID>），comfy_url 指向新实例再出片。" % pre,
-        "%s      入口：fxai-xiangongyun-deploy → xgy_api.py deploy-image <新镜像ID> --yes" % pre,
+        "%s      入口：fxai-xiangongyun-deploy → xgy_api.py deploy-image %s --yes" % (pre, IMAGE_ID),
         "%s      ⚠️ 建实例会实时扣费，须用户确认后才真建；本提示不会自动创建。" % pre,
         "%s      本机部署不受此约束：按 fxai-xiangongyun-deploy/assets/models.json 补齐模型即可。" % pre,
     ])
