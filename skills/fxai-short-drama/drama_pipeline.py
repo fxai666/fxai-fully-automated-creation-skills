@@ -706,7 +706,15 @@ def build_lines_data(shots, suppress_subtitles=True, no_humans=False, dynamic_ac
         if dynamic_action_check:
             _dyn_verbs = ("走|跑|动|敲|端|搭|烤|追|扔|拍|蹦|跳|晒|野|散|收|游|玩|聊|笑|闹|"
                           "挪|转|挥|举|坐|趴|扑|窜|聚|围|忙|喝|吃|睡|望|指|摆|晃|爬|"
-                          "交头接耳|追逐|打闹|加油|欢呼|打盹|溜达|闲逛|嬉戏")
+                          "交头接耳|追逐|打闹|加油|欢呼|打盹|溜达|闲逛|嬉戏|"
+                          # 英文提示词分支（见 fxai-h3-video-prompt/references/03-中文对白镜头.md 5.9）
+                          r"\b(walk|walks|walking|run|runs|running|step|steps|stepping|move|moves|moving|"
+                          r"turn|turns|turning|raise|raises|raising|lift|lifts|lifting|swing|swings|"
+                          r"reach|reaches|reaching|point|points|pointing|lean|leans|leaning|"
+                          r"push|pushes|pushing|pull|pulls|pulling|strike|strikes|kick|kicks|"
+                          r"punch|punches|jump|jumps|jumping|sweep|sweeps|drive|drives|"
+                          r"draw|draws|drawing|cross|crosses|wave|waves|tap|taps|tapping|"
+                          r"gather|gathers|drift|drifts|drifting|flow|flows|blow|blows)\b")
             _sum = _re.search(r"摘要\s*([\s\S]*?)(?=延续分析|详细描述)", prompt)
             _desc = _re.search(r"详细描述\s*([\s\S]*?)(?=整体音效|非叙事音乐)", prompt)
             _scene = "".join([(_sum.group(1) if _sum else ""), (_desc.group(1) if _desc else "")])
@@ -732,39 +740,25 @@ def build_lines_data(shots, suppress_subtitles=True, no_humans=False, dynamic_ac
 
 # ------------------------- 工作流组装 -------------------------
 def _adapt_loras_to_base(wf):
-    """PRISM 系底座自带 8 步蒸馏、且人物皮肤本就不油，挂着 turbo 与去油只会抹细节。
+    """保证人脸去油 LoRA 常开（0.7）。
 
-    实测（科幻机器人镜，同 prompt/seed，2026-11-12）：
-      turbo 1.0 → 0：全局清晰度 +8.6%
-      去油 0.7  → 0：全局 +16.8%、脸部局部清晰度 65.8 → 143.3（翻倍）
-      动修 0.45 保留：脸部清晰度反而 +32%（压运动模糊），且是近中性项，不动
-    老 H3 底座（Singularity / ref2va pruned 等）必须留着 turbo 1.0 与去油 0.7，否则糊。
+    模板里该条被关或强度被清零时补回 0.7 / 开启，其余条目原样不动。
     """
     lora = wf.get("1177", {}).get("inputs", {}).get("lora_data")
-    unet = wf.get("1129", {}).get("inputs", {}).get("unet_name", "")
     if not lora:
         return
     data = json.loads(lora)
-    prism = "prism" in unet.lower()
     changed = []
     for item in data:
-        name = item.get("lora_name", "")
-        if not (name.startswith("minimax_h3_ref2v_turbo_8step") or name.startswith("H3人脸去油")):
+        if not item.get("lora_name", "").startswith("H3人脸去油"):
             continue
-        want = 0.0 if prism else (1.0 if name.startswith("minimax_h3_ref2v_turbo_8step") else 0.7)
-        if prism and item.get("enabled"):
-            item["model_strength"] = 0.0
-            item["enabled"] = False
-            changed.append(name.split(".safetensors")[0])
-        elif not prism and not item.get("enabled"):
-            # 模板里这两条是「PRISM 关闭」态；换回老底座要按基线重新打开，否则必糊
-            item["model_strength"] = want
+        if not item.get("enabled") or not item.get("model_strength"):
+            item["model_strength"] = 0.7
             item["enabled"] = True
-            changed.append(name.split(".safetensors")[0] + "(恢复)")
+            changed.append(item["lora_name"].split(".safetensors")[0] + "(开启)")
     if changed:
         wf["1177"]["inputs"]["lora_data"] = json.dumps(data, ensure_ascii=False)
-        print("[LoRA] %s 底座：%s" % ("PRISM" if prism else "老 H3",
-                                    "已关闭 " + "、".join(changed) if prism else "已恢复 " + "、".join(changed)))
+        print("[LoRA] 人脸去油：" + "、".join(changed))
 
 
 def build_workflow(shots,

@@ -131,7 +131,7 @@
       "id": "h3_prism",
       "group": "mv",
       "repo": "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM",
-      "path": "PRISM_DMAD_PDMD_int8.safetensors",
+      "path": "diffusion_models/PRISM_DMAD_PDMD_int8.safetensors",
       "target_dir": "diffusion_models",
       "target_name": "prism_dmad_pdmd_int8.safetensors",
       "min_bytes": 20284000000,

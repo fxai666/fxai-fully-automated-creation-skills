@@ -32,14 +32,6 @@
     "got": 0,
     "_id": "yue2_ckpt"
   },
-  "sheetsage2_bf16.safetensors": {
-    "url": "https://www.modelscope.cn/models/Comfy-Org/YuE2/resolve/master/audio_encoders/sheetsage2_bf16.safetensors",
-    "size": 1386868122,
-    "save": "audio_encoders",
-    "status": "downloading",
-    "got": 0,
-    "_id": "yue2_sheetsage"
-  },
   "MelBandRoformer_fp32.safetensors": {
     "url": "https://www.modelscope.cn/models/Kijai/MelBandRoFormer_comfy/resolve/master/MelBandRoformer_fp32.safetensors",
     "size": 912885656,
@@ -48,13 +40,13 @@
     "got": 0,
     "_id": "melband_fp32"
   },
-  "minimax_h3_singularity_ref2va_int8.safetensors": {
-    "url": "https://www.modelscope.cn/models/WarmBloodAban/Minimax-h3_Singularity/resolve/master/Minimax-h3_Singularity_ref2va_v1.3_int8.safetensors",
-    "size": 34004507622,
+  "prism_dmad_pdmd_int8.safetensors": {
+    "url": "https://www.modelscope.cn/models/OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM/resolve/master/PRISM_DMAD_PDMD_int8.safetensors",
+    "size": 20284678584,
     "save": "diffusion_models",
-    "status": "downloading",
+    "status": "",
     "got": 0,
-    "_id": "h3_singularity"
+    "_id": "h3_prism"
   },
   "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors": {
     "url": "https://www.modelscope.cn/models/Comfy-Org/MiniMax-H3/resolve/master/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
@@ -80,14 +72,6 @@
     "got": 0,
     "_id": "h3_audio_vae"
   },
-  "minimax_h3_ref2v_turbo_8step_768p_bf16.safetensors": {
-    "url": "https://www.modelscope.cn/models/lightx2v/Minimax-h3-Turbo/resolve/master/minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
-    "size": 1956193000,
-    "save": "loras",
-    "status": "downloading",
-    "got": 0,
-    "_id": "h3_turbo_lora"
-  },
   "minimax_h3_bf16_conservative.safetensors": {
     "url": "https://huggingface.co/Asirus/Minimax-H3-Latent-Upscaler-BF16-MAXQUALITY/resolve/main/minimax_h3_bf16_CONSERVATIVE_v5.safetensors",
     "size": 690593160,
@@ -95,5 +79,21 @@
     "status": "downloading",
     "got": 0,
     "_id": "h3_latent_upscaler"
+  },
+  "relayvsr_x2_lightx2v_int8_convrot.safetensors": {
+    "url": "https://www.modelscope.cn/models/Comfy-Org/RelayVSR/resolve/master/diffusion_models/relayvsr_x2_lightx2v_int8_convrot.safetensors",
+    "size": 5163295248,
+    "save": "diffusion_models",
+    "status": "",
+    "got": 0,
+    "_id": "relayvsr_unet"
+  },
+  "relayvsr_flash_vae_x2_fp32.safetensors": {
+    "url": "https://www.modelscope.cn/models/Comfy-Org/RelayVSR/resolve/master/vae/relayvsr_flash_vae_x2_fp32.safetensors",
+    "size": 127759464,
+    "save": "vae",
+    "status": "",
+    "got": 0,
+    "_id": "relayvsr_vae"
   }
 }

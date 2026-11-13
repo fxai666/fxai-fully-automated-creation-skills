@@ -12,7 +12,7 @@ description: 仙宫云 GPU 实例一键部署凤希技能包（ComfyUI + fxai-to
 |---|---|
 | `references/01-实例管理API.md` | 开机/关机/释放GPU/建实例/存镜像/查余额/充值。认证、命令表、API 判据、接口规范 |
 | `references/02-部署清单与下载管线.md` | 装节点/下模型/探源/对账/本机直传。装什么、怎么下、下坏了怎么办 |
-| `references/03-装完与排障.md` | 装完后的配置、**镜像内置自定义默认工作流**、重启、节点报IMPORT FAILED、升级 ComfyUI/节点、网络现状 |
+| `references/03-装完与排障.md` | 装完后的配置、**镜像内置默认工作流（扩展 TARGETS + bundle 兜底）**、重启、节点报IMPORT FAILED、升级 ComfyUI/节点、网络现状 |
 | `references/04-实例现状与云端运维.md` | 已建实例 `9xtjztkxzajn9vp5` 的现状、本机复用工具、推节点、ComfyUI-Manager、外网连通性 |
 | `references/仙宫云速查.md` | 官方教程摘录：HF 镜像加速、传文件 5 法、系统盘/数据盘、基础排障 |
 
@@ -32,6 +32,11 @@ description: 仙宫云 GPU 实例一键部署凤希技能包（ComfyUI + fxai-to
 11. **资源存在性走接口确认**，云端盘留给下载落盘。
 12. **Jupyter 通道走不通**（kernel 405、terminal 404），**SSH 是唯一能执行命令的通道**。
 13. 🔴 **V1.9 起必须重新创建实例**：本版换了模型与工作流，旧镜像实例系统盘里没有新模型，升级技能包、重下模型、改模型名、重启都补不齐。**用仙宫云时必须重新创建一台新实例**：镜像 ID 固定 `9463d4ca-2f86-45cf-b0a3-a81ba6f3b27c`，凤希用新版覆盖同一 ID，旧实例是创建时的镜像快照、不会跟着变，只能新建；不得沿用或只重启旧实例。运行中提交返回「模型不存在 / 找不到模型」即判定旧实例 → **提示用户用该镜像 ID 新建实例**并给出 `deploy-image <镜像ID> --yes` 入口；建实例实时扣费，**只提示、不自动建**，确认后才真建。细则见 `references/01-实例管理API.md「V1.9 必须重新创建实例」`。
+14. 🔴 **工作流唯一来源 = ComfyUI 工作区的 `user/default/workflows/仙宫云`**（用户 2026-11-13 定）。
+   仙宫云所有工作流一律从这个目录**单向同步**上去，线上只做接收端、**不在线上编辑**。
+   同步用 `scripts/sync_workflows.py --profile <实例ID>`（先 `--dry-run` 看差异，md5 对账、幂等）；
+   来源目录由全局配置 `xgy_workflow_src` 提供，不用每次传。
+   别和 `workflows/凤希AI/` 混（那是本机 dev 用）。细则见 `references/04-实例现状与云端运维.md「工作流唯一来源」`。
 
 ## 三种跑法，按现场条件选
 
@@ -70,7 +75,13 @@ python deploy.py run --no-nodes       # 只下模型
 
 ## 镜像分发：默认工作流
 
-`assets/default-workflow/` 两个文件必须随镜像带上：`fxai_default_workflow.py`（放
-`/root/xgyscripts/`）+ `99-fxai-default-wf.sh`（放 `/scripts/start.d/`，开机自动跑）。
-作用是把前端硬编码的官方基础文生图换成我们的工作流，**重新部署后裸地址打开就是自定义工作流**，
-不依赖任何浏览器 localStorage。规范与验收见 `references/03-装完与排障.md`「打开就是自定义默认工作流」。
+两处配合，**不要建 `workflows/默认/` 这类目录**（用户明确不要多出来的文件夹和标签）：
+
+1. **打开哪几条** → `custom_nodes/fxai-toolkit/js/fxai_default_workflow.js` 的 `TARGETS` 数组
+   （可以列多条，第一条前台、其余后台标签；打开的是真实持久化工作流，标签名=文件名）。
+2. **不出官方默认图**（兜底）→ `assets/default-workflow/` 两个文件随镜像带上：
+   `fxai_default_workflow.py`（放 `/root/xgyscripts/`）+ `99-fxai-default-wf.sh`
+   （放 `/scripts/start.d/`，开机自动跑）。
+
+任何浏览器、零 localStorage，裸地址打开就是指定工作流。规范、为何不能用 `?workflows=` 参数、
+验收命令见 `references/03-装完与排障.md`「打开就是指定工作流」。
