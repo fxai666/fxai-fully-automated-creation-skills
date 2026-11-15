@@ -28,9 +28,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# 品牌条/发布版的生成归独立技能 fxai-workflow-publish（make_release.py 已把
-# 占位图换成真实品牌图放进「发布版」目录，本脚本直接读它推上去）。
-# 本脚本保留最小兜底替换：若某目录里还是占位图，推送时可临时换成真实图（不动本地文件）。
+# 发布版化不依赖外部工具：本脚本默认 --release 在上传时把占位图名换成真实品牌图名
+# （只改上传字节，不动本地文件）；来源目录指向开发版目录也能直接推。
 PLACEHOLDER = "fxai_workflow_banner_placeholder.png"
 REAL = "fxai_workflow_banner.png"
 
