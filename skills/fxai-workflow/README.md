@@ -218,11 +218,12 @@ python xgy_guard.py stop <comfy_url> --keep-gpu   # 普通关机
 - **进程管理归「凤希本地AI控制台」**：状态全靠接口（`GET /queue`、任务结果接口）判定。
 - **产物落地**：本机部署从 ComfyUI 本地成品目录（如 `<技能目录>\output\`）复制进项目；远端部署走下载接口按返回相对路径拉取。
 
-## V1.9 · 提交返回「模型不存在」→ 必须重新创建实例
+## 提交返回「模型不存在」→ 实例里缺模型，按提示重建
 
-本版换了**模型与工作流**（PRISM 新底座 / RelayVSR 超分 / 去油 LoRA 重新上线等）。
+V2.1 起 MV 底座是 **MiniMax H3 Singularity ref2va v1.3 int8** + 8 步加速 LoRA（`minimax_h3_ref2v_turbo_8step_768p_bf16`）。
 模型与自定义节点装在云端实例的系统盘里，技能包升级改不到已创建的实例：
 **旧实例永远补不齐这批新模型**，重下模型、改工作流里的模型名、重启 ComfyUI 都救不回来。
+停在 V1.9 及更早实例的必须新建实例；V2.0 实例按常规「更新技能包」即可，报此错说明实例里缺本版底座，同样按提示重建。
 
 判据落在代码里，不靠人记：`comfy_client._fmt_model_fix()` 在 `unresolved`
 （服务端连可替换的候选都没有）或 `/prompt` 被 `value_not_in_list` 拒且纠正不了时，

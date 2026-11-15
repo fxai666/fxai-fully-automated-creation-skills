@@ -236,6 +236,14 @@ gdi32.DeleteObject.argtypes = [wintypes.HGDIOBJ]
 gdi32.DeleteDC.argtypes = [wintypes.HDC]
 user32.GetDC.argtypes = [wintypes.HWND]
 user32.GetDC.restype = wintypes.HDC
+# PrintWindow 路径：不声明 restype 时 HDC 会按 32 位 int 返回，64 位下句柄被截断，
+# 表现为 PrintWindow 恒失败、只能退回 BitBlt（窗口一被遮挡就截到别的程序）。
+user32.GetWindowDC.argtypes = [wintypes.HWND]
+user32.GetWindowDC.restype = wintypes.HDC
+user32.ReleaseDC.argtypes = [wintypes.HWND, wintypes.HDC]
+user32.ReleaseDC.restype = ctypes.c_int
+user32.PrintWindow.argtypes = [wintypes.HWND, wintypes.HDC, wintypes.UINT]
+user32.PrintWindow.restype = wintypes.BOOL
 user32.ReleaseDC.argtypes = [wintypes.HWND, wintypes.HDC]
 # cmd_env 会读 LOGPIXELSX；不声明签名时 64 位 HDC 被截成 c_int，触发 OverflowError
 gdi32.GetDeviceCaps.argtypes = [wintypes.HDC, ctypes.c_int]
@@ -455,6 +463,76 @@ def pixel_of(data: bytes, w: int, x: int, y: int) -> tuple[int, int, int]:
     i = (y * w + x) * 4
     b, g, r = data[i], data[i + 1], data[i + 2]
     return r, g, b
+
+
+PW_RENDERFULLCONTENT = 0x00000002
+
+
+def print_window_bgra(hwnd: int) -> tuple[int, int, int, int, bytes] | None:
+    """用 PrintWindow 取窗口**自身渲染的内容**，不受其它窗口遮挡影响。
+
+    只走 `grab()`（BitBlt 从屏幕 DC 取）时，窗口一旦被别的程序盖住，
+    截到的就是盖在上面的那个窗口——诊断时看到「截图里是别的软件」就是这么来的。
+    改成先走 PrintWindow，只有它失败或整幅全黑（个别 GPU 合成窗口）才由调用方回退。
+
+    返回 (客户区屏幕 x, y, 宽, 高, BGRA)；不可用返回 None。
+    """
+    wr = RECT()
+    if not user32.GetWindowRect(hwnd, ctypes.byref(wr)):
+        return None
+    ww, wh = wr.right - wr.left, wr.bottom - wr.top
+    if ww <= 0 or wh <= 0:
+        return None
+
+    cr = RECT()
+    if not user32.GetClientRect(hwnd, ctypes.byref(cr)):
+        return None
+    cw, ch = cr.right - cr.left, cr.bottom - cr.top
+    pt = POINT(0, 0)
+    if not user32.ClientToScreen(hwnd, ctypes.byref(pt)):
+        return None
+    offx, offy = pt.x - wr.left, pt.y - wr.top
+    if cw <= 0 or ch <= 0 or offx < 0 or offy < 0:
+        return None
+
+    hdc_win = user32.GetWindowDC(hwnd)
+    if not hdc_win:
+        return None
+    hdc_mem = gdi32.CreateCompatibleDC(hdc_win)
+    hbmp = gdi32.CreateCompatibleBitmap(hdc_win, ww, wh)
+    old = gdi32.SelectObject(hdc_mem, hbmp)
+    try:
+        if not user32.PrintWindow(hwnd, hdc_mem, PW_RENDERFULLCONTENT):
+            return None
+        bi = BITMAPINFO()
+        bi.bmiHeader.biSize = ctypes.sizeof(BITMAPINFOHEADER)
+        bi.bmiHeader.biWidth = ww
+        bi.bmiHeader.biHeight = -wh
+        bi.bmiHeader.biPlanes = 1
+        bi.bmiHeader.biBitCount = 32
+        bi.bmiHeader.biCompression = 0
+        bi.bmiHeader.biSizeImage = ww * wh * 4
+        buf = ctypes.create_string_buffer(ww * wh * 4)
+        if gdi32.GetDIBits(hdc_mem, hbmp, 0, wh, buf, ctypes.byref(bi), 0) == 0:
+            return None
+        raw = buf.raw
+        # 整幅全黑 = 没渲染出来（部分 GPU 合成窗口），交给调用方回退
+        step = max(4, (len(raw) // 256) // 4 * 4) or 4
+        if not any(raw[i:i + 3] != b"\x00\x00\x00" for i in range(0, len(raw), step)):
+            return None
+        stride = ww * 4
+        out = bytearray()
+        for yy in range(offy, offy + ch):
+            s = yy * stride + offx * 4
+            out += raw[s:s + cw * 4]
+        return pt.x, pt.y, cw, ch, bytes(out)
+    except Exception:
+        return None
+    finally:
+        gdi32.SelectObject(hdc_mem, old)
+        gdi32.DeleteObject(hbmp)
+        gdi32.DeleteDC(hdc_mem)
+        user32.ReleaseDC(hwnd, hdc_win)
 
 
 # ---------------------------------------------------------------- 环境可用性

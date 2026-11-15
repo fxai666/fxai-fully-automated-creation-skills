@@ -617,6 +617,53 @@ class Runner:
                         pass
                 self.log(op, chars=len(text), via="clipboard", preview=text[:24])
 
+        elif op == "dismiss_resume":
+            # 残留草稿预清理（用户 2026-11-16 口径）：上次没发完，进投稿页会弹
+            # 「继续编辑 / 恢复草稿」。先放弃并删掉那一条，再走本次全新发布，
+            # 否则上一条的标题、简介、封面会被带进新作品。
+            dg = (self.site_data.get("draft_guard") or {})
+            if not dg.get("probe_region"):
+                self.log("draft_guard_skip", why="站点未配 draft_guard，跳过预清理")
+            else:
+                g = probe.guard(self.site, dg["probe_region"], self.client(),
+                                on_miss="warn",
+                                out_dir=os.path.join(self.run_dir, "shots"))
+                if not g.get("ok"):
+                    self.log("draft_none", region=dg["probe_region"], action=g.get("action"))
+                else:
+                    for key in ("discard_region", "confirm_region"):
+                        name = dg.get(key)
+                        if not name:
+                            continue
+                        r = self.rect_of(name)
+                        px, py = mouse.random_point_in(r, self.rnd)
+                        if self.hwnd and api.foreground_window() != self.hwnd:
+                            api.activate_window(self.hwnd)
+                        mouse.click(px, py, rnd=self.rnd)
+                        self.log("draft_click", region=name, at=[px, py])
+                        time.sleep(float(dg.get("wait_ms", 900)) / 1000.0)
+                    self.log("draft_discarded", region=dg["probe_region"])
+
+        elif op == "crop_fit":
+            # 封面裁剪框调整（用户 2026-11-16 口径）：平台给了裁剪框，就把图拖到
+            # 设计稿的重要文案全部落在框内。偏移优先取步骤内联，其次取站点 cover.crop_adjust。
+            ca = ((self.site_data.get("cover") or {}).get("crop_adjust") or {})
+            box = st.get("box") or ca.get("box")
+            dx = st.get("dx", (ca.get("drag") or [0, 0])[0])
+            dy = st.get("dy", (ca.get("drag") or [0, 0])[1])
+            zoom = st.get("zoom", ca.get("zoom"))
+            if not box:
+                self.log("crop_fit_skip", why="未配裁剪框区域")
+            else:
+                rx, ry, rw, rh = self.rect_of(box)
+                mx, my = rx + rw // 2, ry + rh // 2
+                if zoom:
+                    mouse.scroll(int(zoom), mx, my, self.rnd)
+                    time.sleep(0.45)
+                if dx or dy:
+                    mouse.drag(mx, my, mx + int(dx), my + int(dy), self.rnd)
+                self.log("crop_fit", box=box, drag=[int(dx), int(dy)], zoom=zoom)
+
         elif op == "probe":
             name = st.get("region", "")
             if st.get("learn"):
@@ -678,11 +725,22 @@ class Runner:
                     stable_ms=int(st.get("stable_ms", 600)),
                 )
             else:
-                ok = screen.wait_stable(
-                    rect,
-                    stable_ms=int(st.get("stable_ms", 800)),
-                    timeout_ms=int(st.get("timeout_ms", 25000)),
-                )
+                # 用窗口自身渲染判稳定：窗口被别的程序盖住时 BitBlt 会一直「不变」，
+                # 误判成已加载完，接着就点早了。
+                cx, cy = self.client()[0], self.client()[1]
+                rel = (rect[0] - cx, rect[1] - cy, rect[2], rect[3])
+                if self.hwnd:
+                    ok = screen.wait_stable_win(
+                        self.hwnd, rel,
+                        stable_ms=int(st.get("stable_ms", 800)),
+                        timeout_ms=int(st.get("timeout_ms", 25000)),
+                    )
+                else:
+                    ok = screen.wait_stable(
+                        rect,
+                        stable_ms=int(st.get("stable_ms", 800)),
+                        timeout_ms=int(st.get("timeout_ms", 25000)),
+                    )
             self.log(op, region=st.get("region", "client"), ok=ok)
             if not ok and st.get("required", False):
                 p = self.shot("fail_%02d_%s" % (idx, op))

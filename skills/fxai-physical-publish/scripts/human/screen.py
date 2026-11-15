@@ -50,9 +50,34 @@ def shot(x: int, y: int, w: int, h: int, path: str) -> str:
 
 
 def shot_window(hwnd: int, path: str) -> tuple[str, tuple[int, int, int, int]]:
+    """截窗口客户区。优先 PrintWindow（窗口自身渲染，不受遮挡），失败才回退 BitBlt。"""
+    got = api.print_window_bgra(hwnd)
+    if got:
+        x, y, w, h, data = got
+        return save_png(path, w, h, bgra_to_rgba(data)), (x, y, w, h)
     r = api.client_rect(hwnd)
     p = shot(r[0], r[1], r[2], r[3], path)
     return p, r
+
+
+def signature_window(hwnd: int, rect: tuple[int, int, int, int] | None = None, grid: int = 24) -> str | None:
+    """窗口自身渲染的抽样指纹（不受遮挡）。rect 为客户区相对坐标，缺省取整个客户区。"""
+    got = api.print_window_bgra(hwnd)
+    if not got:
+        return None
+    _x, _y, cw, ch, data = got
+    rx, ry, rw, rh = rect or (0, 0, cw, ch)
+    rw, rh = min(rw, cw - rx), min(rh, ch - ry)
+    if rw <= 0 or rh <= 0:
+        return None
+    xs = [rx + int((i + 0.5) * rw / grid) for i in range(grid)]
+    ys = [ry + int((j + 0.5) * rh / grid) for j in range(grid)]
+    hsh = hashlib.md5()
+    for yy in ys:
+        for xx in xs:
+            i = (yy * cw + xx) * 4
+            hsh.update(bytes((data[i], data[i + 1], data[i + 2])))
+    return hsh.hexdigest()
 
 
 # ---------------------------------------------------------------- 画面特征
@@ -102,6 +127,27 @@ def wait_stable(rect: tuple[int, int, int, int], stable_ms: int = 800, timeout_m
     while (time.time() - t0) * 1000 < timeout_ms:
         time.sleep(poll_ms / 1000.0)
         cur = signature_rect(rect)
+        if cur != last:
+            last = cur
+            last_change = time.time()
+        elif (time.time() - last_change) * 1000 >= stable_ms:
+            return True
+    return False
+
+
+def wait_stable_win(hwnd: int, rect: tuple[int, int, int, int] | None = None,
+                    stable_ms: int = 800, timeout_ms: int = 20000, poll_ms: int = 220) -> bool:
+    """同上，但用窗口自身渲染判定——窗口被别的程序盖住也不会误判成「画面没变」。"""
+    t0 = time.time()
+    last = signature_window(hwnd, rect)
+    if last is None:
+        return wait_stable(rect or (0, 0, 1, 1), stable_ms, timeout_ms, poll_ms)
+    last_change = time.time()
+    while (time.time() - t0) * 1000 < timeout_ms:
+        time.sleep(poll_ms / 1000.0)
+        cur = signature_window(hwnd, rect)
+        if cur is None:
+            return False
         if cur != last:
             last = cur
             last_change = time.time()

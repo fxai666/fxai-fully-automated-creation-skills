@@ -1000,26 +1000,6 @@ def build_lines_data(shots, suppress_subtitles=True, no_humans=False, dynamic_ac
 
 
 # ------------------------- 工作流组装 -------------------------
-def _adapt_loras_to_base(wf):
-    """保证人脸去油 LoRA 常开（0.7）。
-
-    模板里该条被关或强度被清零时补回 0.7 / 开启，其余条目原样不动。
-    """
-    lora = wf.get("1177", {}).get("inputs", {}).get("lora_data")
-    if not lora:
-        return
-    data = json.loads(lora)
-    changed = []
-    for item in data:
-        if not item.get("lora_name", "").startswith("H3人脸去油"):
-            continue
-        if not item.get("enabled") or not item.get("model_strength"):
-            item["model_strength"] = 0.7
-            item["enabled"] = True
-            changed.append(item["lora_name"].split(".safetensors")[0] + "(开启)")
-    if changed:
-        wf["1177"]["inputs"]["lora_data"] = json.dumps(data, ensure_ascii=False)
-        print("[LoRA] 人脸去油：" + "、".join(changed))
 
 
 def build_workflow(shots,
@@ -1107,7 +1087,6 @@ def build_workflow(shots,
 
     require_comfyui()
     wf = json.load(open(workflow_path or DEFAULT_WORKFLOW, encoding="utf-8"))
-    _adapt_loras_to_base(wf)
 
     # 单镜头重生成：开始=结束=同一索引（0-based）
     if single_shot is not None:

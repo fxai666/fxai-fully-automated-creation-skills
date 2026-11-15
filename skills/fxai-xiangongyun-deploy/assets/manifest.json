@@ -40,13 +40,21 @@
     "got": 0,
     "_id": "melband_fp32"
   },
-  "prism_dmad_pdmd_int8.safetensors": {
-    "url": "https://www.modelscope.cn/models/OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM/resolve/master/PRISM_DMAD_PDMD_int8.safetensors",
-    "size": 20284678584,
+  "minimax_h3_singularity_ref2va_int8.safetensors": {
+    "url": "https://www.modelscope.cn/models/WarmBloodAban/Minimax-h3_Singularity/resolve/master/Minimax-h3_Singularity_ref2va_v1.3_int8.safetensors",
+    "size": 34004507622,
     "save": "diffusion_models",
     "status": "",
     "got": 0,
-    "_id": "h3_prism"
+    "_id": "h3_singularity"
+  },
+  "minimax_h3_ref2v_turbo_8step_768p_bf16.safetensors": {
+    "url": "https://www.modelscope.cn/models/lightx2v/Minimax-h3-Turbo/resolve/master/minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
+    "size": 1956193000,
+    "save": "loras",
+    "status": "",
+    "got": 0,
+    "_id": "h3_turbo_lora"
   },
   "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors": {
     "url": "https://www.modelscope.cn/models/Comfy-Org/MiniMax-H3/resolve/master/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",

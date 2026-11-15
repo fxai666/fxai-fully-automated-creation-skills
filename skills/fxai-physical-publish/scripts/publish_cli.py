@@ -344,6 +344,40 @@ def cmd_preflight(args) -> int:
 
 
 # ------------------------------------------------------------------ run
+def print_audit(run_dir: str) -> None:
+    """紧凑逐步表：正常步只看耗时，异常步才去 shots/ 里看那一张。
+
+    用户 2026-11-16 口径：按已记录路径直接跑，只有反馈不正确才回头找原因、才重新截图。
+    所以跑完先给这张表，没有异常行就不必打开任何截图。
+    """
+    path = os.path.join(run_dir, "log.jsonl")
+    if not os.path.exists(path):
+        return
+    rows, bad = [], []
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            try:
+                e = json.loads(line)
+            except Exception:
+                continue
+            ev = e.get("event")
+            if ev == "step_ok":
+                rows.append((e.get("idx"), e.get("op"), e.get("ms")))
+            elif ev in ("run_failed", "optional_skip", "draft_discarded", "crop_fit"):
+                bad.append(e)
+            elif ev == "probe" and not e.get("ok", True):
+                bad.append(e)
+    _hr("逐步（正常步只看耗时）")
+    for idx, op, ms in rows:
+        print("  %3s  %-13s %6s ms" % (idx, op, ms))
+    if bad:
+        _hr("异常（只看这几条对应的截图）")
+        for e in bad:
+            print("  " + json.dumps(e, ensure_ascii=False)[:220])
+    else:
+        print("  无异常，不必看截图。")
+
+
 def cmd_run(args) -> int:
     api.assert_ready("执行发布流程")   # 锁屏 / 显示器关闭时直接报错，别假装在跑
     if args.flow:
@@ -359,6 +393,17 @@ def cmd_run(args) -> int:
             steps = steps.get("steps", [])
     else:
         steps = json.loads(args.inline)
+
+    # 断点续跑（用户 2026-11-16 口径）：某一步反馈不对、修好后从失败步接着跑，
+    # 不用重头再上传一遍、再填一遍表。窗口状态由自动补的 focus 兜住。
+    start = max(1, int(args.from_step or 1))
+    if start > 1 and steps:
+        total = len(steps)
+        steps = steps[start - 1:]
+        if not steps or steps[0].get("do") != "focus":
+            steps = [{"do": "focus"}] + steps
+        print("断点续跑：原流程 %d 步，从第 %d 步开始（实际执行 %d 步）"
+              % (total, start, len(steps)))
 
     variables = {}
     for kv in args.var or []:
@@ -388,6 +433,8 @@ def cmd_run(args) -> int:
     res = runner.run(steps)
     _hr("结果")
     print(json.dumps(res, ensure_ascii=False, indent=2))
+    if args.audit:
+        print_audit(runner.run_dir)
     return 0 if res.get("ok") else 2
 
 
@@ -543,8 +590,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--steps", default="", help="步骤 JSON 文件")
     p.add_argument("--inline", default="", help="步骤 JSON 字符串")
     p.add_argument("--var", action="append", help="变量 k=v，模板里用 {k}")
-    p.add_argument("--fast", action="store_true", help="调试用：把真人停顿整体压到 8%")
+    p.add_argument("--fast", action="store_true", help="调试用：把真人停顿整体压到 8%%")
     p.add_argument("--scale", type=float, default=0.0, help="真人停顿倍率（1.0 为真实节奏）")
+    p.add_argument("--from-step", type=int, default=0,
+                   help="断点续跑：从第 N 步开始，异常修好后不用重头")
+    p.add_argument("--audit", action="store_true",
+                   help="跑完打印逐步耗时表；无异常行就不必看截图")
     p.set_defaults(func=cmd_run)
 
     p = sub.add_parser("selftest", help="安全自检：验证轨迹/点击/输入真实生效")

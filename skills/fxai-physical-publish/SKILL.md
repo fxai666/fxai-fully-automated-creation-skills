@@ -69,6 +69,9 @@ description: 物理仿真发布通道。用系统级 SendInput 鼠标键盘操�
 29. 🔴 **点前只截那一小块校验**：ROI 比模板，命中才点；未命中才全屏重扫、复验。
 30. 🔴 **表单文本一律粘贴，清空只用框内拖选**（`select` / `clear`）：**禁用 Ctrl+A**——焦点不在框里时 Chrome 整页全选。
 31. 🔴 **开工先诊断**：锁屏、客户区原点、独立确认窗；确认窗就是普通弹窗，点「离开/确定」继续。
+32. 🔴 **整条流程一次跑完，异常才回头找原因**：禁止把 40 步拆成 3~6 步小段逐步截图；只有抛错 / `probe` 未命中 / `required` 超时 / 出现台账外弹窗才升级；修好用 `--from-step N` 续跑，跑完看 `--audit` 表，无异常行不看截图。
+33. 🔴 **开工先清残留草稿**：进投稿页先 `dismiss_resume`，把「继续编辑 / 恢复草稿」那一条放弃并删掉，再走本次全新发布；不清会把上一条标题、简介、封面带进新作品。
+34. 🔴 **封面裁剪框必须让文案全显示**：平台裁剪框比例 ≠ 出图比例；优先出图时就零裁切（横屏作品发竖版站用「横图完整居中 + 模糊铺底」），仍需拖动时用 `crop_fit`。
 
 ## 快速开始
 
@@ -81,7 +84,9 @@ $PY -B $S/publish_cli.py preflight --site <站点>      # 开工诊断
 $PY -B $S/publish_cli.py mark --site <站点> --name publish_btn --anchor bottom --color ksred --text 发布
 $PY -B $S/publish_cli.py probe --site <站点> --name publish_btn [--learn|--relocate]
 $PY -B $S/publish_cli.py reanchor --site <站点> --names publish_btn --anchor bottom
-$PY -B $S/publish_cli.py run --site <站点> --flow video   # 跑流程
+$PY -B $S/publish_cli.py run --site <站点> --flow video   # 跑流程（整条连跑，别拆段）
+$PY -B $S/publish_cli.py run --site <站点> --flow video --audit      # 跑完看逐步耗时表
+$PY -B $S/publish_cli.py run --site <站点> --flow video --from-step 23  # 异常修好后续跑
 $PY -B $S/publish_cli.py reveal                  # 缩窗让位（不置顶）
 $PY -B $S/publish_cli.py minimize                # 最小化，让屏给对话
 ```
