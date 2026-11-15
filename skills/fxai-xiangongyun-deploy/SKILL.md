@@ -18,6 +18,13 @@ description: 仙宫云 GPU 实例一键部署凤希技能包（ComfyUI + fxai-to
 
 **确定本次要做什么之后，只读对应的那一两册，其余一律不读。**
 
+## 素材台账（做片子要配图/配录屏时先查这里）
+
+仙宫云可复用素材（界面截图、开实例标注图、推文成品图、成片样片等）登记在
+`<项目空间根>/仙宫云/素材登记.md`（机读同目录 `素材登记.json`；项目空间根取全局配置 `projects.root`），
+由 `fxai-asset-registry` 维护。清单内容与新增/检索命令见
+`references/04-实例现状与云端运维.md「素材台账」`。
+
 ## 铁律速查（常驻）
 1. 🚨 **`release-gpu` 之后先等冷却**：etc 状态真正回到 `shutdown` 再 `boot`。冷却期内 boot 返 `code=1000 该实例暂时无法进行操作`。
 2. 🚨 **建实例实时扣费**：`--yes` 缺省时只打印请求体；用户明确说「建/开一个实例/按这个镜像建」并看过请求体后再加 `--yes` 真发。
@@ -32,11 +39,15 @@ description: 仙宫云 GPU 实例一键部署凤希技能包（ComfyUI + fxai-to
 11. **资源存在性走接口确认**，云端盘留给下载落盘。
 12. **Jupyter 通道走不通**（kernel 405、terminal 404），**SSH 是唯一能执行命令的通道**。
 13. 🔴 **V1.9 起必须重新创建实例**：本版换了模型与工作流，旧镜像实例系统盘里没有新模型，升级技能包、重下模型、改模型名、重启都补不齐。**用仙宫云时必须重新创建一台新实例**：镜像 ID 固定 `9463d4ca-2f86-45cf-b0a3-a81ba6f3b27c`，凤希用新版覆盖同一 ID，旧实例是创建时的镜像快照、不会跟着变，只能新建；不得沿用或只重启旧实例。运行中提交返回「模型不存在 / 找不到模型」即判定旧实例 → **提示用户用该镜像 ID 新建实例**并给出 `deploy-image <镜像ID> --yes` 入口；建实例实时扣费，**只提示、不自动建**，确认后才真建。细则见 `references/01-实例管理API.md「V1.9 必须重新创建实例」`。
-14. 🔴 **工作流唯一来源 = ComfyUI 工作区的 `user/default/workflows/仙宫云`**（用户 2026-11-13 定）。
+14. 🔴 **工作流唯一来源 = ComfyUI 工作区的 `user/default/workflows/发布版`**（用户 2026-11-13 定；目录旧名「仙宫云」，2026-11-15 改名）。
    仙宫云所有工作流一律从这个目录**单向同步**上去，线上只做接收端、**不在线上编辑**。
    同步用 `scripts/sync_workflows.py --profile <实例ID>`（先 `--dry-run` 看差异，md5 对账、幂等）；
-   来源目录由全局配置 `xgy_workflow_src` 提供，不用每次传。
+   来源目录读**全局配置 `workflows` 块**（`~/.workbuddy/fxai_global.json` 的 `workflows.release_dir`，
+   配了 `comfy_root` 时按它拼接；`--src` / 环境变量 `FXAI_XGY_WF_SRC` 可显式覆盖），不硬编码进代码。
    别和 `workflows/凤希AI/` 混（那是本机 dev 用）。细则见 `references/04-实例现状与云端运维.md「工作流唯一来源」`。
+
+   品牌条 = 发布版专属标记，**生成归 `fxai-workflow-publish`，本技能只「读发布版目录 → 推送」**；
+   开发版用占位图、发布版用真实品牌图，细则与命令见 `references/04-实例现状与云端运维.md「工作流品牌条：开发版 / 发布版」`。
 
 ## 三种跑法，按现场条件选
 
@@ -65,8 +76,7 @@ python deploy.py run --no-nodes       # 只下模型
 
 ## 常用开关
 
-`--group img`(24.3 GB) / `--group music`(7.8 GB) / `--group mv`(约 42.5 GB) / `--group vsr`(5.3 GB) / `--group vocalsep`(0.9 GB)；
-`--variant pruned` **已废弃**（PRISM 新底座无剪枝变体）。其余开关见 `references/02-部署清单与下载管线.md`。
+各分组体积与全部开关见 `references/02-部署清单与下载管线.md`；`--variant pruned` 已废弃（PRISM 新底座无剪枝变体）。
 
 ## 全装体积
 
@@ -75,13 +85,8 @@ python deploy.py run --no-nodes       # 只下模型
 
 ## 镜像分发：默认工作流
 
-两处配合，**不要建 `workflows/默认/` 这类目录**（用户明确不要多出来的文件夹和标签）：
+两处配合（**不建 `workflows/默认/` 这类目录**，用户明确不要多出来的文件夹和标签）：
+① 打开哪几条 → `custom_nodes/fxai-toolkit/js/fxai_default_workflow.js` 的 `TARGETS`（可列多条，第一条前台、其余标签；标签名=文件名）；
+② 兜底不出官方默认图 → `assets/default-workflow/` 的 `fxai_default_workflow.py`（放 `/root/xgyscripts/`）+ `99-fxai-default-wf.sh`（放 `/scripts/start.d/`，开机自动跑）随镜像带上。
 
-1. **打开哪几条** → `custom_nodes/fxai-toolkit/js/fxai_default_workflow.js` 的 `TARGETS` 数组
-   （可以列多条，第一条前台、其余后台标签；打开的是真实持久化工作流，标签名=文件名）。
-2. **不出官方默认图**（兜底）→ `assets/default-workflow/` 两个文件随镜像带上：
-   `fxai_default_workflow.py`（放 `/root/xgyscripts/`）+ `99-fxai-default-wf.sh`
-   （放 `/scripts/start.d/`，开机自动跑）。
-
-任何浏览器、零 localStorage，裸地址打开就是指定工作流。规范、为何不能用 `?workflows=` 参数、
-验收命令见 `references/03-装完与排障.md`「打开就是指定工作流」。
+规范与为何不能用 `?workflows=` 参数、验收命令见 `references/03-装完与排障.md`「打开就是指定工作流」。

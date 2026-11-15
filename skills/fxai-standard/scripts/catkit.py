@@ -17,7 +17,7 @@ CATEGORY_FILE = os.path.normpath(os.path.join(HERE, os.pardir, 'categories.json'
 STAGE_KEYS = ('script', 'image', 'audio', 'video', 'publish')
 
 # 类别表缺失时的兜底取值（只保脚本能跑，判据以 JSON 为准）
-FALLBACK_ORDER = ('drama', 'anime', 'mv', 'music', 'image', 'voiceover', 'ad', 'novel', 'wechat', 'remake', 'other')
+FALLBACK_ORDER = ('drama', 'anime', 'mv', 'music', 'image', 'voiceover', 'slide', 'ad', 'novel', 'wechat', 'remake', 'other')
 
 
 def load():

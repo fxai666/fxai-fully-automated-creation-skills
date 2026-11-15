@@ -114,7 +114,7 @@ def mp4_ok(path):
 
 def restore(video, out_dir="", ref="", seed=42, subdir="", timeout=7200,
             name="", url="", dry_run=False, width=0, height=0,
-            auto_shutdown=False):
+            auto_shutdown=False, face_width=-1, face_scale=2, swap_width=-1):
     """提交人脸精修任务并取回成片。
 
     参数：
@@ -169,6 +169,11 @@ def restore(video, out_dir="", ref="", seed=42, subdir="", timeout=7200,
         "fxai_segment_data": "[]",
         "fxai_start_index": 0,
         "fxai_auto_shutdown": bool(auto_shutdown),
+        # 脸宽上限 × 超分倍数 = 实际输出脸宽。96×4 与 192×2 都是 384，
+        # 但 192 意味着送进网络的是原分辨率级别的脸，无须先降采样（竖屏成品脸宽约 170）。
+        "fxai_face_width": int(face_width),
+        "fxai_face_scale": int(face_scale),
+        "fxai_swap_width": int(swap_width),
     }
 
     if dry_run:
@@ -232,6 +237,14 @@ def main():
     ap.add_argument("--out-dir", default="", help="本地落点目录（默认当前目录）")
     ap.add_argument("--name", default="", help="本地文件名（默认沿用服务端返回名）")
     ap.add_argument("--timeout", type=int, default=7200, help="等终态上限秒数（默认 7200）")
+    ap.add_argument("--face-width", type=int, default=-1,
+                    help="处理脸宽上限＝总闸（默认 -1 = 全片每张脸都过模型）。"
+                         "脸宽 ≥ 这个值会被整张跳过、不修不换（96 会漏掉竖屏近景的 170px 大脸）")
+    ap.add_argument("--swap-width", type=int, default=-1,
+                    help="换脸脸宽上限（默认 -1 = 检测到脸就换，不设上限）。"
+                         "注意节点实测：121px 大脸换脸会掉点，先拿 10 秒段验证再整片")
+    ap.add_argument("--face-scale", type=int, default=2,
+                    help="超分倍数（仅手动指定裁切框边长时生效；自动框下由程序按 512 训练分辨率配套）")
     ap.add_argument("--url", default="", help="指定 ComfyUI 地址（默认本机优先）")
     ap.add_argument("--dry-run", action="store_true", help="只打印要提交的参数，不真跑")
     a = ap.parse_args()
@@ -240,7 +253,9 @@ def main():
         p = restore(a.video, out_dir=a.out_dir, ref=a.ref, seed=a.seed,
                     subdir=a.subdir, timeout=a.timeout, name=a.name,
                     url=a.url, dry_run=a.dry_run, width=a.width, height=a.height,
-                    auto_shutdown=a.auto_shutdown)
+                    auto_shutdown=a.auto_shutdown,
+                    face_width=a.face_width, face_scale=a.face_scale,
+                    swap_width=a.swap_width)
     except Exception as e:
         print("失败：%s" % e, flush=True)
         raise SystemExit(1)

@@ -25,6 +25,9 @@ import urllib.error
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "fxai-workflow"))
 import comfy_client as C
 
+# H3 六段式格式门禁（与 fxai-h3-video-prompt 共用，唯一事实源，见 h3_format_gate.py）
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "fxai-h3-video-prompt"))
+
 SKILL_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -191,13 +194,10 @@ def timeline_marks(prompt, duration=None):
 
 
 def audit_shot_speech(shots, rate=None, breath=None):
-    """三件事：①每句台词在自己那段时间窗里装不装得下（字数/语速 + 气口）；
-    ②说话行之后紧跟的静场段有没有显式写成静场行；③切点是否递增、是否落在镜时长内。
+    """两件事：①每句台词在自己那段时间窗里装不装得下（字数/语速 + 气口）；
+    ②切点是否递增、是否落在镜时长内。
 
-    时间轴按切点制读（`At 00:03.500, ……`）：带 <d>[Chinese] 的是说话行，不带的就是
-    静场/动作行；**紧跟在说话行后面的静场段**不写「静场」二字 → H3 会顺着上一句台词把这段
-    当还在说话、自己吐人声，硬拦；隔了好几段才到的收尾静场风险低，不拦。
-    老分镜的 `X.XX 秒到 Y.YY 秒，` 仍可读（终点自带）。
+    时间轴按切点制读（`At 00:03.500, ……`）；老分镜的 `X.XX 秒到 Y.YY 秒，` 仍可读（终点自带）。
     返回问题条目列表，空列表 = 通过。
     """
     rate = SPEECH_CHARS_PER_SECOND if rate is None else rate
@@ -229,10 +229,6 @@ def audit_shot_speech(shots, rate=None, breath=None):
                                % (i, st, en, en - st, need,
                                   len(PUNCT_RE.sub("", txt.group(1))), rate, breath, txt.group(1)[:24]))
                 continue
-            if k and re.search(r"<d>\s*\[Chinese\]", segs[k - 1][2]) and "静场" not in line:
-                bad.append("镜%d [%.2f-%.2f]s 紧跟在说话行后面却没写成静场行（H3 会顺着上一句自己吐人声，"
-                           "这一行只写「At xx.xxx, 静场。」，别带任何可念的中文短语）：%s"
-                           % (i, st, en, line.strip()[:34]))
     return bad
 
 
@@ -417,6 +413,45 @@ def load_project_def(project_root):
     return None, None
 
 
+def init_project(series_root, title, slug, total_episodes=None, overwrite=False):
+    """【建项目入口】生成 project_def.json 骨架，把本项目独立素材目录写死进去。
+
+    - server_subdir 由 slug 派生：`shortdrama_<slug>`。**slug 必填**（没有 slug 就没有目录名，
+      不允许建项目），且只能含字母/数字/下划线 —— 服务端文件接口会剥离斜杠，嵌套目录不可用。
+    - 目录名的语义：本项目的角色三视图/四视图、场景图、一切素材全部放这一个服务端目录下，
+      生成时由 subdir 参数传进工作流，落 <server_subdir>/<server_index>.png。
+    - 已存在 project_def.json 时默认不覆盖；overwrite=True 才覆盖，覆盖前自动备份 .bak。
+    返回 (project_def 路径, server_subdir)。
+    """
+    if not slug or not re.fullmatch(r"[A-Za-z0-9_]+", str(slug)):
+        raise ValueError(
+            "slug 必填，且只能含字母/数字/下划线（用于派生服务端素材目录名 shortdrama_<slug>，不能有斜杠）")
+    sd = "shortdrama_%s" % slug
+    root = os.path.abspath(series_root)
+    os.makedirs(root, exist_ok=True)
+    path = os.path.join(root, "project_def.json")
+    if os.path.exists(path) and not overwrite:
+        raise FileExistsError("已存在 %s；要覆盖请传 overwrite=True" % path)
+    if os.path.exists(path):
+        shutil.copyfile(path, path + ".bak")
+    pd = {
+        "title": title,
+        "slug": slug,
+        "type": "short_drama_series",
+        "server_subdir": sd,
+        "note": "本系列所有角色/场景资源统一存于 ComfyUI 服务端 fxai/image/%s/（单层目录，接口会剥离斜杠）。"
+                "生成素材时 subdir 传该目录名，落 <server_subdir>/<server_index>.png；禁止落公用目录（会被别的项目覆盖）。"
+                % sd,
+        "total_episodes": int(total_episodes or 0),
+        "characters": {},
+        "scenes": {},
+        "episodes": [],
+    }
+    json.dump(pd, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    print("已建项目《%s》：服务端素材目录 %s/（角色、场景、三/四视图全部放这一个目录）" % (title, sd))
+    return path, sd
+
+
 def upload_project_assets(project_root, overwrite=True, subdir=None):
     """
     按 project_def 把本系列本地资产覆盖上传到 ComfyUI 服务端对应 server_subdir（每项目独立目录）。
@@ -436,14 +471,124 @@ def upload_project_assets(project_root, overwrite=True, subdir=None):
         for key, info in pd.get(grp, {}).items():
             local = os.path.join(series_root, info.get("local", ""))
             sidx = int(info.get("server_index", 0))
-            fname = f"{sidx:03d}.png"
+            fname = info.get("server_file") or f"{sidx:03d}.png"
             if not os.path.exists(local):
                 print(f"⚠️ 本地资产缺失，跳过 {key}: {local}")
                 continue
             C.upload_image(local, subdir=sd, filename=fname, overwrite=overwrite)
             done.append((key, f"{sd}/{fname}"))
             print(f"已上传 {key} -> 服务端 {sd}/{fname}（覆盖={overwrite}）")
+    # 上传即登记：把服务端落点与本地指纹固定写回 project_def，不让台账靠猜
+    if done:
+        register_assets(project_root, only=[k for k, _ in done], check_server=False)
     return done
+
+
+def register_assets(project_root, only=None, check_server=False, quiet=False):
+    """【项目资产总账 · 唯一写入口】把每个角色/场景的服务端落点与指纹固定写回 project_def。
+
+    每个角色/场景在 project_def 里是一条对象记录（键值对），固定包含这几个字段：
+        name        中文名
+        server_index 服务器编号（决定默认文件名）
+        server_file  服务端文件名（如 000.png）
+        server_path  服务端完整 rel 路径（如 shortdrama_qsl/000.png），引用/校验一律用它
+        local        本地真值副本路径
+        md5          本地真值的指纹（覆盖检测的基准）
+        bytes        本地真值字节数
+        synced_at    最后一次与服务端对齐的时间
+    —— 以后查「凤希在服务端叫什么、在哪个目录、是不是我们那张」，只读 project_def，
+       不用再翻服务端目录、更不用靠编号去猜（2026-11-14 整集人物错乱就是靠猜编号出的错）。
+
+    - only: 只登记指定 key（如 ["fengxi"]），不给 = 全量
+    - check_server=True 时顺带回读服务端同名文件比 md5，不一致标 stale=True
+      （默认 False：刚生成完服务端就是新的，回读纯属浪费；体检时再开）
+    返回 {"ok": [...], "stale": [...], "missing": [...]}
+    """
+    series_root, pd = load_project_def(project_root)
+    if not pd:
+        raise RuntimeError("未找到 project_def.json（向上查找失败）。请先在本系列根建 project_def.json。")
+    sd = pd.get("server_subdir") or "shortdrama"
+    _only = set(only or [])
+    now = time.strftime("%Y-%m-%d %H:%M:%S")
+    res = {"ok": [], "stale": [], "missing": []}
+    import tempfile
+    tmpdir = tempfile.gettempdir()
+
+    for grp in ("characters", "scenes"):
+        for key, info in (pd.get(grp) or {}).items():
+            if _only and key not in _only:
+                continue
+            if not isinstance(info, dict):
+                continue
+            try:
+                sidx = int(info.get("server_index", -1))
+            except Exception:
+                continue
+            if sidx < 0:
+                continue
+            # server_file 已有值则沿用（给将来「独立文件名」留口），否则按编号
+            sfile = info.get("server_file") or ("%03d.png" % sidx)
+            srel = "%s/%s" % (sd, sfile)
+            info["server_file"] = sfile
+            info["server_path"] = srel
+            info["synced_at"] = now
+            local = os.path.join(series_root, info["local"]) if info.get("local") else ""
+            if not local or not os.path.exists(local):
+                info["stale"] = True
+                res["missing"].append(key)
+                if not quiet:
+                    print("[登记] %s 本地真值缺失，只登记落点：%s" % (key, srel))
+                continue
+            info["md5"] = _file_md5(local)
+            info["bytes"] = os.path.getsize(local)
+            if check_server:
+                tmp = os.path.join(tmpdir, "fxai_reg_" + sfile)
+                try:
+                    C._download("image/" + srel.replace("/", "|", 1), tmp)
+                    if _file_md5(tmp) == info["md5"]:
+                        info["stale"] = False
+                        res["ok"].append(key)
+                    else:
+                        info["stale"] = True
+                        res["stale"].append(key)
+                        if not quiet:
+                            print("[登记] ⚠ %s 服务端内容与本地不一致（%s）" % (key, srel))
+                except Exception as e:
+                    info["stale"] = True
+                    res["stale"].append(key)
+                    if not quiet:
+                        print("[登记] ⚠ %s 回读失败：%s" % (key, str(e)[:60]))
+            else:
+                info.pop("stale", None)
+                res["ok"].append(key)
+
+    path = os.path.join(series_root, "project_def.json")
+    json.dump(pd, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    if not quiet:
+        print("[登记] 已写入 project_def.json：%d 条（缺本地 %d，服务端不一致 %d）"
+              % (len(res["ok"]) + len(res["stale"]) + len(res["missing"]),
+                 len(res["missing"]), len(res["stale"])))
+    return res
+
+
+def asset_registry(project_root):
+    """导出「项目资产生成清单」（对象/键值对），供交付清单、文档、门禁共用。
+
+    返回 {"series": 剧名, "server_subdir": 目录, "generated_at": 时间,
+          "characters": {key: {...}}, "scenes": {key: {...}}}
+    每条只保留稳定字段：name / server_index / server_file / server_path / local / md5 / bytes / synced_at
+    """
+    series_root, pd = load_project_def(project_root)
+    if not pd:
+        raise RuntimeError("未找到 project_def.json（向上查找失败）。")
+    keep = ("name", "server_index", "server_file", "server_path", "local", "md5", "bytes", "synced_at")
+    out = {"series": pd.get("title"), "server_subdir": pd.get("server_subdir"),
+           "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"), "characters": {}, "scenes": {}}
+    for grp in ("characters", "scenes"):
+        for key, info in (pd.get(grp) or {}).items():
+            if isinstance(info, dict):
+                out[grp][key] = {k: info.get(k) for k in keep}
+    return out
 
 
 def server_subdir_of(project_root):
@@ -452,13 +597,117 @@ def server_subdir_of(project_root):
     return (pd or {}).get("server_subdir") or "shortdrama"
 
 
-def gen_project_assets(project_root, force=False, prompts=None, timeout=600):
+def _file_md5(path, chunk=1 << 20):
+    import hashlib
+    h = hashlib.md5()
+    with open(path, "rb") as f:
+        while True:
+            b = f.read(chunk)
+            if not b:
+                break
+            h.update(b)
+    return h.hexdigest()
+
+
+def verify_project_assets(project_root, rels, check_content=True, quiet=False):
+    """【提交渲染前的参考图门禁】核对每张参考图确实属于本项目、且服务端内容没被人换过。
+
+    查四件事：
+      ① rel 必须带目录前缀，前缀 == 本项目 project_def.server_subdir（不许指向别家目录或公用目录）；
+      ② 该文件在服务端确实存在；
+      ③ 服务端该文件与本地 assets 对应的角色/场景图 md5 一致 —— 防「别的项目按同名覆盖」
+         （2026-11-14 本系列 000-008 被另一项目素材整体覆盖，整集人物错乱，就是这个没拦住）；
+      ④ 本地没有可对照底图时跳过内容比对，只做 ①②（并在日志里点名）。
+
+    返回 bad 列表；空列表 = 通过。非空必须停，不许带着错参考图提交渲染。
+    """
+    sd = server_subdir_of(project_root)
+    bad = []
+    try:
+        server = set(C._list_files(sd))
+    except Exception as e:
+        server = set()
+        bad.append("列不出服务端目录 %s：%s" % (sd, str(e)[:80]))
+    series_root, pd = load_project_def(project_root)
+    idx2local = {}
+    path2info = {}
+    if pd:
+        for grp in ("characters", "scenes"):
+            for _k, info in (pd.get(grp) or {}).items():
+                if not isinstance(info, dict):
+                    continue
+                if info.get("local"):
+                    try:
+                        idx2local[int(info.get("server_index", -1))] = os.path.join(series_root, info["local"])
+                    except Exception:
+                        pass
+                # 优先按配置里登记的 server_path 精确认领（不靠编号猜）
+                if info.get("server_path"):
+                    path2info[info["server_path"].replace("\\", "/")] = info
+    import tempfile
+    seen, checked = set(), 0
+    for rel in rels:
+        r = (rel or "").replace("\\", "/").strip("/")
+        if not r or r in seen:
+            continue
+        seen.add(r)
+        if "/" not in r:
+            bad.append("%s 没有项目目录前缀（应为 %s/…）" % (rel, sd))
+            continue
+        if r.split("/")[0] != sd:
+            bad.append("%s 落在 %s/，不是本项目目录 %s/" % (rel, r.split("/")[0], sd))
+            continue
+        if server and r not in server:
+            bad.append("%s 服务端不存在" % rel)
+            continue
+        if not check_content:
+            continue
+        info = path2info.get(r)
+        if info is not None:
+            local = os.path.join(series_root, info["local"]) if info.get("local") else None
+        else:
+            base = os.path.splitext(r.split("/")[-1])[0]
+            try:
+                idx = int(base)
+            except Exception:
+                idx = None
+            local = idx2local.get(idx) if idx is not None else None
+            if not quiet:
+                print("[门禁] %s 未在 project_def 登记，按编号回退认领" % rel)
+        if not local or not os.path.exists(local):
+            if not quiet:
+                print("[门禁] %s 无本地底图可对照，跳过内容比对" % rel)
+            continue
+        tmp = os.path.join(tempfile.gettempdir(), "fxai_verify_" + r.replace("/", "_"))
+        try:
+            C._download("image/" + r.replace("/", "|", 1), tmp)
+            # 基准优先用登记表里固定下来的 md5，没有才现算本地
+            want = (info or {}).get("md5") or _file_md5(local)
+            if want != _file_md5(tmp):
+                bad.append("%s 服务端内容与本地不一致（可能被别的项目按同名覆盖）" % rel)
+            else:
+                checked += 1
+        except Exception as e:
+            bad.append("%s 内容校验失败：%s" % (rel, str(e)[:60]))
+    if bad:
+        print("❌ 参考图门禁未通过：")
+        for b in bad:
+            print("   -", b)
+    elif not quiet:
+        print("✅ 参考图门禁通过：%d 张全部落在 %s/，内容与本地底图一致（%d 张比过 md5）"
+              % (len(seen), sd, checked))
+    return bad
+
+
+def gen_project_assets(project_root, force=False, prompts=None, timeout=600, only=None):
     """
     按 project_def 为本系列在服务器端生图（每项目独立目录 shortdrama_<slug>）。
     关键对齐规则：每个角色/场景用 project_def 里的 prompt 生成，并显式传
     subdir=server_subdir、num=server_index —— 服务端文件精确落到
     shortdrama_<slug>/<server_index>.png，与上传/引用完全同名对齐，不靠递增乱序。
     - prompts: 可选 {group: {key: prompt}}，覆盖 project_def 里的 prompt（便于分集临时指定）。
+    - only:   可选 [key, ...]，只重做指定角色/场景（如 only=["fengxi"] 只重画女主四视图），
+              其余一概不动。给了 only 时对命中的 key 强制重生成并覆盖，不用再传 force。
     - force=False 时本地已存在备份则跳过（不重复生图）；force=True 强制重生成并覆盖服务端。
     - 角色一律生成四视图；project_def 角色条目的 `ref` 指我们自己的参考图（自有角色必填，锁脸锁身段），空则按提示词纯生成。
     - 生成后下载备份到 series_root/assets/<角色四视图|场景图>/<本地名>，写回 project_def 的 local。
@@ -469,6 +718,11 @@ def gen_project_assets(project_root, force=False, prompts=None, timeout=600):
     if not pd:
         raise RuntimeError("未找到 project_def.json（向上查找失败）。请先在本系列根建 project_def.json。")
     sd = pd.get("server_subdir") or "shortdrama"
+    _only = set(only or [])
+
+    def _want(k):
+        return (not _only) or (k in _only)
+
     skill_dir = os.path.dirname(os.path.abspath(__file__))
     for d in (os.path.join(skill_dir, "..", "fxai-fourview-gen"),
               os.path.join(skill_dir, "..", "fxai-scene-gen")):
@@ -491,8 +745,10 @@ def gen_project_assets(project_root, force=False, prompts=None, timeout=600):
 
     # 角色四视图（一律四视图；自有角色靠 project_def 里的 ref 指到我们自己的参考图）
     for key, info in pd.get("characters", {}).items():
+        if not _want(key):
+            continue
         local = os.path.join(series_root, info.get("local", ""))
-        if os.path.exists(local) and not force:
+        if os.path.exists(local) and not force and not _only:
             continue
         prompt = (prompts.get("characters", {}) or {}).get(key) or info.get("prompt")
         if not prompt:
@@ -506,8 +762,10 @@ def gen_project_assets(project_root, force=False, prompts=None, timeout=600):
             print(f"已生成角色 {key} -> 服务端 {sd}/{sidx:03d}.png（本地备份 {local}）")
     # 场景图
     for key, info in pd.get("scenes", {}).items():
+        if not _want(key):
+            continue
         local = os.path.join(series_root, info.get("local", ""))
-        if os.path.exists(local) and not force:
+        if os.path.exists(local) and not force and not _only:
             continue
         prompt = (prompts.get("scenes", {}) or {}).get(key) or info.get("prompt")
         if not prompt:
@@ -519,6 +777,9 @@ def gen_project_assets(project_root, force=False, prompts=None, timeout=600):
         if _backup(scene_gen, key, local):
             done.append((key, f"{sd}/{sidx:03d}.png"))
             print(f"已生成场景 {key} -> 服务端 {sd}/{sidx:03d}.png（本地备份 {local}）")
+    # 生成即登记：服务端文件名/路径/本地指纹一次性固定进 project_def
+    if done:
+        register_assets(project_root, only=[k for k, _ in done], check_server=False)
     return done
 
 
@@ -773,6 +1034,7 @@ def build_workflow(shots,
                    no_humans=False,
                    dynamic_action_check=True,
                    auto_triggers=True,
+                   h3_format_gate=True,
                    negative_prompt=None,
                    world_constraint=None,
                    min_episode_seconds=None,
@@ -785,6 +1047,28 @@ def build_workflow(shots,
 
 
 
+
+    # ---------- 参考图门禁（2026-11-14 固化，硬） ----------
+    # 提交渲染前核对每张参考图：① 必须落在本项目 project_def.server_subdir 下；② 服务端存在；
+    # ③ 服务端内容与本地 assets 底图 md5 一致。防「别的项目按同名覆盖」造成整集人物错乱
+    # （2026-11-14 本系列 000-008 被另一项目素材整体覆盖，整集人物错乱，即此）。
+    # 不在任何项目目录内（找不到 project_def）→ 跳过，不影响 MV 等其它调用方。
+    _rels = []
+    for _s in shots:
+        for _r in (_s.get("images") or []):
+            if _r:
+                _rels.append(_r)
+    if _rels:
+        _gate_root = ep_dir or os.getcwd()
+        if C.project_asset_subdir(_gate_root):
+            _bad_rel = verify_project_assets(_gate_root, _rels, quiet=True)
+            if _bad_rel:
+                raise ValueError(
+                    "参考图门禁未通过，拒绝提交渲染（问题 %d 项）：\n  %s\n"
+                    "逐条修好后重跑；不要带着错参考图出片。"
+                    % (len(_bad_rel), "\n  ".join(_bad_rel)))
+            print("[门禁] ✅ 参考图 %d 张：全部在本项目目录内，服务端内容与本地底图一致"
+                  % len(set(_rels)))
 
     # 可选的单集时长校验：默认关闭（本函数是通用入口，别的能力/技能也会走它）。
     # 短剧线路请走 render_episode（默认 min_episode_seconds=60），
@@ -803,6 +1087,23 @@ def build_workflow(shots,
             "把该句挪到更长的区间，或按 speech_seconds() 重算该段时长。"
             % (len(_speech_bad), SPEECH_CHARS_PER_SECOND, SPEECH_BREATH_SECONDS,
                "\n  ".join(_speech_bad)))
+
+    # H3 六段式提示词格式门禁（2026-11-14 固化，硬）：主体定义只指认、四段正文须全英文。
+    # 文章只写「该怎么做」；以下「不允许的写法」在此拦截，命中即拒绝提交渲染。
+    if h3_format_gate:
+        try:
+            from h3_format_gate import audit_short_drama_six_segment
+        except Exception:
+            audit_short_drama_six_segment = None
+        if audit_short_drama_six_segment:
+            _fmt_bad = audit_short_drama_six_segment(shots)
+            for msg in _fmt_bad:
+                print("[格式门禁] ✗ %s" % msg)
+            if _fmt_bad:
+                raise ValueError(
+                    "有 %d 处提示词格式违规（主体定义只指认、四段正文须全英文、中文只进 <d>）：\n  %s\n"
+                    "改完再提交渲染。"
+                    % (len(_fmt_bad), "\n  ".join(_fmt_bad)))
 
     require_comfyui()
     wf = json.load(open(workflow_path or DEFAULT_WORKFLOW, encoding="utf-8"))
@@ -1284,6 +1585,8 @@ if __name__ == "__main__":
     p.add_argument("--segment-duration", type=int, default=None, help="场景分段时长（秒），不填则按 lines_data 联动")
     p.add_argument("--no-suppress-subtitles", action="store_true",
                    help="关闭「生成阶段画面字幕排除」约束（默认开启，字幕统一后期烧录）")
+    p.add_argument("--no-format-gate", action="store_true",
+                   help="关闭 H3 六段式提示词格式门禁（默认开启：主体定义只指认、四段正文须全英文）")
     p.add_argument("--negative-prompt", default=None,
                    help="负面提示词（若工作流 1155 节点暴露负面字段则注入；默认不单独传，用内置 ANTI_SUBTITLE）")
     # 后期字幕烧录模式
@@ -1330,6 +1633,7 @@ if __name__ == "__main__":
             suppress_subtitles=not args.no_suppress_subtitles,
             negative_prompt=args.negative_prompt,
             single_shot=args.single_shot,
+            h3_format_gate=not args.no_format_gate,
         )
         pid = submit_workflow(wf)
         print("提交 prompt_id:", pid, flush=True)

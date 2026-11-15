@@ -6,7 +6,8 @@
 可用环境变量 FXAI_GLOBAL_CONFIG 改落点（多宿主 / 测试用）。
 
 规则：
-- 本机路径（python 解释器、logo / 图标 / 头像、字体目录）一律写在这里，技能源码与文档不得写死。
+- 本机路径（python 解释器、logo / 图标 / 头像、字体目录、项目空间根、素材库根、
+  ComfyUI 安装目录）一律写在这里，技能源码与文档不得写死。
 - 全局配置只存本机数据，不进分发包；包里只带 fxai_global.example.json 空模板。
 - 读取一律走本模块，取不到时给通用兜底（当前解释器 / 系统字体目录 / 空串），不猜盘符。
 - --init 用于安装环节：探测本机数据、合并写入全局配置，已存在的键不覆盖。
@@ -31,6 +32,9 @@ COLLECT_KEYS = (
     "brand.logo_svg",
     "brand.avatar_512",
     "brand.font_dir",
+    "projects.root",
+    "asset_library.root",
+    "comfyui.root",
 )
 
 
@@ -81,6 +85,33 @@ def brand_asset(key, default="", cfg=None):
     """品牌资源路径：brand.<key>（logo_ico / logo_svg / avatar_512 / font_dir ...）。"""
     c = cfg if cfg is not None else load()
     return get("brand.%s" % key, default, c)
+
+
+def projects_root(cfg=None):
+    """项目空间根：环境变量 FXAI_PROJECTS_ROOT > projects.root > 空串。
+
+    空串表示本机没配项目空间，调用方据此报错让人填，不自行猜盘符。
+    """
+    env = os.environ.get("FXAI_PROJECTS_ROOT", "").strip()
+    if env:
+        return os.path.abspath(os.path.expanduser(env))
+    c = cfg if cfg is not None else load()
+    return get("projects.root", "", c)
+
+
+def asset_library_root(cfg=None):
+    """应用级素材库根：asset_library.root > 空串（空串＝本机未建库）。"""
+    c = cfg if cfg is not None else load()
+    return get("asset_library.root", "", c)
+
+
+def comfy_root(cfg=None):
+    """ComfyUI 安装目录：环境变量 FXAI_COMFY_ROOT > comfyui.root > workflows.comfy_root > 空串。"""
+    env = os.environ.get("FXAI_COMFY_ROOT", "").strip()
+    if env:
+        return os.path.abspath(os.path.expanduser(env))
+    c = cfg if cfg is not None else load()
+    return get("comfyui.root", "", c) or get("workflows.comfy_root", "", c)
 
 
 def font_dir(cfg=None):

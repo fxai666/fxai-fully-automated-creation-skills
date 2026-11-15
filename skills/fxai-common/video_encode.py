@@ -3,22 +3,28 @@
 
 规格唯一来源：fxai-standard/references/12-交付视频编码规格.md。
 码率数值只在本模块定义；产线只调函数，不得各自写 -b:v / -crf / -cq。
+
+用户口径 2026-11-15：2000 kbps 是「最高上限」，不是必须凑到的目标。
+低于上限一律合规（CRF 画质档产出的低码率成片同样放行）。
 """
 import os
 import subprocess
 import tempfile
 
-DELIVERY_TOTAL_KBPS = 2000          # 交付成片总比特率目标（视频 + 音频）
+# 2000 是硬上限：ffprobe 实测总比特率 ≤ 此值才放行，没有下界。
+DELIVERY_MAX_TOTAL_KBPS = 2000      # 上限（判据唯一出处）
+DELIVERY_TARGET_TOTAL_KBPS = 1900   # 编码目标：留 100 kbps 封装 / VBV 余量，确保实测不顶穿上限
+DELIVERY_TOTAL_KBPS = 2000          # 兼容别名＝上限，供既有产线与静态契约引用
 DELIVERY_AUDIO_BPS = 191678         # 源音轨 AAC 192k 的实测值；-c:a copy 时用
-DELIVERY_MAXRATE_KBPS = 2200        # 单遍 ABR 的 VBV 峰值
+DELIVERY_MAXRATE_KBPS = 2000        # 单遍 ABR 的 VBV 峰值（不得高于上限）
 DELIVERY_BUFSIZE_KBPS = 3600        # 单遍 ABR 的 VBV 缓冲
-BITRATE_TOLERANCE = 0.10            # 验收容差 ±10%
+BITRATE_TOLERANCE = 0.0             # 上限判据不使用容差；保留参数位兼容旧调用
 MIN_APPLY_SECONDS = 30.0            # 短于此长度的片段/对比片不受交付码率约束
 
 
 def delivery_video_bps(audio_bps=DELIVERY_AUDIO_BPS):
-    """返回视频目标码率（bps）：总码率减去音轨码率。"""
-    total = DELIVERY_TOTAL_KBPS * 1000
+    """返回视频目标码率（bps）：编码目标码率减去音轨码率。"""
+    total = DELIVERY_TARGET_TOTAL_KBPS * 1000
     if not 0 < audio_bps < total:
         raise ValueError("音轨码率必须落在 0 与 %d bps 之间，收到 %r"
                          % (total, audio_bps))
@@ -58,14 +64,17 @@ def decoded_bitrate(path, ffprobe=None):
 
 
 def assert_delivery_bitrate(path, ffprobe=None, tol=BITRATE_TOLERANCE):
-    """验收门：总比特率落在容差内才放行，不过即停在交付前。"""
+    """验收门：实测总比特率 ≤ 上限 2000 kbps 即放行，低于上限一律合规。
+
+    用户口径 2026-11-15：只判上限；旧的 1800~2200 区间判据已废止。
+    低于 2000 的成片（含 CRF 画质档产物）直接放行。
+    """
     kbps = decoded_bitrate(path, ffprobe) / 1000.0
-    lo = DELIVERY_TOTAL_KBPS * (1 - tol)
-    hi = DELIVERY_TOTAL_KBPS * (1 + tol)
-    if not lo <= kbps <= hi:
+    hi = DELIVERY_MAX_TOTAL_KBPS * (1 + tol)
+    if kbps > hi:
         raise RuntimeError(
-            "交付码率验收未过：%s 实测 %.0f kbps，要求 %.0f~%.0f kbps（目标 %d）"
-            % (path, kbps, lo, hi, DELIVERY_TOTAL_KBPS))
+            "交付码率验收未过：%s 实测 %.0f kbps，超过上限 %.0f kbps（2000 以内均合规）"
+            % (path, kbps, hi))
     return kbps
 
 

@@ -98,6 +98,6 @@ python sv_media.py --project <项目名> --segs <段落画面映射.json> --size
 
 ```bash
 P=~/.workbuddy/skills/fxai-standard/scripts/fxai_project.py
-python "$P" init  "<项目>" --title <名称> --category voiceover --skill fxai-slide-video
+python "$P" init  "<项目>" --title <名称> --category slide --skill fxai-slide-video
 python "$P" stage "<项目>" --script 2 --image 1 --audio 0 --video 0
 ```

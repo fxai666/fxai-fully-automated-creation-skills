@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""把本地「仙宫云」专用工作流目录单向同步到线上 ComfyUI。
+"""把本地「发布版」专用工作流目录单向同步到线上 ComfyUI（仙宫云实例）。
 
 🔴 唯一来源（用户 2026-11-13 定）：本机 ComfyUI 工作区的
-   user/default/workflows/仙宫云 目录。
+   user/default/workflows/发布版 目录（旧名「仙宫云」，2026-11-15 改名）。
    线上 user/default/workflows/ 只做接收端，不在线上直接编辑。
 
 用法：
@@ -12,9 +12,10 @@
     python sync_workflows.py --src <目录> --remote <远端目录>
     python sync_workflows.py --prune          # 额外报告远端独有的文件（默认只提示不删）
 
-来源目录解析顺序：--src → 环境变量 FXAI_XGY_WF_SRC → 全局配置 xgy_workflow_src
-→ 当前目录下的 user/default/workflows/仙宫云。
-凭据读取顺序：环境变量 XGY_HOST/XGY_PORT/XGY_PASS → --profile → xgy_cfg.ssh_cred()
+来源目录解析顺序（最新标准，只读 workflows 块）：--src → 环境变量 FXAI_XGY_WF_SRC
+→ 全局配置 ~/.workbuddy/fxai_global.json 的 workflows.release_dir（配了 comfy_root 时按它拼接）
+→ 当前目录下的 user/default/workflows/发布版。
+凭据读取顺序：环境变量 XGY_HOST/XGY_PORT/XGY_PASS → --profile → 全局配置 workflows.secrets
 """
 from __future__ import annotations
 
@@ -27,48 +28,75 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# 品牌条/发布版的生成归独立技能 fxai-workflow-publish（make_release.py 已把
+# 占位图换成真实品牌图放进「发布版」目录，本脚本直接读它推上去）。
+# 本脚本保留最小兜底替换：若某目录里还是占位图，推送时可临时换成真实图（不动本地文件）。
+PLACEHOLDER = "fxai_workflow_banner_placeholder.png"
+REAL = "fxai_workflow_banner.png"
+
+
+def swap_banner_bytes(text: bytes, src: str, dst: str) -> bytes:
+    """把工作流 JSON 文本里的 banner 图片名 src 换成 dst。无匹配则原样返回。"""
+    return text.replace(src.encode("utf-8"), dst.encode("utf-8"))
+
 SECRET_NAME = "xianggongyun.json"
 DEFAULT_REMOTE = "/root/ComfyUI/user/default/workflows"
 
 
-def default_src():
-    """工作流唯一来源目录的解析顺序（不写死本机路径）。
+def _workflows_cfg() -> dict:
+    """读全局配置 workflows 块（~/.workbuddy/fxai_global.json，FXAI_GLOBAL_CONFIG 可改位置）。
 
-    1) 环境变量 FXAI_XGY_WF_SRC
-    2) 全局配置 ~/.workbuddy/fxai_global.json 的 xgy_workflow_src
-    3) 当前目录下 user/default/workflows/仙宫云（在 ComfyUI 根目录跑时自动命中）
-    4) 当前目录本身就是那个目录
+    最新标准：工作流发布相关路径统一放 workflows 块（comfy_root + dev_dir/release_dir + banner_*），
+    旧扁平键 xgy_workflow_src / xgy_secrets 已停用。
+    """
+    import os as _os
+    p = _os.environ.get(
+        "FXAI_GLOBAL_CONFIG",
+        _os.path.join(_os.path.expanduser("~"), ".workbuddy", "fxai_global.json"))
+    try:
+        with open(p, encoding="utf-8") as f:
+            g = json.load(f) or {}
+    except Exception:
+        return {}
+    wf = g.get("workflows")
+    return wf if isinstance(wf, dict) else {}
+
+
+def default_src():
+    """发布版工作流目录的解析顺序（不写死本机路径，最新标准只读 workflows 块）。
+
+    1) 环境变量 FXAI_XGY_WF_SRC（显式覆盖）
+    2) 全局配置 workflows.release_dir（配了 comfy_root 时按 comfy_root 拼接）
+    3) 当前目录下 user/default/workflows/发布版
     """
     env = os.environ.get("FXAI_XGY_WF_SRC", "")
     if env and os.path.isdir(env):
         return env
-    try:
-        import xgy_cfg
-        v = (xgy_cfg.cfg() or {}).get("xgy_workflow_src") or ""
-        if v and os.path.isdir(v):
-            return v
-    except Exception:
-        pass
-    cand = os.path.join(os.getcwd(), "user", "default", "workflows", "仙宫云")
+    wf = _workflows_cfg()
+    release_dir = wf.get("release_dir") or ""
+    if release_dir:
+        if os.path.isabs(release_dir):
+            cand = release_dir
+        else:
+            base = wf.get("comfy_root") or os.getcwd()
+            cand = os.path.join(base, release_dir)
+        if os.path.isdir(cand):
+            return cand
+    cand = os.path.join(os.getcwd(), "user", "default", "workflows", "发布版")
     if os.path.isdir(cand):
         return cand
-    if os.path.basename(os.getcwd()) == "仙宫云":
-        return os.getcwd()
     return ""
 
 
 def find_secret_file():
-    """secrets/xianggongyun.json 的解析：环境变量 → 全局配置 → 从脚本目录逐级向上找。"""
+    """secrets/xianggongyun.json 的解析：环境变量 → 全局配置 workflows.secrets → 脚本目录逐级向上找。"""
     env = os.environ.get("FXAI_XGY_SECRETS", "")
     if env and os.path.isfile(env):
         return env
-    try:
-        import xgy_cfg
-        v = (xgy_cfg.cfg() or {}).get("xgy_secrets") or ""
-        if v and os.path.isfile(v):
-            return v
-    except Exception:
-        pass
+    wf = _workflows_cfg()
+    v = wf.get("secrets") or ""
+    if v and os.path.isfile(v):
+        return v
     here = os.path.dirname(os.path.abspath(__file__))
     for up in range(0, 7):
         p = os.path.join(*([here] + [".."] * up), "secrets", SECRET_NAME)
@@ -126,13 +154,44 @@ def md5_bytes(b):
     return hashlib.md5(b).hexdigest()
 
 
+def comfy_root_of(path):
+    """把 .../user/default/workflows 这样的路径规整为 ComfyUI 根目录。"""
+    r = path
+    for _ in range(3):
+        r = os.path.dirname(r)
+    return r
+
+
+def upload_release_banner(sftp, remote, src="", cwd=""):
+    """最佳努力把真实品牌图上传到云端 input/（非致命，失败只告警）。"""
+    cands = []
+    if cwd:
+        cands.append(os.path.join(cwd, "input", REAL))
+    if src:
+        cands.append(os.path.join(comfy_root_of(os.path.abspath(src)), "input", REAL))
+    cands.append(os.path.join(comfy_root_of(os.path.abspath(cwd or ".")), "input", REAL))
+    lp = next((c for c in cands if os.path.isfile(c)), "")
+    if not lp:
+        print("  · 本地未找到 %s，跳过品牌图上传（云端若已有则无碍）" % REAL)
+        return
+    rp = os.path.join(comfy_root_of(remote), "input", REAL)
+    try:
+        sftp.put(lp, rp)
+        sftp.chmod(rp, 0o644)
+        print("  · 已上传品牌图 %s -> %s" % (REAL, rp))
+    except Exception as e:
+        print("  ! 品牌图上传失败（非致命，可手动补）：%s" % e)
+
+
 def main():
-    ap = argparse.ArgumentParser(description="仙宫云工作流单向同步（本地 仙宫云/ → 线上）")
+    ap = argparse.ArgumentParser(description="仙宫云工作流单向同步（本地 发布版/ → 线上）")
     ap.add_argument("--src", default="", help="本地来源目录；不给则按 环境变量/全局配置/当前目录 自动解析")
     ap.add_argument("--remote", default=DEFAULT_REMOTE)
     ap.add_argument("--profile", default="")
     ap.add_argument("--dry-run", "--check", dest="dry", action="store_true")
     ap.add_argument("--prune", action="store_true", help="报告远端独有的 json（不删，只列）")
+    ap.add_argument("--no-release", dest="release", action="store_false",
+                    help="默认推送前把占位图换为真实品牌图（发布版）；加此项则原样推送")
     ap.add_argument("--quiet", action="store_true")
     a = ap.parse_args()
 
@@ -142,7 +201,7 @@ def main():
             "找不到工作流来源目录。三种指定方式（任选其一）：\n"
             "  1) --src <目录>\n"
             "  2) 环境变量 FXAI_XGY_WF_SRC=<目录>\n"
-            "  3) 全局配置 ~/.workbuddy/fxai_global.json 写 \"xgy_workflow_src\": \"<目录>\"")
+            "  3) 全局配置 ~/.workbuddy/fxai_global.json 的 workflows.release_dir（配 comfy_root 时按它拼接）")
     if not os.path.isdir(src):
         raise SystemExit("源目录不存在: %s" % src)
 
@@ -159,6 +218,11 @@ def main():
             json.loads(b.decode("utf-8"))
         except Exception as e:
             raise SystemExit("JSON 不合法，先修好再推：%s (%s)" % (os.path.basename(p), e))
+        if a.release:
+            # 兜底发布版化：若来源里还是占位图（未经 make_release 生成的发布版目录），
+            # 推送时临时换回真实品牌图（仅改上传字节，不动本地文件）。
+            # 正常流程下 make_release.py 已在「发布版」目录里把图换成真实图，此步为幂等 no-op。
+            b = swap_banner_bytes(b, PLACEHOLDER, REAL)
         name = os.path.basename(p)
         local[name] = (md5_bytes(b), len(b), p)
         print("  %-40s %8d B  %s" % (name, len(b), local[name][0][:12]))
@@ -188,6 +252,10 @@ def main():
             "或凭据过期（改 secrets/xianggongyun.json）。"
             % (user, host, port, type(e).__name__, e))
     sftp = paramiko.SFTPClient.from_transport(t)
+
+    if a.release:
+        # 发布版需要云端 input/ 里有真实品牌图，这里最佳努力补传一次
+        upload_release_banner(sftp, a.remote, a.src, os.getcwd())
 
     new, changed, same = [], [], []
     try:

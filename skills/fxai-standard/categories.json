@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "_note": "项目类别唯一事实源。加类别只改这份文件，再跑 scripts/sync_categories.py 生成客户端页面；三个脚本运行时直接读它。",
-  "order": ["drama", "anime", "mv", "music", "image", "voiceover", "ad", "novel", "wechat", "remake", "other"],
+  "order": ["drama", "anime", "mv", "music", "image", "voiceover", "slide", "ad", "novel", "wechat", "remake", "other"],
   "items": {
     "drama": {
       "name": "短剧",
@@ -50,6 +50,15 @@
       "words": ["口播", "数字人", "讲解"],
       "stages": ["script", "audio", "video", "publish"],
       "skill": "fxai-digital-human-video"
+    },
+    "slide": {
+      "name": "幻灯片",
+      "icon": "bi-file-slides",
+      "color": "#f97316",
+      "words": ["幻灯", "幻灯片", "ppt", "配图视频", "图文讲解", "slide"],
+      "stages": ["script", "image", "audio", "video", "publish"],
+      "comment": "幻灯片：文案 → 配图 → 配音 → 成片 → 发布；别名配图视频 / PPT 视频，产出由 fxai-slide-video 建档",
+      "skill": "fxai-slide-video"
     },
     "ad": {
       "name": "广告",

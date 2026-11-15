@@ -72,7 +72,7 @@ STAGE_CN = {'script': '剧本', 'image': '画面', 'audio': '音频', 'video': '
 try:
     from catkit import CATEGORIES  # 类别表：fxai-standard/categories.json（唯一事实源）
 except ImportError:  # 类别表缺失时兜底，判据仍以 categories.json 为准
-    CATEGORIES = ('drama', 'anime', 'mv', 'music', 'image', 'voiceover',
+    CATEGORIES = ('drama', 'anime', 'mv', 'music', 'image', 'voiceover', 'slide',
                   'ad', 'novel', 'wechat', 'remake', 'other')
 
 

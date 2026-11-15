@@ -10,13 +10,15 @@
     Thumbs.db / desktop.ini / ~$* / *.tmp / *.part —— 出现在项目根与交付目录即不合规。
   - 过程目录：`_` 前缀目录（白名单 _base 除外）属中间产物/备份，应清空或并入 _tmp/。
   - 过程文件：代码 / 日志 / 进程号 / 中间态 / 自检帧 / 备份副本，应移入 _tmp/。
+  - 历史版本：交付目录里同一交付物的旧版 / 变体（去品牌条 / v2 / 备份 / draft…）
+    与最终版并存即不合规，判据见 01 册「产物落点」。
   - 分层目录：video / music / doc / audio / output 属旧布局，交付物一律放项目根
     （图片多才允许 image/）。
   - 项目清单：项目根应写 _fxai_project.json（category + title）。
   - 项目记忆：项目根应写 _fxai_memory.md（跨会话续做靠它接口径）。
 
 退出码：0 = 干净；1 = 有不合规项；2 = 目录不存在。
---strict 把「过程目录 / 过程文件 / 分层目录 / 清单缺失」一并计入失败。
+--strict 把「过程目录 / 过程文件 / 分层目录 / 历史版本 / 清单缺失」一并计入失败。
 不删除、不移动、不修改任何文件——只出报告，整改由调用方执行。
 """
 import sys
@@ -51,6 +53,13 @@ PROCESS_FILE_RE = re.compile(
 MEDIA_EXT = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif', '.mp4', '.mov', '.mkv', '.avi', '.webm'}
 PID_TXT_RE = re.compile(r'(^|_)(pid|log|debug|trace|dryrun)(_|\.|=|$)')
 
+# 历史版本标记：命中即视为旧版候选，由调用方确认后清掉（判据见 01 册「产物落点」）
+STALE_WORD_RE = re.compile(
+    r'去品牌条|去水印|遮挡|遮罩|修复版|重做|旧版|副本|备份|历史版|draft|wip'
+    r'|(?:^|_)old|(?:^|_)bak|(?:^|_)backup|(?:^|_)temp|(?:^|_)test', re.I)
+STALE_VER_RE = re.compile(r'(?:^|[_\-])v\d+(?:[_\-]|$)|v\d+(?=\.)|(?:^|[_\-])final[_\-]?\d+', re.I)
+DELIVER_EXT = MEDIA_EXT | {'.mp3', '.wav', '.flac', '.m4a', '.pdf', '.md', '.docx', '.pptx', '.xlsx'}
+
 # 旧的分层布局目录：交付物一律放项目根，图片多才允许 image/
 LAYER_DIRS = {'video', 'videos', 'music', 'doc', 'docs', 'audio', 'output', 'outputs', '成片', '视频', '音频'}
 
@@ -60,7 +69,7 @@ try:
     from catkit import CATEGORIES as _CATEGORIES  # 类别表唯一事实源
     CATEGORIES = set(_CATEGORIES)
 except ImportError:  # 类别表缺失时兜底
-    CATEGORIES = {'drama', 'anime', 'mv', 'music', 'image', 'voiceover',
+    CATEGORIES = {'drama', 'anime', 'mv', 'music', 'image', 'voiceover', 'slide',
                   'ad', 'novel', 'wechat', 'remake', 'other'}
 
 MAX_DEPTH = 8
@@ -86,8 +95,15 @@ def is_process_file(name):
     return False
 
 
+def is_stale_version(name):
+    """交付目录里疑似历史版本的文件名（只读判据，命中不等于必须删）。"""
+    if os.path.splitext(name.lower())[1] not in DELIVER_EXT:
+        return False
+    return bool(STALE_WORD_RE.search(name) or STALE_VER_RE.search(name))
+
+
 def scan(root):
-    junk, work, stray, procs, layers = [], [], [], [], []
+    junk, work, stray, procs, layers, stale = [], [], [], [], [], []
     for cur, dirs, files in os.walk(root):
         rel = os.path.relpath(cur, root)
         rel = '' if rel == '.' else rel.replace('\\', '/')
@@ -116,7 +132,9 @@ def scan(root):
                 junk.append({'path': path, 'kind': 'file', 'why': f})
             elif is_process_file(f):
                 procs.append(path)
-    return junk, work, stray, procs, layers
+            elif is_stale_version(f):
+                stale.append(path)
+    return junk, work, stray, procs, layers, stale
 
 
 def check_manifest(root):
@@ -173,10 +191,11 @@ def main(argv):
         print('目录不存在：%s' % root)
         return 2
 
-    junk, work, stray, procs, layers = scan(root)
+    junk, work, stray, procs, layers, stale = scan(root)
     man = check_manifest(root)
     mem = check_memory(root)
-    soft = len(stray) + len(procs) + len(layers) + (0 if man['ok'] else 1) + (0 if mem['ok'] else 1)
+    soft = (len(stray) + len(procs) + len(layers) + len(stale)
+            + (0 if man['ok'] else 1) + (0 if mem['ok'] else 1))
     failed = bool(junk) or (strict and soft > 0)
 
     if as_json:
@@ -188,6 +207,7 @@ def main(argv):
             'stray_dirs': stray,
             'process_files': procs,
             'layer_dirs': layers,
+            'stale_versions': stale,
             'manifest': man,
             'memory': mem,
         }, ensure_ascii=False, indent=2))
@@ -210,6 +230,9 @@ def main(argv):
     if layers:
         print('分层目录 %d 个（旧布局，交付物放项目根；图片多才允许 image/）：' % len(layers))
         print('\n'.join(brief(layers)))
+    if stale:
+        print('疑似历史版本 %d 个（交付结果只留最终版，见 01 册「产物落点」）：' % len(stale))
+        print('\n'.join(brief(stale)))
     print('项目清单：%s' % ('%s OK' % MANIFEST if man['ok'] else 'WARN ' + man['msg']))
     print('项目记忆：%s' % ('%s OK（%s）' % (MEMORY, mem['msg']) if mem['ok'] else 'WARN ' + mem['msg']))
     tail = '不合规，按上面清单整改后重跑' if failed else '通过'

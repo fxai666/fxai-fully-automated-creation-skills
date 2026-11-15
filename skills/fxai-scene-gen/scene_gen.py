@@ -32,7 +32,7 @@ _download = C._download
 url_to_rel = C.url_to_rel
 
 
-def gen_scene_image(prompt, role="woman", w=1080, h=1920, tag=None, subdir="mv_scene",
+def gen_scene_image(prompt, role="woman", w=1080, h=1920, tag=None, subdir=None,
  timeout=3600, num=None, model=None, force=False, allow_no_outfit=False):
  """生成场景图（可把人物直接放进场景）。
 
@@ -51,7 +51,11 @@ def gen_scene_image(prompt, role="woman", w=1080, h=1920, tag=None, subdir="mv_s
  - w/h 为规范尺寸（竖屏 1080×1920 / 1440×1920，横屏宽高交换）；缩放/对齐/裁剪由工作流内部完成。
  - timeout 默认 3600：ComfyUI 队列拥堵时（同一台机还有别人的任务）一张图可能要等十几分钟，
  600s 会误判超时。force=True 才重画已有同名图。
+ - subdir（项目资产目录，2026-11-14 固化）默认 None → 由 comfy_client.resolve_asset_subdir() 解析：
+ 项目目录内工作时自动落本项目 server_subdir（场景图与角色图同一个项目目录）；公用目录
+ （mv_scene 等）在项目内会被改写成项目目录，防止被别的项目覆盖；项目外退回 mv_scene。
  """
+ subdir = C.resolve_asset_subdir(subdir)
  require_comfyui()
  check_outfit(prompt, role, allow_no_outfit)  # 含人物(role非空)必写穿搭+发型；role=None 纯场景自动免检
  tag = tag or ("scene_%d" % int(time.time()))

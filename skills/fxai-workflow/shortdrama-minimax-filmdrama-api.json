@@ -533,7 +533,7 @@
   },
   "1177": {
     "inputs": {
-      "lora_data": "[{\"lora_name\": \"H3人脸去油.safetensors\",\"model_strength\": 0.7,\"clip_strength\": -1,\"trigger_words\": [],\"enabled\": true,\"invert\": false,\"fade_start\": 1.0,\"fade_end\": 1.0},{\"lora_name\": \"Motion_Repair.safetensors\",\"model_strength\": 0.45,\"clip_strength\": -1,\"trigger_words\": [],\"enabled\": true,\"invert\": false,\"fade_start\": 1.0,\"fade_end\": 1.0}]",
+      "lora_data": "[{\"lora_name\": \"H3人脸去油.safetensors\", \"model_strength\": 0.45, \"clip_strength\": -1, \"trigger_words\": [], \"enabled\": true, \"invert\": false, \"fade_start\": 1.0, \"fade_end\": 1.0}, {\"lora_name\": \"Motion_Repair.safetensors\", \"model_strength\": 0.45, \"clip_strength\": -1, \"trigger_words\": [], \"enabled\": true, \"invert\": false, \"fade_start\": 1.0, \"fade_end\": 1.0}]",
       "lora_wrap": "",
       "model": [
         "1173",

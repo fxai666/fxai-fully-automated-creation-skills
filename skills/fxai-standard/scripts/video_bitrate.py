@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-"""交付视频码率验收：ffprobe 实测总比特率，落在容差内才放行。
+"""交付视频码率验收：ffprobe 实测总比特率，不超过上限才放行。
 
 规格见 references/12-交付视频编码规格.md。
+用户口径 2026-11-15：2000 kbps 是上限，低于上限一律合规，没有下界。
 用法：python -B video_bitrate.py <成片.mp4>
 退出码：0 通过 / 1 未过 / 2 参数或文件错误。
 """
@@ -14,7 +15,7 @@ _COMMON = os.path.normpath(os.path.join(_HERE, "..", "..", "fxai-common"))
 if _COMMON not in sys.path:
     sys.path.insert(0, _COMMON)
 
-from video_encode import (DELIVERY_TOTAL_KBPS, assert_delivery_bitrate)  # noqa: E402
+from video_encode import (DELIVERY_MAX_TOTAL_KBPS, assert_delivery_bitrate)  # noqa: E402
 
 
 def main():
@@ -30,8 +31,8 @@ def main():
     except RuntimeError as exc:
         print(str(exc))
         return 1
-    print("OK  %s  实测总比特率 %.0f kbps（目标 %d）"
-          % (path, kbps, DELIVERY_TOTAL_KBPS))
+    print("OK  %s  实测总比特率 %.0f kbps ≤ 上限 %d kbps（2000 以内均合规）"
+          % (path, kbps, DELIVERY_MAX_TOTAL_KBPS))
     return 0
 
 

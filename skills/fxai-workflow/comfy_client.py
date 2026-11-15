@@ -739,6 +739,82 @@ def submit_workflow(wf_path, params, optional_keys=None, validate=True, tag="run
 REF_WOMAN = "avatar/000.png"
 REF_MAN = "avatar/001.png"
 
+# =========================================================================
+# 项目资产目录 —— 硬规则（2026-11-14 用户要求固化到程序里）
+#
+#   ① 每个短剧 / MV 项目在服务端必须有【自己独立】的素材目录：角色三视图、四视图、
+#      场景图，以及本项目其它一切素材，全部放这一个目录下，不散落。
+#   ② 目录名唯一来源：项目根 project_def.json 的 server_subdir；分集子目录向上查找。
+#      找不到时退回分集 assets_map.json 的 server_subdir。
+#   ③ 生成素材时必须把该目录名作为 subdir 传进工作流，精确落 <server_subdir>/<序号>.png，
+#      与上传、引用同名对齐，不靠递增乱序。
+#   ④ 公用目录只允许「不属于任何项目的一次性试验」使用。在项目目录内工作时，生成入口
+#      会自动把公用目录改写成项目目录 —— 因为公用目录会被别的项目按同名覆盖（已发生过
+#      一次：本系列 000-008 被另一项目素材整体覆盖，整集人物错乱）。
+# =========================================================================
+PUBLIC_ASSET_SUBDIRS = ("charview", "charview3", "charview4", "mv_scene", "scene", "views")
+
+
+def project_def_path(start=None):
+    """向上查找 project_def.json，返回 (项目根, dict)；找不到返回 (None, None)。"""
+    cur = os.path.abspath(start or os.getcwd())
+    for _ in range(8):
+        cand = os.path.join(cur, "project_def.json")
+        if os.path.exists(cand):
+            try:
+                return cur, json.load(open(cand, encoding="utf-8"))
+            except Exception:
+                return cur, {}
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            break
+        cur = parent
+    return None, None
+
+
+def project_asset_subdir(start=None, required=False):
+    """返回本项目服务端素材目录名（project_def.server_subdir，缺失时退回 assets_map 的同名字段）。
+    找不到返回 None；required=True 时直接报错，逼调用方先把 project_def.json 建好。"""
+    _root, pd = project_def_path(start)
+    if pd and pd.get("server_subdir"):
+        return str(pd["server_subdir"]).strip("/")
+    cur = os.path.abspath(start or os.getcwd())
+    for _ in range(8):
+        am = os.path.join(cur, "assets_map.json")
+        if os.path.exists(am):
+            try:
+                d = json.load(open(am, encoding="utf-8"))
+                if d.get("server_subdir"):
+                    return str(d["server_subdir"]).strip("/")
+            except Exception:
+                pass
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            break
+        cur = parent
+    if required:
+        raise RuntimeError(
+            "未找到项目服务端素材目录。请先在项目根建 project_def.json 并写 server_subdir —— "
+            "每个短剧项目必须有自己独立的素材目录，禁止用公用目录（公用目录会被别的项目覆盖）。")
+    return None
+
+
+def resolve_asset_subdir(subdir=None, start=None):
+    """生成素材时 subdir 的唯一出口：
+    · 显式传了项目目录 → 照用；
+    · 没传 / 传的是公用目录 → 在项目目录内工作时自动改成项目目录；
+    · 不在任何项目目录内 → 保持原样（一次性试验允许用公用目录），仍为空则用 charview。"""
+    sd = (subdir or "").strip("/") or None
+    proj = project_asset_subdir(start)
+    if proj:
+        if not sd or sd in PUBLIC_ASSET_SUBDIRS:
+            if sd and sd != proj:
+                print("[资产目录] subdir=%s 是公用目录，已改写为本项目目录 %s（防跨项目覆盖）" % (sd, proj))
+            return proj
+        return sd
+    return sd or "charview"
+
+
 MAX_EDGE = 1300 # 生视频「最大边长」封顶固定值（1300，不可改）；生图保持 1080×1920 不动。
 
 # 视频目标分辨率（1080×1920 竖屏全高清）：

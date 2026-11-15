@@ -53,7 +53,7 @@ non_diegetic_music:
 上文那句主体定义**只有一句身份词**，这是硬要求不是风格偏好：
 
 - 主体定义：`<Subject N> 是 <Picture M> 中的<身份词>。` —— 到句号为止，**句号后不追加任何内容**。
-  身份词可以具体（古装年轻女子 / 临水木构戏台），但止于「是什么」。
+  身份词只到「男子 / 女子 / 老人 / 小孩 / 场景 / 道具」这一层，不加国籍、年龄、民族、身材、相貌、衣着修饰（2026-11-14 定）。
 - 保留类目**全部写进延续分析**：人物 `保留人物身份、发型发色、服装样式与颜色、裤装、鞋履。`；
   场景 `保留场景的建筑、陈设与物品。`；道具 `保留道具的形制、材质与颜色。`
 - **两段都不写**具体颜色（月白、鸦青、浅杏色）、款式（窄袖、束腰短甲、半扎低丸子头）、材质（棉质、烟罗纱）、
@@ -135,8 +135,8 @@ Ref2VA 送进去的参考图一定有「人物在前、场景在后」两组，�
 import audio_video as av
 # 多参考：人物图 char_rel + 场景图 scene_ref，提示词由 char_desc/scene_desc 驱动
 # ★ char_desc / scene_desc 只传「身份词」（铁律 17），类目清单由函数写进延续分析
-p = av.build_ref2va_prompt(char_descs=["古装年轻女子"],
-                          scene_desc="临水木构戏台",
+p = av.build_ref2va_prompt(char_descs=["女子"],
+                          scene_desc="场景",
                           kind="sing")     # MV 演唱
 p = av.build_ref2va_prompt(char_descs=["人物"],
                           scene_desc="室内场景",
@@ -148,8 +148,8 @@ p = av.build_ref2va_prompt(char_descs=["人物"],
 
 ```text
 subject_definitions:
-<Subject 1> 是 <Picture 1> 中的古装年轻女子。
-<Subject 2> 是 <Picture 2> 中的临水木构戏台。
+<Subject 1> 是 <Picture 1> 中的女子。
+<Subject 2> 是 <Picture 2> 中的场景。
 
 retention_analysis:
 <Subject 1> (appears in [Shot 1]): fully_preserved - 保留人物身份、发型发色、服装样式与颜色、裤装、鞋履。

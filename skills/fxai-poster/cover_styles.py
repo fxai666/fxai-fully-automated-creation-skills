@@ -103,7 +103,7 @@ CSS_PHOTO_BIG = """
 
 
 def _photo_big(bg, t1, t2, sub, w, h, s1=282, s2=196, top=110, gap=22,
-               ls1=0.0, ls2=-0.01, ss=40, subtop=None):
+               ls1=0.0, ls2=-0.01, ss=40, subtop=None, side="right"):
     if subtop is None:
         subtop = top + int(s1 * .96) + gap + int(s2 * .96) + 46
     css = (CSS_PHOTO_BIG.replace("{{rw}}", str(int(w * 1.02)))

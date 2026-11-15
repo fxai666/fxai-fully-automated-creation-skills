@@ -31,12 +31,18 @@ _download = C._download
 url_to_rel = C.url_to_rel
 
 
-def gen_char_view(prompt, ref=REF_WOMAN, views=None, tag=None, subdir="charview", timeout=600,
+def gen_char_view(prompt, ref=REF_WOMAN, views=None, tag=None, subdir=None, timeout=600,
                   num=0, model=None, allow_no_outfit=False):
     """生成角色视图（默认四视图）。
 - 一律出四视图：views=None → 4。有 ref → 把参考头像注进人脸特征节点锚脸；无 ref → 纯按提示词生成。
 - 尺寸由工作流内置（输出长边随宽高比浮动，实读为准），本函数不覆盖宽高。
 - prompt 直接写入主生成节点的「正向提示词」，不做追加/改写。
+
+🔴 subdir（项目资产目录，2026-11-14 固化）：默认 None → 由 comfy_client.resolve_asset_subdir()
+   解析。规则：在短剧/MV 项目目录内工作时，自动落到该项目 project_def.json 的 server_subdir
+   （角色四视图、场景图全部放同一个项目目录）；公用目录（charview/views/…）不允许在项目内使用，
+   传了也会被改写成项目目录。不在任何项目目录内 → 退回 charview（一次性试验）。
+   落点始终是 <subdir>/<num>.png，与上传、引用同名对齐。
 
 ⚠️ `ref` 参数格式：`ref` 是【服务端相对路径】`<子目录>/<文件名>`（如 `avatar/000.png`），直接喂给节点147「图片列表」由服务端按 rel 读取；格式与取值判据见 `fxai-standard/references/10-资源引用路径规范.md`。自有形象直接写 `avatar/000.png` / `avatar/001.png`（即 `C.REF_WOMAN`/`C.REF_MAN`）。
 
@@ -47,8 +53,9 @@ def gen_char_view(prompt, ref=REF_WOMAN, views=None, tag=None, subdir="charview"
   · 工作流里的提示词与节点输出（170 提示词 / 147 图片列表 / 205、210 生成器）保持原样。
 
 返回 (本地png路径, ComfyUI相对路径)。
-输出目录默认 `charview`（与场景图 `mv_*` 分开，两个目录各取各的图）。
+输出目录由 subdir 决定：项目目录内 = 本项目 server_subdir；项目外 = charview。
 """
+    subdir = C.resolve_asset_subdir(subdir)
     require_comfyui()
     # ref 非空＝直接引用角色底图（000/001 裸肩头像），必写穿搭+发型；三视图 ref="" 时自动免检
     check_outfit(prompt, ref, allow_no_outfit)

@@ -84,7 +84,7 @@ PRODUCERS = {
     "fxai-novel-writing": "novel",
     "fxai-digital-human-video": "voiceover",
     "fxai-voiceover": "voiceover",
-    "fxai-slide-video": "voiceover",
+    "fxai-slide-video": "slide",
     "fxai-weixin-gzh-publisher": "wechat",
     "fxai-video-upscale": "other",
 }
@@ -157,7 +157,7 @@ FRAME_ORDER_HINT = "视频帧数验收接线位置有误：assert_frames() 出�
 BITRATE_IMPL_MARKS = ("DELIVERY_TOTAL_KBPS = 2000", "def delivery_venc(",
                       "def assert_delivery_bitrate(")
 BITRATE_IMPL_HINT = ("交付编码出口缺失或不完整：fxai-common/video_encode.py 须提供 "
-                     "2000 kbps 常量、delivery_venc() 与 assert_delivery_bitrate()")
+                     "上限 2000 kbps 常量、delivery_venc() 与 assert_delivery_bitrate()")
 BITRATE_CALL_MARKS = ("delivery_venc(", "encode_delivery_2pass(")
 BITRATE_TARGETS = {
     "fxai-mv-pipeline": ("lyrics_align.py",),

@@ -74,7 +74,6 @@ def build_shots(manifest):
 目标视频是场景，自然光，氛围轻松。
 [Shot 1] 中景镜头，固定机位，<Subject 1> (S1) 站在画面正中，<Subject 2> 在身后铺开。
 <Subject 1> (S1) 对着画面左侧画外沉声道：<d>[Chinese] 第一句台词。</d>。
-At 00:02.500, 静场。
 At 00:03.500, <Subject 1> (S1) 对着画面左侧画外接着说：<d>[Chinese] 第二句台词。</d>。
 
 整体音效
