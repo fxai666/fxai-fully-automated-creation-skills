@@ -17,6 +17,20 @@ VK = {
     "win": 0x5B, "lwin": 0x5B,
     "num0": 0x60, "f1": 0x70, "f2": 0x71, "f3": 0x72, "f4": 0x73, "f5": 0x74,
     "f6": 0x75, "f7": 0x76, "f8": 0x77, "f9": 0x78, "f10": 0x79, "f11": 0x7A, "f12": 0x7B,
+    # 符号键：必须显式给出 VK。原实现中 combo/press 对未收录的键走 ord(k.upper())，
+    # 而符号键的 ord 与 VK 完全不是一回事（"-" 的 ord 是 0x2D = VK_INSERT），
+    # 于是 ctrl+"-" 实际发出去的是 ctrl+insert（复制），浏览器缩放毫无反应（2026-11-16 实测）。
+    "-": 0xBD, "minus": 0xBD,
+    "=": 0xBB, "equal": 0xBB,
+    ",": 0xBC, "comma": 0xBC,
+    ".": 0xBE, "period": 0xBE,
+    "/": 0xBF, "slash": 0xBF,
+    ";": 0xBA, "semicolon": 0xBA,
+    "'": 0xDE, "quote": 0xDE,
+    "[": 0xDB, "lbracket": 0xDB,
+    "]": 0xDD, "rbracket": 0xDD,
+    "\\": 0xDC, "backslash": 0xDC,
+    "`": 0xC0, "grave": 0xC0,
 }
 
 # 需要 Shift 的符号（美式键盘）

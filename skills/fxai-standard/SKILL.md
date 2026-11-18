@@ -21,7 +21,7 @@ scripts）前先读本册；改完跑 `scripts/check_standard.py` 体检，ERROR
 | `references/06-字体与素材授权.md` | 任何文字上屏/上图的字体选择、交付记录字体时 |
 | `references/07-本地环境边界.md` | 开工前确认能力、想查模型/节点/配置/安装目录时（默认适用） |
 | `references/08-客户端与登录检测.md` | 要读本机客户端目录 / 登录身份 / 用户账号库时（开工第一步） |
-| `references/09-会话记忆.md` | 开工读记忆、收工写记忆、整理 `.workbuddy/memory/` 时 |
+| `references/09-会话记忆.md` | 开工读记忆、收工写记忆、整理 `.workbuddy/memory/`、对齐记忆空间目录时 |
 | `references/10-资源引用路径规范.md` | 提交任务填参考图 / 音频 / 视频、上传素材、把生图产物接下一环节时（路径与 rel 取值） |
 | `references/11-浏览器运行时与自动安装.md` | 需要本机浏览器、检测 Chrome 就绪、缺失要自动安装时 |
 | `references/12-交付视频编码规格.md` | 写最终交付 MP4、改编码参数、交付前验收码率时 |
@@ -54,6 +54,7 @@ scripts）前先读本册；改完跑 `scripts/check_standard.py` 体检，ERROR
 16. 🔴 **对比片按源片画幅拼**：横屏上下、竖屏左右（判据见 01 册）。
 17. 🔴 **浏览器运行时走公共件**：Chrome 检测与缺失补装统一调 `scripts/ensure_chrome.py`，其他技能只留指针；判据见 11 册。
 18. 🔴 **交付成片总比特率最高 2000 kbps**：2000 是上限不是目标，2000 以内都合规、不重制不回压；码率数值只写在 `fxai-common/video_encode.py`，产线调统一出口，交付前跑 `scripts/video_bitrate.py` 只判上界；判据见 12 册。
+19. 🔴 **记忆真身恒在 `.workbuddy/memory/`**：别名目录（`.workbuddy-ai` 等）只做目录联接指向它，缺目录先建，多客户端同指一个工作区即共享记忆；开工跑 `scripts/ensure_memory_link.py <工作区> --apply`。判据见 09 册。
 
 ## 规范体检
 
@@ -64,6 +65,7 @@ python scripts/check_project_clean.py <项目目录> [--strict] # 交付目录
 python scripts/fxai_project.py check <项目目录>            # 清单结构
 python scripts/sync_categories.py --site <站点根> [--write] # 类别表 → 客户端页面
 python -B scripts/ensure_chrome.py --check-only --json  # 浏览器就绪自检（零下载零安装）
+python -B scripts/ensure_memory_link.py <工作区> [--apply]  # 记忆空间真身与别名对齐
 ```
 
 清单与记忆的读写一律走 `scripts/fxai_project.py`（init / episode / deliver / stage / memory），

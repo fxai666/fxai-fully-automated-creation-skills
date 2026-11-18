@@ -1,6 +1,6 @@
 ---
 name: fxai-common
-description: fxai 全系列技能共用的底层公共件（**公共目录，不是技能，没有可触发的能力**）。提供地址规范化、本机代理绕过、统一 HTTP 请求出口、口播文案校验，以及分段视频的影调/接缝对齐（`video_tone.py`）。当需要知道「fxai-common 是什么、哪些技能依赖它、它提供哪些函数」时使用。普通用户无需安装说明它的用法——它由 fxai-workflow / fxai-voiceover / fxai-comfyui-watcher / fxai-audio-video / fxai-digital-human-video / fxai-voiceover-script 自动 import。
+description: fxai 全系列技能共用的底层公共件（**公共目录，不是技能，没有可触发的能力**）。提供地址规范化、本机代理绕过、统一 HTTP 请求出口、口播文案校验、分段视频的影调/接缝对齐（`video_tone.py`）、最终交付编码（`video_encode.py`）与 AIGC 隐式标识写入/验收（`aigc_mark.py`）。当需要知道「fxai-common 是什么、哪些技能依赖它、它提供哪些函数」时使用。普通用户无需安装说明它的用法——它由 fxai-workflow / fxai-voiceover / fxai-comfyui-watcher / fxai-audio-video / fxai-digital-human-video / fxai-voiceover-script 自动 import。
 ---
 
 # fxai-common（公共目录）
@@ -13,6 +13,7 @@ description: fxai 全系列技能共用的底层公共件（**公共目录，不
 | `fxai_common.py` | 函数实现，被别的技能 import；**不用通读**，只在改公共函数或排障时查对应函数 |
 | `video_tone.py` | **分段视频的影调/接缝对齐**（纯后处理，不依赖 8188）。拼段前段间跳色、画面发灰时用；算法与 `FxAiToneMatch` / `FxAiSeamColorMatch` 同口径 |
 | `video_encode.py` | **最终交付成片编码**：按「上限 2000 kbps」（目标 1900）取参数、两遍编码、只判上界的码率验收。规格见 `fxai-standard/references/12-交付视频编码规格.md` |
+| `aigc_mark.py` | **所有最终交付视频的 AIGC 隐式标识**：`embed()` 写入 + `verify()` 回读验收 + 命令行验收门。字段规范见 `fxai-standard/references/01-产出铁律.md`「成片品牌标识」 |
 | `env_guard.py` | 换机器/给客户装时的环境守卫：缺「凤希AI伴侣」打下载指引、缺 pip 小包自动补。**只在这两种场景读**：① 技能要在新机器上跑起来 ② 改安装引导文案/下载链接 |
 | references/01-公共函数速查.md | 查它提供哪些函数：地址与代理 / HTTP / 环境守卫 / 口播文案 / 影调接缝 |
 | references/02-依赖与改动影响.md | 查谁在依赖它、改公共函数会波及哪些技能 |
@@ -29,7 +30,7 @@ description: fxai 全系列技能共用的底层公共件（**公共目录，不
 
 ## 它提供什么
 
-函数清单见 references/01-公共函数速查.md，分六类：
+函数清单见 references/01-公共函数速查.md，分七类：
 
 ### 地址与代理
 
@@ -64,6 +65,13 @@ fixed = video_tone.align(段列表, outdir="tmp/tone")   # 返回等长同序的
 最终成片的总比特率与编码参数只从 `delivery_venc()` / `encode_delivery_2pass()` 取，
 产线不各自写 `-b:v` / `-crf`；交付前跑 `assert_delivery_bitrate()` 验收。
 函数清单见 01 册，规格与判据见 `fxai-standard/references/12-交付视频编码规格.md`。
+
+### AIGC 隐式标识（`aigc_mark.py`）
+
+所有最终交付视频（成片 / 对比片 / 宣传样片）除画面显式角标外，必须有 `AIGC` 隐式元数据。
+封装时走 `embed(path, project, author=None)`（幂等，`-c copy` 不动画面），交付前逐个走
+`verify(path)`（`Label=1` 且字段齐全，缺键抛错）；命令行入口逐个验收并返回 0/1。
+规则正文与字段规范只写 `fxai-standard/references/01-产出铁律.md`「成片品牌标识」，产线只调用。
 
 ## 公共约定：等任务纪律（跨技能唯一真相源）
 

@@ -397,6 +397,7 @@ def cmd_run(args) -> int:
     # 断点续跑（用户 2026-11-16 口径）：某一步反馈不对、修好后从失败步接着跑，
     # 不用重头再上传一遍、再填一遍表。窗口状态由自动补的 focus 兜住。
     start = max(1, int(args.from_step or 1))
+    total_all = len(steps)
     if start > 1 and steps:
         total = len(steps)
         steps = steps[start - 1:]
@@ -431,6 +432,13 @@ def cmd_run(args) -> int:
     runner = flow.Runner(args.site, variables, human_override=override)
     print("运行目录: %s" % runner.run_dir)
     res = runner.run(steps)
+    # 记下跑到哪了：关窗口的闸门读它（铁律 35 / 36，没跑完、没确认成功都不许关）
+    # 续跑时 steps_done 是相对本段的，换成整条流程里的绝对步号。
+    done_abs = (start - 1) + int(res.get("steps_done") or 0)
+    browser.mark_run(args.site, bool(res.get("ok")), done_abs, total_all, args.flow or "",
+                     publish_ok=bool(res.get("publish_ok")),
+                     resumed=bool(res.get("resumed")),
+                     unverified=bool(res.get("publish_unverified")))
     _hr("结果")
     print(json.dumps(res, ensure_ascii=False, indent=2))
     if args.audit:
@@ -458,6 +466,55 @@ def cmd_minimize(args) -> int:
     ui.minimize(w["hwnd"])
     print("已最小化窗口 #%s" % w["hwnd"])
     return 0
+
+
+# ------------------------------------------------------------------ close
+def cmd_close(args) -> int:
+    """关浏览器——**只在发布真的走完之后**才允许。
+
+    用户 2026-11-16 口径（铁律 35）：整个任务没发布成功之前不许关浏览器。
+    中途关窗的代价是双向的：平台侧留下「上次没发完」的草稿，下次进投稿页又弹
+    「继续编辑」；本地侧重开就得重新上传一遍成片，平台看到的是反复上传同一个文件。
+    所以关窗前先看这一站这次跑到哪了，没跑完一律拒绝。
+    """
+    lr = browser.last_run()
+    done = int(lr.get("steps_done") or 0)
+    total = int(lr.get("steps_total") or 0)
+    finished = bool(lr.get("finished"))
+    published = bool(lr.get("publish_ok"))
+    why = ""
+    if not lr:
+        why = "没有任何执行记录"
+    elif args.site and lr.get("site") and lr["site"] != args.site:
+        why = "上次跑的是 %s，不是 %s" % (lr["site"], args.site)
+    elif not finished:
+        why = "上次只跑到 %d/%d 步（ok=%s），任务没走完" % (done, total, lr.get("ok"))
+    elif not published:
+        why = "点过发布但没在页面上确认到成功标志，无法当已发布"
+    elif lr.get("publish_unverified") and not args.accept_unverified:
+        why = ("发布后只做了页面变化判定，站点还没配 success_check 模板，"
+               "未经成功标志确认（需人工看 after_submit.png）")
+
+    if why and not args.force:
+        print("拒绝关窗：%s。" % why)
+        print("窗口留着等续跑，别重开：")
+        print("  python -B publish_cli.py run --site %s --flow <流程> --from-step %d"
+              % (args.site or lr.get("site") or "<站点>", done + 1))
+        print("人工看过结果截图、确认已发布，用 --accept-unverified 关窗；")
+        print("确实要放弃这次任务再关，显式加 --force。")
+        return 2
+
+    try:
+        w = browser.pick_window(args.title or "", args.hwnd)
+    except Exception:
+        print("没有打开的浏览器窗口，无需关闭。")
+        return 0
+    ok = browser.close_window(w["hwnd"], float(args.wait_s))
+    print("%s窗口 #%s" % ("已关闭" if ok else "关闭超时，窗口还在", w["hwnd"]))
+    if ok:
+        browser.mark_run(lr.get("site", ""), False, 0, 0, "closed")
+        print("下一站可以重新 launch 开新窗口了。")
+    return 0 if ok else 1
 
 
 # ------------------------------------------------------------------ selftest
@@ -615,6 +672,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--hwnd", type=int)
     p.add_argument("--title", default="")
     p.set_defaults(func=cmd_minimize)
+
+    p = sub.add_parser("close", help="关浏览器（只在发布真的走完之后才允许）")
+    p.add_argument("--site", default="", help="核对这一站上次是否跑完")
+    p.add_argument("--hwnd", type=int)
+    p.add_argument("--title", default="")
+    p.add_argument("--wait-s", type=float, default=8.0)
+    p.add_argument("--accept-unverified", action="store_true",
+                   help="人工看过结果截图、确认已发布，允许关窗（站点未配 success_check 时用）")
+    p.add_argument("--force", action="store_true",
+                   help="明确放弃本次任务：没跑完也强关，平台侧会留草稿")
+    p.set_defaults(func=cmd_close)
 
     return ap
 

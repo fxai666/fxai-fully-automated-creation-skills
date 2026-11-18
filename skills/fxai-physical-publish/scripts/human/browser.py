@@ -103,6 +103,56 @@ def remember(hwnd: int, title: str = "") -> None:
     _write_state(d)
 
 
+def mark_run(site: str, ok: bool, done: int, total: int, flow: str = "",
+             publish_ok: bool = False, resumed: bool = False,
+             unverified: bool = False) -> None:
+    """记下「这一站这次跑到哪了、有没有真发出去」。
+
+    关窗口的闸门读它（铁律 35 / 36）：跑到最后一步**并且**在页面上确认了发布成功，
+    才允许关浏览器。中途失败、或点完发布没确认到成功标志的，窗口必须留着。
+    """
+    d = _read_state()
+    d["last_run"] = {
+        "site": site,
+        "flow": flow,
+        "ok": bool(ok),
+        "steps_done": int(done),
+        "steps_total": int(total),
+        "resumed": bool(resumed),
+        "publish_ok": bool(publish_ok),
+        "publish_unverified": bool(unverified),
+        "finished": bool(ok) and int(done) >= int(total) and int(total) > 0,
+        "at": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    _write_state(d)
+
+
+def last_run() -> dict:
+    return dict(_read_state().get("last_run") or {})
+
+
+def close_window(hwnd: int, wait_s: float = 8.0) -> bool:
+    """像人点右上角 × 一样正常关窗（WM_CLOSE），不是强杀。
+
+    只在发布真的走完之后才允许调用——见 publish_cli 的 close 闸门。
+    """
+    WM_CLOSE = 0x0010
+    try:
+        api.close_window(hwnd)
+    except Exception:
+        return False
+    t0 = time.time()
+    while time.time() - t0 < wait_s:
+        if not any(w["hwnd"] == hwnd for w in chrome_windows()):
+            d = _read_state()
+            if (d.get("browser") or {}).get("hwnd") == hwnd:
+                d.pop("browser", None)
+                _write_state(d)
+            return True
+        time.sleep(0.25)
+    return False
+
+
 def ensure_window(url: str = "about:blank", exe: str = "chrome.exe") -> tuple[int, bool]:
     """拿一个可用的浏览器窗口——**能复用就绝不开新的**。
 
@@ -131,6 +181,31 @@ def ensure_window(url: str = "about:blank", exe: str = "chrome.exe") -> tuple[in
 # （上次 Chrome 被强杀 / 关机重启后必然出现），等价于用户在设置里关掉它。
 LAUNCH_FLAGS = ["--hide-crash-restore-bubble"]
 
+# 用户 2026-11-16 口径（铁律 35）：**整个任务没发布成功之前不许关浏览器**。
+# 但浏览器若只是本进程的子进程，调用方那条命令一结束，进程树被回收，窗口就没了；
+# 下次只能重开、重登、重传一遍，平台侧看起来就是反复上传同一个文件。
+# 所以开窗口时必须让它脱离调用方的进程组 / 作业对象：DETACHED_PROCESS 断开控制台，
+# CREATE_BREAKAWAY_FROM_JOB 脱离作业对象，两条一起用窗口才能活到下一次命令。
+CREATE_NEW_PROCESS_GROUP = 0x00000200
+DETACHED_PROCESS = 0x00000008
+CREATE_BREAKAWAY_FROM_JOB = 0x01000000
+
+
+def _spawn_detached(cmd: list[str]) -> None:
+    """开一个不随调用方退出的浏览器进程。
+
+    CREATE_BREAKAWAY_FROM_JOB 在「作业对象不允许 breakaway」时会直接报错，
+    那就退一步只用 DETACHED_PROCESS——多数情况下也够活过命令边界。
+    """
+    flags = DETACHED_PROCESS | CREATE_BREAKAWAY_FROM_JOB
+    try:
+        subprocess.Popen(cmd, close_fds=True, creationflags=flags)
+        return
+    except OSError:
+        pass
+    subprocess.Popen(cmd, close_fds=True,
+                     creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP)
+
 
 def launch(url: str = "about:blank", wait_s: float = 12.0) -> int:
     """像用户手动双击图标一样打开浏览器（不带任何自动化参数）。"""
@@ -138,7 +213,7 @@ def launch(url: str = "about:blank", wait_s: float = 12.0) -> int:
     if not exe:
         raise RuntimeError("找不到 Chrome / Edge 可执行文件")
     before = {w["hwnd"] for w in chrome_windows()}
-    subprocess.Popen([exe, *LAUNCH_FLAGS, url], close_fds=True)
+    _spawn_detached([exe, *LAUNCH_FLAGS, url])
     t0 = time.time()
     while time.time() - t0 < wait_s:
         for w in chrome_windows():

@@ -219,6 +219,13 @@ class Runner:
         self.tk = timing.TimeKeeper(cfg, self.rnd, verbose=False)
         # 本次运行里已经点过的区域：第一次要找，之后是熟路
         self._seen: set[str] = set()
+        # 用户 2026-11-16 口径：进页面先判有没有上次没发完的草稿。
+        # 有 → 点「继续编辑」在原稿上接着做，防止重复上传；后续带
+        # skip_if_resumed 的步骤（点上传入口、选文件）自动跳过。
+        self.resumed = False
+        # 发布是否已确认成功：关窗闸门读它，没确认成功不许关浏览器。
+        self.publish_ok = False
+        self.publish_unverified = False
 
     # ------------------------------------------------------------ 输出
     def log(self, event: str, **kw) -> None:
@@ -382,33 +389,78 @@ class Runner:
         dlg = self.wait_file_dialog(timeout_s)
         api.activate_window(dlg)
         time.sleep(0.45)
-        # 文件名输入框默认有焦点：清空后**粘贴**完整路径，再回车。
-        # 用户口径：表单/路径这类长文本一律复制粘贴，不逐字敲（中文路径逐字还会被 IME 吞）。
-        keyboard.combo("ctrl", "a")
-        time.sleep(0.15)
-        api.key_press(keyboard.VK["backspace"], hold_ms=30)
-        time.sleep(0.18)
-        old = clipboard.get_text()
-        if not clipboard.set_text(path):
-            raise RuntimeError("写剪贴板失败，无法粘贴上传路径")
-        keyboard.combo("ctrl", "v")
-        time.sleep(0.35)
-        if old:
-            try:
-                clipboard.set_text(old)
-            except Exception:
-                pass
+        base = os.path.basename(path)
+        ok = False
+        for attempt in (1, 2, 3):
+            # 焦点必须先落到「文件名」框（Alt+N 是它的加速键）。焦点若停在文件列表上，
+            # Ctrl+A 选中的是文件、Ctrl+V 也贴不进去，框里会留着对话框「上次选择」预填的
+            # `"文件1" "文件2"` 两个带引号的名字——2026-11-16 02:49 实测就是这个现象。
+            keyboard.combo("alt", "n")
+            time.sleep(0.25)
+            keyboard.combo("ctrl", "a")
+            time.sleep(0.15)
+            api.key_press(keyboard.VK["backspace"], hold_ms=30)
+            time.sleep(0.2)
+            if attempt == 1 and hasattr(clipboard, "set_files"):
+                # 优先按「资源管理器复制文件」的格式放剪贴板：对话框会自己定位并选中该文件
+                clipboard.set_files([path])
+            else:
+                # 退路：直接贴完整路径文本
+                clipboard.set_text(path)
+            keyboard.combo("ctrl", "v")
+            time.sleep(0.8)
+            got = " | ".join(self._dlg_edit_texts(dlg))
+            self.log("file_dialog_check", attempt=attempt, box=got[:180])
+            if base in got or path in got:
+                ok = True
+                break
+        if not ok:
+            self.log("warn", msg="文件名框未确认到目标文件，按当前内容回车：%s" % base)
         api.key_press(keyboard.VK["enter"], hold_ms=40)
-        # 等对话框消失
+        # 等对话框消失（消失 = 路径已被接受）
         t0 = time.time()
         while time.time() - t0 < 25:
             alive = any(w["hwnd"] == dlg for w in api.list_windows())
             if not alive:
                 break
             time.sleep(0.4)
+        # 用完清空，别把路径或旧文件列表留在剪贴板里污染下一次
+        try:
+            clipboard.clear()
+        except Exception:
+            pass
         time.sleep(settle_s)
         if self.hwnd and not api.activate_window(self.hwnd):
             self.log("warn", msg="文件对话框关闭后窗口未回到前台")
+
+    def _dlg_edit_texts(self, dlg: int) -> list:
+        """读系统文件对话框里所有 Edit 控件的文本，用来确认文件名框到底填了什么。"""
+        import ctypes
+        out = []
+        try:
+            u = api.user32
+            CB = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+            u.EnumChildWindows.argtypes = [ctypes.c_void_p, CB, ctypes.c_void_p]
+            u.EnumChildWindows.restype = ctypes.c_bool
+
+            def _cb(hwnd, _lp):
+                try:
+                    cls = ctypes.create_unicode_buffer(64)
+                    u.GetClassNameW(ctypes.c_void_p(hwnd), cls, 64)
+                    if cls.value == "Edit":
+                        n = u.GetWindowTextLengthW(ctypes.c_void_p(hwnd))
+                        if n and n > 0:
+                            b = ctypes.create_unicode_buffer(n + 1)
+                            u.GetWindowTextW(ctypes.c_void_p(hwnd), b, n + 1)
+                            out.append(b.value)
+                except Exception:
+                    pass
+                return True
+
+            u.EnumChildWindows(ctypes.c_void_p(dlg), CB(_cb), 0)
+        except Exception:
+            pass
+        return out
 
     # ------------------------------------------------------------ 节奏
     def approach(self, name: str) -> None:
@@ -617,6 +669,65 @@ class Runner:
                         pass
                 self.log(op, chars=len(text), via="clipboard", preview=text[:24])
 
+        elif op == "resume_gate":
+            # 用户 2026-11-16 口径：进页面先判有没有上次没发完的草稿。
+            # 有 → 点「继续编辑」在原稿上接着做，防止重复上传；
+            # 无 → 什么都不做，后面的上传步骤照常走。
+            # 判据是提示条区域那一小块模板，只截局部，不整屏扫。
+            dg = (self.site_data.get("draft_guard") or {})
+            pr = dg.get("probe_region")
+            if not pr:
+                self.log("resume_gate_skip", why="站点未配 draft_guard.probe_region")
+            else:
+                g = probe.guard(self.site, pr, self.client(),
+                                on_miss=dg.get("on_miss", "learn"),
+                                out_dir=os.path.join(self.run_dir, "shots"))
+                act = g.get("action")
+                # 第一次没有模板时会学一次（action=learned）；站点若明确声明
+                # 「首次学完就当命中」，就按有草稿处理，防止第一次又白传一遍。
+                hit = (act == "hit") or (act == "learned" and bool(dg.get("first_run_assume")))
+                self.log("resume_gate", region=pr, action=act, hit=hit)
+                if hit:
+                    cr = dg.get("continue_region")
+                    if not cr:
+                        self.log("resume_hit_no_region", region=pr)
+                    else:
+                        r = self.rect_of(cr)
+                        px, py = mouse.random_point_in(r, self.rnd)
+                        if self.hwnd and api.foreground_window() != self.hwnd:
+                            api.activate_window(self.hwnd)
+                        mouse.click(px, py, rnd=self.rnd)
+                        self.resumed = True
+                        self.log("resume_continue", region=cr, at=[px, py])
+                        time.sleep(float(dg.get("wait_ms", 2800)) / 1000.0)
+                else:
+                    self.log("resume_none", region=pr)
+
+        elif op == "confirm_success":
+            # 用户 2026-11-16 口径：点发布后必须在页面上确认成功了才允许关窗。
+            # 站点配了 success_check.region（成功提示条 / 稿件管理页特征元素）就做
+            # 局部模板校验；没配则退化为「页面已变 + 稳定」并标记 unverified，
+            # 由 close 闸门要求人工看图，不冒充成功。
+            sc = (self.site_data.get("success_check") or {})
+            reg = sc.get("region")
+            if reg:
+                g = probe.guard(self.site, reg, self.client(),
+                                on_miss=sc.get("on_miss", "warn"),
+                                out_dir=os.path.join(self.run_dir, "shots"))
+                self.publish_ok = bool(g.get("ok"))
+                self.log("confirm_success", region=reg, ok=self.publish_ok,
+                         action=g.get("action"))
+                if not self.publish_ok and st.get("required", True):
+                    raise RuntimeError(
+                        "发布后没在页面上确认到成功标志（区域 %s 未命中，%s）。"
+                        "按铁律 36 不许当成功、不许关窗。现场截图：%s"
+                        % (reg, g.get("action"), g.get("detail")))
+            else:
+                self.publish_ok = True
+                self.publish_unverified = True
+                self.log("confirm_success", region="", ok=True, unverified=True,
+                         why="站点未配 success_check.region，只做了页面变化判定")
+
         elif op == "dismiss_resume":
             # 残留草稿预清理（用户 2026-11-16 口径）：上次没发完，进投稿页会弹
             # 「继续编辑 / 恢复草稿」。先放弃并删掉那一条，再走本次全新发布，
@@ -752,12 +863,40 @@ class Runner:
                 px, py = mouse.random_point_in(rect, self.rnd)
                 mouse.scroll(int(st["clicks"]), px, py, self.rnd)
             else:
-                mouse.scroll(int(st["clicks"]), rnd=self.rnd)
-            self.log("scroll", clicks=st["clicks"])
+                # 滚轮事件发给**指针所在的那个窗口区域**。未指定坐标时按「鼠标现在在哪」投递，
+                # 可是文件对话框一关，光标常常停在浏览器左导航、
+                # 或者干脆还在浏览器外面，滚轮就滚不动正文——页面停在顶部，后面
+                # 所有按 y 定位的点击全打在别处（2026-11-16 B站实测整页没动）。
+                # 统一滚在客户区中心：那里一定是正文区，与光标历史无关。
+                cx, cy, cw, ch = self.client()
+                mouse.scroll(int(st["clicks"]), cx + cw // 2, cy + ch // 2, self.rnd)
+            self.log("scroll", clicks=st["clicks"], at=st.get("region") or "client_center")
 
         elif op == "file":
             self.handle_file_step(st["path"], float(st.get("timeout_s", 12)))
             self.log("file", path=self.fill(st["path"]))
+
+        elif op == "wait_file":
+            # 逐步确认闸门（用户 2026-11-16 02:28 口径：每一步必须截图、确认过后再操作）。
+            # 本环境里浏览器是命令的子进程，命令一结束窗口就没了；所以要让「命令别结束」，
+            # 每步做完截图后停在这里，等调用方看过截图、放下放行文件，再走下一步。
+            # 等待期间浏览器活着、页面状态原地保留，不重开、不重传。
+            path = self.fill(st["path"])
+            timeout_s = float(st.get("timeout_s", 900))
+            t0 = time.time()
+            self.log("wait_file_begin", path=path, timeout_s=timeout_s)
+            while time.time() - t0 < timeout_s:
+                self.check_abort()
+                if os.path.exists(path):
+                    try:
+                        os.remove(path)
+                    except Exception:
+                        pass
+                    self.log("wait_file_go", path=path, waited=round(time.time() - t0, 1))
+                    break
+                time.sleep(0.4)
+            else:
+                raise RuntimeError("等放行超时 %ss：%s" % (timeout_s, path))
 
         elif op == "pause":
             kind = st.get("kind", "auto")
@@ -851,6 +990,11 @@ class Runner:
         try:
             for i, st in enumerate(steps, 1):
                 nxt = steps[i] if i < len(steps) else None
+                # 草稿已恢复 → 上传入口、选文件这些步骤整体跳过，防止重复上传
+                if st.get("skip_if_resumed") and self.resumed:
+                    self.log("skip_resumed", idx=i, op=st.get("do"))
+                    ok += 1
+                    continue
                 if st.get("optional"):
                     try:
                         self.step(st, i, nxt)
@@ -864,8 +1008,11 @@ class Runner:
             # 铁律 22/27 与 06 册第 2 次提炼都要求「点发布即收工」。
             if not any(bool(s.get("terminal")) for s in steps):
                 self.shot("final")
-            self.log("run_done", site=self.site, ok=ok, **self.tk.report())
+            self.log("run_done", site=self.site, ok=ok, resumed=self.resumed,
+                     publish_ok=self.publish_ok, **self.tk.report())
             return {"ok": True, "steps_done": ok, "run_dir": self.run_dir,
+                    "resumed": self.resumed, "publish_ok": self.publish_ok,
+                    "publish_unverified": self.publish_unverified,
                     "human_pauses": self.tk.count, "paused_s": round(self.tk.spent, 1),
                     "gap_s": round(self.tk.gap_spent, 1), "thoughts": self.tk.thoughts}
         except Aborted as e:

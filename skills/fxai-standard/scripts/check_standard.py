@@ -20,7 +20,6 @@ sys.dont_write_bytecode = True
 # SKILL.md 体积闸门：按文件字节数判定（右键属性即得，不必跑脚本）
 # 中英混排实测字节/字符比 1.68~1.70，9216 B ≈ 5400 字符；纯中文 9216 B ≈ 3070 汉字
 MAX_SKILL_BYTES = 9 * 1024    # 超此即 ERROR
-WARN_SKILL_BYTES = 8 * 1024   # 超此提示细节降级到 references
 SCAN_SUFFIX = (".md", ".py", ".json", ".js", ".sh")
 
 # 过程叙述判定词（行内命中即 ERROR；豁免见 EXEMPT_CTX / ALLOW_MARKS）
@@ -152,6 +151,14 @@ FRAME_IMPL_HINT = "视频帧数验收实现缺失或不完整：scripts/video_fr
 FRAME_MISSING_HINT = "视频帧数验收未接线：make_compare.py 生成对比片后须调 assert_frames()"
 FRAME_ORDER_HINT = "视频帧数验收接线位置有误：assert_frames() 出现在生成命令之前"
 
+# ---------- AIGC 隐式标识契约 ----------
+# 判据落在共用实现上：写入与回读验收两函数缺一即 ERROR。
+# 规则正文见 references/01-产出铁律.md「成片品牌标识」。
+AIGC_IMPL_MARKS = ("def embed(", "def verify(", "+use_metadata_tags",
+                   '"AIGC"', 'raise RuntimeError')
+AIGC_IMPL_HINT = ("AIGC 隐式标识能力缺失或不完整：fxai-common/aigc_mark.py 须同时提供 "
+                  "embed() 写入与 verify() 回读验收")
+
 # ---------- 交付编码契约 ----------
 # 规则正文见 references/12-交付视频编码规格.md，判据说明见 04 册。
 BITRATE_IMPL_MARKS = ("DELIVERY_TOTAL_KBPS = 2000", "def delivery_venc(",
@@ -273,6 +280,16 @@ def check_video_frame_contract(root, name, errors):
             errors.append(FRAME_ORDER_HINT)
 
 
+def check_aigc_mark_contract(root, name, errors):
+    """AIGC 隐式标识判据查共用实现：写入与回读验收两函数同在。"""
+    if name != "fxai-common":
+        return
+    path = os.path.join(root, "aigc_mark.py")
+    text = _read_text(path)
+    if not os.path.isfile(path) or any(m not in text for m in AIGC_IMPL_MARKS):
+        errors.append(AIGC_IMPL_HINT)
+
+
 def iter_files(root):
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d != ".git"]
@@ -343,11 +360,6 @@ def check_skill_md(root, errors, warns):
         errors.append(
             "SKILL.md %d B 超上限（%d KB，约 %d 字符）：细节降级到 references，别压表述"
             % (size, MAX_SKILL_BYTES // 1024, len(text))
-        )
-    elif size > WARN_SKILL_BYTES:
-        warns.append(
-            "SKILL.md %d B，接近上限 %d KB：可考虑把细节挪进 references"
-            % (size, WARN_SKILL_BYTES // 1024)
         )
     lines = text.splitlines()
     has_table = any(
@@ -478,6 +490,7 @@ def audit(root, junk=False, fix=False):
     check_gpu_gate_contract(root, name, errors)
     check_gpu_self_heal_contract(root, name, errors)
     check_video_frame_contract(root, name, errors)
+    check_aigc_mark_contract(root, name, errors)
     check_delivery_bitrate_contract(root, name, errors)
     for path in iter_files(root):
         rel = os.path.relpath(path, root).replace("\\", "/")

@@ -15,6 +15,31 @@
 SSH 信息由 `xgy_cfg.ssh_cred()` 统一提供（`deploy.py` / `remote.py` / `xgy_launch.py` 等都走它）。
 不读 `secrets/xiangongyun.json` 里的 profile（那是老一套）。`FXAI_GLOBAL_CONFIG` 可另指全局配置路径。
 
+## 🔴 SSH 维护免手输密码（2026-11-16 新增：`xgy_ssh_api.py`）
+
+**以后维护任何仙宫云实例，不用再手工给 SSH 账号密码** —— 开放平台 `GET /instance/{id}`
+的 data 里就带 `password` / `ssh_domain` / `ssh_port` / `ssh_user`，工具现取现用。
+
+```bash
+# 只用令牌（xgy_api_token），从 API 取凭证直连。ID 省略则取全局配置 xgy_instance_id，
+# 再没有就用令牌下唯一那台实例（多台必须显式给）。
+python xgy_ssh_api.py info                                   # 看凭证（密码打码）+ 状态，不连 SSH
+python xgy_ssh_api.py run  <id> "hostname; uptime"           # 执行命令
+python xgy_ssh_api.py put  <id> ./patch.py /root/xgyscripts/patch.py
+python xgy_ssh_api.py get  <id> /root/xgyscripts/log.txt ./log.txt
+python xgy_ssh_api.py shell <id>                             # 交互（打印 API 取的密码让粘贴）
+```
+
+- 绑定默认实例：改 `~/.workbuddy/fxai_global.json` 的 `xgy_instance_id`（和 `xgy_guard.py use` 同一个键）。
+- **paramiko 依赖**：run/put/get 的密码登录必须有 paramiko。当前解释器缺它时脚本自动
+  `sys.executable -m pip install paramiko` 装到当前解释器、装完复核，装失败才给手动指引；
+  解释器路径一律动态取自当前进程，技能包内不得写死盘符。pip 源可经
+  `FXAI_PIP_INDEX` / `FXAI_PIP_EXTRA` 覆盖。info 不需要 paramiko。
+- 库函数：`xgy_cfg.ssh_cred_from_api(iid, token=None)` → 返回 `{host,port,user,password,status,label}`；
+  实例不在令牌名下 / 字段缺失 / 令牌失效都抛带指引的错。`xgy_cfg.current_instance_id()` 读默认实例。
+- 复用 `xgy_ssh.SSH`（传输层）：paramiko/系统 ssh、`put_text`、`run_bg`、`stream` 那套不动。
+- 🔴 密码来自 API 实时返回，**换实例/改密码都不用动本地文件**；`ssh_cred()`（本地静态）只作兜底。
+
 ```bash
 python xgy_api.py list                       # 所有实例（id/状态/GPU/磁盘/单价/SSH/web_url）
 python xgy_api.py info <id>                  # 单个实例详情
