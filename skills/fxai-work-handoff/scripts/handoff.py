@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""项目交接清单：建骨架、体检、打印。
+"""工作交接清单：建骨架、体检、打印。
 
 用法:
     python handoff.py init  <项目目录> [--to "<接手人>"] [--force]
@@ -30,7 +30,7 @@ import time
 
 sys.dont_write_bytecode = True
 
-DOC = '项目交接清单.md'
+DOC = '工作交接清单.md'
 MANIFEST = '_fxai_project.json'
 MEMORY = '_fxai_memory.md'
 TODO = '<待填'
@@ -56,6 +56,7 @@ SECTIONS = [
 PATHISH = re.compile(r'\.(md|json|py|mp4|mov|wav|mp3|png|jpg|jpeg|txt|srt|log|ps1|bat|sh|csv|xlsx)$',
                      re.I)
 HEAD = re.compile(r'^##\s+(.+?)\s*$')
+ABS_PATH = re.compile(r'^(?:[A-Za-z]:[\\/]|\\\\|/)')
 
 def now():
     return time.strftime('%Y-%m-%d %H:%M')
@@ -119,7 +120,7 @@ def tree_rows(root):
     except OSError:
         return rows
     for name in names:
-        if name in (DOC, '.git', '__pycache__'):
+        if name in (DOC, MANIFEST, MEMORY, '.git', '__pycache__'):
             continue
         full = os.path.join(root, name)
         if os.path.isdir(full):
@@ -155,7 +156,7 @@ def build(root, to):
 
     lines = []
     add = lines.append
-    add('# 项目交接清单 · %s' % title)
+    add('# 工作交接清单 · %s' % title)
     add('')
     add('> 交接时间：%s　交接给：%s' % (now(), to))
     add('> 项目根：`%s`　分类：%s' % (root, category))
@@ -330,7 +331,7 @@ def check(root):
         full = tok if os.path.isabs(tok) else os.path.join(root, tok)
         if not os.path.exists(full):
             bad.append('六：%s' % tok)
-    for s in ('二、交接卡', '十一、记忆与标准指针'):
+    for s in ('二、交接卡',):
         for line in bodies.get(s, []):
             if UNBUILT in line:
                 continue
@@ -342,6 +343,19 @@ def check(root):
                     continue
                 full = tok if os.path.isabs(tok) else os.path.join(root, tok)
                 if not os.path.exists(full):
+                    bad.append('%s：%s' % (s.split('、')[0], tok))
+    # 三/四/五/十一：产物与落点一律写绝对路径，只验绝对路径，
+    # 十一节的技能册指针是相对技能根的，不按项目根校验
+    for s in ('三、接手第一件事', '四、已完成', '五、待办与下一步', '十一、记忆与标准指针'):
+        for line in bodies.get(s, []):
+            if UNBUILT in line:
+                continue
+            toks = re.findall(r'`([^`]+)`', line) + re.findall(r'[A-Za-z]:[\\/][^\s`|、，。：]+', line)
+            for tok in toks:
+                tok = tok.strip()
+                if not ABS_PATH.match(tok) or not looks_path(tok):
+                    continue
+                if not os.path.exists(tok):
                     bad.append('%s：%s' % (s.split('、')[0], tok))
     for b in sorted(set(bad)):
         msgs.append('路径不存在：%s' % b)
@@ -362,8 +376,8 @@ def cmd_init(root, to, force):
         tmp = os.path.join(root, '_tmp')
         os.makedirs(tmp, exist_ok=True)
         stamp = time.strftime('%Y%m%d-%H%M%S')
-        shutil.move(doc, os.path.join(tmp, '项目交接清单.%s.md' % stamp))
-        print('旧清单已移入 %s' % os.path.join(tmp, '项目交接清单.%s.md' % stamp))
+        shutil.move(doc, os.path.join(tmp, '工作交接清单.%s.md' % stamp))
+        print('旧清单已移入 %s' % os.path.join(tmp, '工作交接清单.%s.md' % stamp))
     text = build(root, to)
     with io.open(doc, 'w', encoding='utf-8', newline='\n') as f:
         f.write(text)
@@ -388,7 +402,7 @@ def cmd_show(root):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description='项目交接清单：建骨架 / 体检 / 打印')
+    ap = argparse.ArgumentParser(description='工作交接清单：建骨架 / 体检 / 打印')
     sub = ap.add_subparsers(dest='cmd')
 
     p = sub.add_parser('init', help='建骨架')
