@@ -1,5 +1,19 @@
 __pycache__/
 *.pyc
+*.pyo
 *.log
 *.tmp
-.bak*/
+*.bak
+*.bak_*
+
+# 技能内部记忆，不对外分发
+MEMORY.md
+
+# 媒体与字体不进仓库
+*.mp4
+*.mov
+*.wav
+*.norm
+*.ttf
+*.otf
+*.ttc

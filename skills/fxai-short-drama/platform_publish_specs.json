@@ -1,4 +1,5 @@
 {
+  "_note": "可选套件 platform_publish.py 的规格真相源；该套件默认不跑，最终发布以 fxai-browser-publish 为准。每集封面主图仍在短剧侧生成（铁律 14）。",
   "video_common": {
     "format": "MP4 (H.264)",
     "resolution": "1080x1920",

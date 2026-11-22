@@ -45,10 +45,11 @@ LOCAL_URL_DEFAULT = "http://127.0.0.1:8182"
 _SPEAKER_FILE = os.path.join(_HERE, "speakers.json")
 
 # 引擎名 → 默认本机端口（配置未给 engines 时按端口兜底）
-ENGINE_PORTS = {"cosyvoice": 8182, "qwen3tts": 8086}
+ENGINE_PORTS = {"cosyvoice": 8182, "qwen3tts": 8086, "ming3tts": 8192}
 # 引擎别名 → 配置 engines 里的正式键名
 ENGINE_ALIAS = {"cosy": "cosyvoice", "cosyvoice3": "cosyvoice", "cv3": "cosyvoice",
-                "qwen": "qwen3tts", "qwen3": "qwen3tts", "qwen-tts": "qwen3tts"}
+                "qwen": "qwen3tts", "qwen3": "qwen3tts", "qwen-tts": "qwen3tts",
+                "ming": "ming3tts", "ming3": "ming3tts", "ming-tts": "ming3tts"}
 
 norm_url = fxc.norm_url
 

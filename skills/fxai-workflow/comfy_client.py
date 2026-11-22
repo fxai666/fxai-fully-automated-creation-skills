@@ -211,6 +211,10 @@ WORKFLOWS = {
     "charview4": {"qwen21": "img-qwen21-fourview.json"},
     "charview3": {"qwen21": "img-qwen21-threeview.json"},
     "scene": {"qwen21": "img-qwen21-process.json"},
+    # 角色造型（fxai-character-styling）：三图参考（图1人物/图2服装/图3姿势）→ 场景图。
+    # 与 scene 同为千问2.1底座，独立工作流便于技能自带 API 与提示词口径各自演进。
+    # 调用入口见 fxai-character-styling/scripts/styling_api.py；UI/API 版在 ComfyUI/workflows/凤希AI/角色造型合成V1*.json。
+    "charstyling": {"qwen21": "charstyling-qwen21-api.json"},
     "single": {"minimax": "mv-minimax-single.json"},
     "multi": {"minimax": "mv-minimax-multi.json"},
     "multiref": {"minimax": "mv-minimax-multiref.json"},
@@ -1608,6 +1612,18 @@ def _in_queue(pid, url):
     return False
 
 
+# 提交前显存门禁（清掉上一轮残留模型/缓存）只对「视频类」任务生效（用户口径 2026-11-21）。
+# 生图（scene / charview3 / charview4 / imgedit）与音乐音频（music / vocalsep）提交前不做清理：
+# 这类任务本身不吃大显存，没必要每次提交都把模型卸掉重来。
+# 视频类：single / multi / multiref（音频驱动视频、口播、MV）、charswap（角色替换）、
+#         facerestore（视频人脸精修）、upscale（视频超分）。
+# 改判据只动这个集合；短剧走 drama_pipeline.py 自己的 submit_workflow，本就不经此门禁。
+VIDEO_GATE_KINDS = frozenset({
+    "single", "multi", "multiref",
+    "charswap", "facerestore", "upscale",
+})
+
+
 def gpu_gate(url="", tag="run"):
     """POST /prompt 前的显存门禁，唯一实现在 fxai-standard/scripts/check_gpu_gate.py。
 
@@ -1682,7 +1698,11 @@ def run_workflow(wf, timeout=1800, poll=6, tag="run", kind=None, url=None,
     """
     validate_workflow_payload(wf, kind=kind, tag=tag)  # ← 提交前格式自检
     url = comfy_url(url)
-    gpu_gate(url=url, tag=tag)  # ← 提交前显存门禁，唯一实现在 fxai-standard/scripts
+    # 提交前显存门禁只对视频类任务用；生图/写歌/人声分离等跳过，不卸上一轮的模型。
+    if kind in VIDEO_GATE_KINDS:
+        gpu_gate(url=url, tag=tag)  # ← 提交前显存门禁，唯一实现在 fxai-standard/scripts
+    else:
+        print("  [%s] 非视频任务(kind=%s)，跳过提交前显存门禁" % (tag, kind), flush=True)
     # 模型名自适应：服务器升级后模型文件名变了，这里先换成服务器上实际有的那个再提交，
     # 省掉一次注定被拒的往返。名字没变时零动作；取不到服务器信息（离线）时静默跳过。
     if not models_checked:

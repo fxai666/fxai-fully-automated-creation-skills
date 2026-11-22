@@ -67,10 +67,19 @@ def qc_cmd(a, skip):
     cmd = [sys.executable, tool("shot_qc.py"), "--manifest",
            os.path.join(a.work_dir, "manifest.json"),
            "--out", a.out, "--src", a.src, "--min-diff", str(a.min_diff),
+           "--scan-step", str(a.scan_step),
            "--fail-out", os.path.join(a.work_dir, "qc_fail.json")]
     if skip_arg:
         cmd += ["--skip", skip_arg]
     return cmd
+
+
+def seam_cmd(a):
+    """接缝门禁：每镜起点即接缝，源片切镜则成片必须同点切镜。"""
+    return [sys.executable, tool("shot_seam_check.py"), "--out", a.out,
+            "--src", a.src,
+            "--manifest", os.path.join(a.work_dir, "manifest.json"),
+            "--report", os.path.join(a.work_dir, "seam_report.json")]
 
 
 def assemble_cmd(a, swap):
@@ -95,6 +104,9 @@ def main():
     ap.add_argument("--min-frames", type=int, default=24, help="短段合并帧数")
     ap.add_argument("--min-diff", type=float, default=3.0, help="质检未替换差异阈值")
     ap.add_argument("--max-side", type=int, default=960, help="换人长边档位")
+    ap.add_argument("--scan-step", type=int, default=4,
+                    help="全片扫描间隔帧数（0 关闭，交付不建议关）")
+    ap.add_argument("--no-seam", action="store_true", help="跳过接缝门禁（仅排障用）")
     ap.add_argument("--subdir", default="h3_shot", help="ComfyUI 任务子目录前缀")
     ap.add_argument("--dry", action="store_true", help="只打印计划，不执行")
     a = ap.parse_args()
@@ -136,16 +148,34 @@ def main():
         print("=== 第 %d 轮质检 ===" % (attempt + 1))
         if a.dry:
             print("[计划] 拼装:", " ".join(assemble_cmd(a, swap)))
+            if not a.no_seam:
+                print("[计划] 接缝:", " ".join(seam_cmd(a)))
             print("[计划] 质检:", " ".join(qc_cmd(a, skip)))
             break
         if run(assemble_cmd(a, swap), "拼装")[0] != 0:
             raise SystemExit("拼装失败")
+        if not a.no_seam:
+            code, _ = run(seam_cmd(a), "接缝门禁")
+            if code != 0:
+                print("接缝门禁未过：接缝未落在源片切镜点上，"
+                      "须按源片切点重定位或重跑该镜，不得交付。")
+                raise SystemExit(2)
         code, _ = run(qc_cmd(a, skip), "质检")
         if code == 0:
             print("质检全过，成片:", a.out)
             return
         fails = json.load(open(os.path.join(a.work_dir, "qc_fail.json"),
                                encoding="utf-8"))
+        scan_fails = [f for f in fails if f.get("scan")]
+        fails = [f for f in fails if f.get("idx") is not None]
+        if scan_fails:
+            print("全片扫描发现未替换段（镜头中点未覆盖），须按段重跑：")
+            for f in scan_fails:
+                print("  帧 %d~%d（%d 帧）" % (f["start_frame"], f["end_frame"],
+                                           f["frames"]))
+        if not fails:
+            print("仅扫描项未过、镜级无失败，停止自动重跑（扫描段须人工定位所属镜）")
+            raise SystemExit(2)
         if attempt == a.max_retry:
             print("达到最大重跑轮数，仍有失败镜:", [f["idx"] for f in fails])
             raise SystemExit(2)

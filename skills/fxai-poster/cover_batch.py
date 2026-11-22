@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import pathlib
 import sys
@@ -135,10 +136,15 @@ def main() -> int:
     ap.add_argument("--force", action="store_true", help="忽略生图缓存，强制重出")
 
     ap.add_argument("--list-sizes", action="store_true", help="列出尺寸注册表")
+    ap.add_argument("--list-styles", action="store_true", help="列出封面模板（常用/按主题两档）")
     ap.add_argument("--sites", action="store_true", help="列出各站封面规格")
     a = ap.parse_args()
 
     reg = _reg()
+
+    if a.list_styles:
+        CS.print_styles()
+        return 0
 
     if a.list_sizes:
         pol = reg.get("policy", {})
@@ -184,25 +190,44 @@ def main() -> int:
 
     # ---- 路线 B / 已有底图：叠加层出多尺寸 ----
     bg = a.bg or c.get("base_image", "")
+    style = c.get("style", "")
+    if not style:                                    # 不写 style 就按标题类别自动选
+        text = " ".join(str(c.get(x, "")) for x in ("title", "title2", "kicker", "subtitle"))
+        style, score = CS.auto_style(text, has_bg=bool(bg))
+        hit = "、".join("%s×%d" % (k, v) for k, v in
+                        sorted(score.items(), key=lambda x: -x[1]) if v)
+        print("未指定 style → 自动选 %s（%s）" % (style, hit or "无关键词命中，走兜底"))
+    if style not in CS.STYLES:
+        raise SystemExit("未知样式 %s（可选 %s）" % (style, ", ".join(CS.STYLES)))
+    need_bg = CS.STYLES[style].get("need_bg", True)
+
     if a.gen_base:
         side = _side_for_generation(c, a.side)
         bg = _generate_base(c, a.gen_size, side, a.gen_role, outdir,
                             a.gen_prompt, a.skip_qc, a.force)
-    if not pathlib.Path(bg).is_file():
+    if bg and not pathlib.Path(bg).is_file():
         raise SystemExit("底图不存在：%s" % bg)
+    if need_bg and not bg:
+        raise SystemExit("样式 %s 必须有底图（封面.json 的 base_image 或 --bg）" % style)
 
-    configured = a.side or c.get("text_side", "auto")
-    side, info = SIDE.resolve_side(bg, configured)
-    print(SIDE.describe(side, info))
+    if bg:
+        side, info = SIDE.resolve_side(bg, a.side or c.get("text_side", "auto"))
+        print(SIDE.describe(side, info))
+    else:                                            # cream_capsule 这类不需要底图
+        side = a.side or c.get("text_side", "auto")
 
     theme = c.get("theme", {})
     kw = dict(t1=c["title"], en=c.get("title_en", ""), kick=c.get("kicker", ""),
               sub=c.get("subtitle", ""), brand=c.get("footer", ""),
               gold=theme.get("gold", "#d8c39a"), paper=theme.get("paper", "#f7f2e9"),
-              side=side)
-    style = c.get("style", "vert_title")
-    if style not in CS.STYLES:
-        raise SystemExit("未知样式 %s（可选 %s）" % (style, ", ".join(CS.STYLES)))
+              side=side,
+              t2=c.get("title2", ""), cards=c.get("cards") or None,
+              foot_left=c.get("foot_left", ""), foot_acc=c.get("foot_acc", ""),
+              shot=c.get("shot", ""))
+    # 各样式 fn 的签名不一样：只传它认的字段（空值照传，有些是必填位置参数）
+    fn = CS.STYLES[style]["fn"]
+    params = set(inspect.signature(fn).parameters) if fn else set()
+    kw = {k: v for k, v in kw.items() if k in params}
 
     keys = [x.strip() for x in a.only.split(",") if x.strip()] or c.get("sizes") or None
     name = "封面_%s" % c["title"]

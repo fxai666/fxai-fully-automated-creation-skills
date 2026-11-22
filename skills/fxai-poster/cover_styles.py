@@ -19,6 +19,9 @@
                            适用：改造、对比、前后、转折
   still       剧照压底     成片截帧 + 底部大面积压暗 + 三行标题贴底
                            适用：短剧 / MV / 数字人（底图必须是成片剧照）
+  cream_capsule 奶油胶囊卡 奶油渐变 + 深色胶囊 + 两行大字 + 三张白卡（右上素材可选）
+                           适用：教程 / 实操 / 部署配置（浅色、干净、缩略图里也认得出）
+                           横版＝用户原稿 1440×900 的等比移植（参数已固化在本文件）
 
 只用两款字：得意黑（标题花字）+ 微软雅黑（正文/副标）。
 一切颜色、字号、边距都从 STYLES 里改，不许在 HTML 里散落硬编码。
@@ -378,6 +381,200 @@ def _list(bg, head, items, foot, w, h, kick="一个人 · 一条片", hs=104, bs
     return page(body, css, w, h)
 
 
+# ---------------------------------------------------------------- 9 奶油胶囊卡
+# 起源：2026-11-19「技能包部署教程」封面 D（人像版 1440×900），用户指定
+# 「这种配色、下面那排胶囊标签的样式都挺好看，抽象成模板，横屏竖屏各一版；
+#  人物在需要的时候才加，不加人物版式照样成立」。
+# 结构：奶油橙紫渐变 + 网点 + 深色胶囊 kicker + 两行大字（深墨蓝 / 品牌橙）
+#      + 底部白卡（每张一条彩色底边 / 左边）+ 一行页脚。
+# 人物/截图都是可选件：给了 `bg`（人像，羽化遮罩）或 `shot`（截图，圆角白框）才出现。
+CSS_CREAM = """
+body{background:linear-gradient(135deg,#FFF8F0 0%,#FFEAD8 42%,#EEF2FF 100%);color:#101828}
+.blob{position:absolute;border-radius:50%;filter:blur({{BL}}px);opacity:.55}
+.b1{width:{{B1}}px;height:{{B1}}px;left:{{B1X}}px;top:{{B1Y}}px;background:#FFB07A}
+.b2{width:{{B2}}px;height:{{B2}}px;right:{{B2X}}px;top:{{B2Y}}px;background:#A9BEFF}
+.b3{width:{{B3}}px;height:{{B3H}}px;left:{{B3X}}%;bottom:{{B3Y}}px;background:#FFD9C2}
+.dots{position:absolute;inset:0;
+  background-image:radial-gradient(rgba(16,24,40,.14) 1.6px,transparent 1.7px);
+  background-size:{{DOT}}px {{DOT}}px;
+  -webkit-mask-image:radial-gradient(circle at {{MX}}% {{MY}}%,#000 {{DMK}}%,transparent {{DMT}}%);
+  mask-image:radial-gradient(circle at {{MX}}% {{MY}}%,#000 {{DMK}}%,transparent {{DMT}}%)}
+.heroglow{position:absolute}
+.hero{position:absolute;
+  filter:saturate(1.02) brightness(1.03) contrast(1.02);
+  -webkit-mask-image:linear-gradient(180deg,#000 62%,rgba(0,0,0,.55) 82%,transparent 100%);
+  mask-image:linear-gradient(180deg,#000 62%,rgba(0,0,0,.55) 82%,transparent 100%)}
+.heroP{position:absolute;right:0;top:{{HPTOP}}px;height:{{HPH}}px;
+  object-fit:contain;object-position:100% 0%;max-width:{{HPMW}}%;filter:saturate(1.02) brightness(1.03) contrast(1.02);
+  -webkit-mask-image:linear-gradient(180deg,#000 74%,rgba(0,0,0,.6) 90%,transparent 100%);
+  mask-image:linear-gradient(180deg,#000 74%,rgba(0,0,0,.6) 90%,transparent 100%)}
+.shot{position:absolute;border-radius:{{SR}}px;overflow:hidden;background:#0B1220;
+  box-shadow:0 28px 70px rgba(16,24,40,.22);border:{{SB}}px solid #fff}
+.shot img{width:100%;height:100%;object-fit:cover;display:block}
+.stack{position:relative;z-index:2;padding:{{PT}}px {{PX}}px {{PB}}px;height:100%;
+  display:flex;flex-direction:column}
+.spacer{flex:1;min-height:{{SPMIN}}px}
+.chip{display:inline-flex;align-items:center;gap:{{CG2}}px;align-self:flex-start;
+  padding:{{CPV}}px {{CPH}}px;border-radius:999px;background:#101828;color:#FFE8D6;
+  font-size:{{KFS}}px;font-weight:700;letter-spacing:{{KLS}}px;white-space:nowrap}
+.chip i{width:{{DOT2}}px;height:{{DOT2}}px;border-radius:50%;background:#FF7A33;
+  display:block;flex:none}
+.h1{font-family:{{TITLE}};font-weight:400;line-height:{{LH}};margin-top:{{HMT}}px;
+  letter-spacing:{{HLS}}px;position:relative;z-index:3}
+.h1 .l1{font-size:{{S1}}px;color:#101828;display:block;white-space:nowrap}
+.h1 .l2{font-size:{{S2}}px;color:#FF5A1F;display:block;margin-top:{{GAP}}px;white-space:nowrap}
+.cards{display:flex;flex-direction:{{CDIR}};gap:{{CGAP}}px;position:relative;z-index:4}
+.card{flex:1;min-width:0;background:#FFFFFF;border-radius:{{CR}}px;padding:{{CPV2}}px {{CPH2}}px;
+  box-shadow:0 14px 34px rgba(16,24,40,.10);border-{{BAR}}:{{BW}}px solid #FF7A33;
+  display:flex;flex-direction:{{CDIR2}};justify-content:{{CJ}};align-items:{{CA}};
+  gap:{{CG3}}px;overflow:hidden}
+.card b{display:block;font-size:{{CT}}px;font-weight:800;line-height:1.15;white-space:nowrap}
+.card span{display:block;font-size:{{CS}}px;color:#5A6577;letter-spacing:{{CSLS}}px;
+  white-space:nowrap}
+.foot{margin-top:{{FMT}}px;font-size:{{FS}}px;color:#3A4356;font-weight:600;
+  letter-spacing:{{FLS}}px}
+.foot em{font-style:normal;color:#FF5A1F}
+"""
+
+
+def _cw(text):
+    """视觉宽度（全角 1.0 / 半角 0.52），按字数缩字号别按 len()。"""
+    return sum(1.0 if ord(c) > 127 else 0.52 for c in text) or 1.0
+
+
+def _fit(text, avail, base, ls=0.02):
+    return max(22, min(int(base), int(avail / (_cw(text) * (1 + ls)))))
+
+
+def _cream_capsule(bg=None, t1="", t2="", w=1080, h=1920, kick="", cards=None,
+                   foot_left="", foot_acc="", shot=None, pad=None, top=None,
+                   accents=("#FF7A33", "#3B6FF5", "#12B981")):
+    """奶油胶囊卡。`bg`=人像（可选，羽化遮罩）；`shot`=截图（可选，仅横版）。
+
+    cards: [{"t": 主标, "s": 副标, "c": 边条色}]，最多 3 张；不传就不出卡片。
+    """
+    cards = cards or []
+    wide = w > h * 1.15
+    vals = {}
+    if wide:
+        # 基准版式＝「封面D 人像版 1440×900」，参数已固化在本函数
+        # 横竖两版共用这一套版式，尺寸由 cover_sizes.json 统一管理。
+        # 所有像素按 h/900 等比放大：横版 1920×1080 就是同一张版式的等比重排版，
+        # 不重新设计、不估边距；如需调整数值，以本函数为准。
+        f = h / 900.0
+        px = pad if pad is not None else round(w * 80.0 / 1440.0)
+        avail = (w - px * 2) if not shot else round(w * 0.55)
+        vals.update(PT=round(58 * f), PX=px, PB=round(58 * f),
+                    SPMIN=round(28 * f), HMT=round(34 * f), GAP=round(6 * f),
+                    LH=.98, HLS=round(2 * f), DMK=22, DMT=76,
+                    KFS=round(26 * f), KLS=round(4 * f), DOT2=round(10 * f),
+                    CPV=round(12 * f), CPH=round(26 * f), CG2=round(12 * f),
+                    CDIR="row", CDIR2="column", CJ="flex-start", CA="stretch",
+                    CGAP=round(22 * f), CG3=round(8 * f),
+                    CR=round(22 * f), BW=round(7 * f), BAR="bottom",
+                    CPV2=round(22 * f), CPH2=round(26 * f),
+                    CT=round(50 * f), CS=round(23 * f), CSLS=round(2 * f),
+                    FMT=round(24 * f), FS=round(27 * f), FLS=round(5 * f),
+                    SR=round(20 * f), SB=round(6 * f))
+        s1 = _fit(t1, avail, round(186 * f), .02)
+        s2 = _fit(t2, avail, round(150 * f), .02)
+        if not bg and not shot:
+            # 右上角不挂素材时要补满画面：标题放大，别让右边空一大块
+            s1 = _fit(t1, avail, round(250 * f), .02)
+            s2 = _fit(t2, avail, round(200 * f), .02)
+        vals.update(S1=s1, S2=s2)
+    else:
+        f = h / 1920.0
+        pad = pad if pad is not None else round(w * 0.059)
+        avail = (w - pad * 2)
+        # 竖版＝把横版那套顺序竖过来：胶囊 → 两行大字 → 素材（头肩）→ 三张卡 → 页脚。
+        # 卡片压在人像下半身之上（人像只露头肩），页脚落在卡片下方、
+        # 整体仍在 3:4 安全区（y≤1680）内，抖音竖版裁切不会切到字。
+        vals.update(PT=top if top is not None else round(h * 0.100), PX=pad,
+                    PB=round(h * 0.125),          # 底边收到 3:4 安全区内（y≤1680）
+                    SPMIN=round(24 * f), HMT=round(40 * f), GAP=round(6 * f),
+                    LH=.98, HLS=round(2 * f), DMK=18, DMT=74,
+                    KFS=round(32 * f), KLS=round(4 * f), DOT2=round(11 * f),
+                    CPV=round(14 * f), CPH=round(34 * f), CG2=round(13 * f),
+                    CDIR="column", CDIR2="column", CJ="flex-start", CA="stretch",
+                    CGAP=round(14 * f), CG3=round(6 * f),
+                    CR=round(20 * f), BW=round(8 * f), BAR="left",
+                    CPV2=round(20 * f), CPH2=round(30 * f),
+                    CT=round(44 * f), CS=round(24 * f), CSLS=round(2 * f),
+                    FMT=round(18 * f), FS=round(28 * f), FLS=round(5 * f),
+                    SR=round(20 * f), SB=round(6 * f))
+        base = round(238 * f) if not bg else round(212 * f)
+        s1 = _fit(t1, avail, base, .01)
+        s2 = _fit(t2, avail, base, .01)
+        vals.update(S1=s1, S2=s2)
+
+    vals.update(BL=round(70 * f), B1=round(620 * f), B2=round(560 * f),
+                B3=round(520 * f), B3H=round(420 * f),
+                B1X=round(-160 * f), B1Y=round(-180 * f),
+                B2X=round(-140 * f), B2Y=round(-120 * f),
+                B3X=44, B3Y=round(-220 * f), DOT=round(34 * f),
+                MX=52, MY=42, TITLE=TITLE, HPMW=56,
+                HPTOP=round(h * 0.395), HPH=round(h * 0.365))
+
+    css = CSS_CREAM
+    for k, v in vals.items():
+        css = css.replace("{{%s}}" % k, str(v))
+
+    body = ['<div class="blob b1"></div><div class="blob b2"></div>',
+            '<div class="blob b3"></div>']
+
+    if bg:
+        if wide:
+            # 右上角素材位：right 56 / top 2 / height 562，光晕 right 20 / top 40 / 620×520
+            # —— 数值已固化在本函数；素材可以是人像，也可以是产品图、截图、角色图。
+            body.append('<div class="heroglow" style="right:%dpx;top:%dpx;width:%dpx;'
+                        'height:%dpx;background:radial-gradient(ellipse at 50%% 45%%,'
+                        'rgba(255,214,170,.36),rgba(255,214,170,0) 68%%)"></div>'
+                        % (round(20 * f), round(40 * f),
+                           round(620 * f), round(520 * f)))
+            body.append('<img class="hero" src="%s" style="right:%dpx;top:%dpx;'
+                        'height:%dpx;width:auto">'
+                        % (_uri(bg), round(56 * f), round(2 * f), round(562 * f)))
+        else:
+            # 竖版：人像踩在右下，头部露在第三张卡上方；高度按画布给，宽度自己收
+            body.append('<img class="heroP" src="%s">' % _uri(bg))
+
+    if shot and wide:
+        sw = round(w * 0.365)
+        sh = round(sw * 0.615)
+        body.append('<div class="shot" style="right:%dpx;top:%dpx;width:%dpx;height:%dpx">'
+                    '<img src="%s"></div>'
+                    % (round(w * 0.052), round(h * 0.185), sw, sh, _uri(shot)))
+
+    body.append('<div class="dots"></div>')
+    body.append('<div class="stack">')
+    if kick:
+        body.append('<div class="chip"><i></i>%s</div>' % kick)
+    body.append('<div class="h1"><span class="l1">%s</span><span class="l2">%s</span></div>'
+                % (t1, t2))
+    body.append('<div class="spacer"></div>')
+    foot = ""
+    if foot_left or foot_acc:
+        foot = '<div class="foot">%s%s%s</div>' % (
+            foot_left, " · " if foot_left and foot_acc else "",
+            "<em>%s</em>" % foot_acc if foot_acc else "")
+    if cards:
+        body.append('<div class="cards">')
+        for i, c in enumerate(cards):
+            if isinstance(c, dict):
+                ct, cs, cc = c.get("t", ""), c.get("s", ""), c.get("c")
+            else:
+                ct, cs, cc = c[0], (c[1] if len(c) > 1 else ""), None
+            cc = cc or accents[i % len(accents)]
+            body.append('<div class="card" style="border-color:%s"><b>%s</b>'
+                        '<span>%s</span></div>' % (cc, ct, cs))
+        body.append('</div>')
+    if foot:                                          # 横竖版一律：胶囊→标题→卡片→页脚
+        body.append(foot)
+    body.append('</div>')
+    return page("".join(body), css, w, h)
+
+
 # ---------------------------------------------------------------- 注册表
 def _uri(p):
     return pathlib.Path(p).resolve().as_uri()
@@ -548,35 +745,56 @@ def _vert_title(bg, t1, sub="", w=1080, h=1920, en="", kick="", brand="",
     return page("".join(body), css, w, h)
 
 
+# 类别 → 默认模板。`tier` 只影响展示与默认优先级，不影响可用性：
+#   常用＝日常九成情况落在这四个里；按主题＝标题出现该类专属词才用。
+# 没命中任何关键词时的兜底：有底图 → photo_big，没底图 → cream_capsule（唯一不依赖底图）。
 STYLES = {
-    "photo_big": dict(cn="写真大字", fn=_photo_big, need_bg=True,
+    "photo_big": dict(cn="写真大字", fn=_photo_big, need_bg=True, tier="常用",
+                      cat="人物向",
                       use="人物出镜 / 故事 / 情感 / 人设口播",
                       keys=("人", "故事", "我", "个人", "经历", "生活", "情感", "真实")),
-    "vert_title": dict(cn="竖排贴左", fn=_vert_title, need_bg=True,
+    "vert_title": dict(cn="竖排贴左", fn=_vert_title, need_bg=True, tier="常用",
+                       cat="音乐向",
                        use="MV / 歌曲 / 情绪向（标题竖排贴左，绝不压脸）",
                        keys=("MV", "歌", "曲", "音乐", "海边", "治愈", "情绪", "来信")),
-    "magazine": dict(cn="杂志白卡", fn=_magazine, need_bg=True,
-                     use="观点 / 认知 / 书单 / 深度（高级感）",
-                     keys=("观点", "认知", "方法论", "为什么", "本质", "思考", "书")),
-    "bold_block": dict(cn="撞色色块", fn=_bold_block, need_bg=True,
-                       use="反差 / 结论 / 硬核干货 / 数据",
-                       keys=("钱", "效率", "翻倍", "错", "坑", "真相", "对比", "多少")),
-    "split": dict(cn="上下分屏", fn=_split, need_bg=True,
-                  use="改造 / 前后对比 / 转折",
-                  keys=("以前", "现在", "改造", "前后", "从", "变成", "升级")),  # std:allow
-    "closeup": dict(cn="人物特写", fn=_closeup, need_bg=True,
+    "cream_capsule": dict(cn="奶油胶囊卡", fn=_cream_capsule, need_bg=False, tier="常用",
+                          cat="教程向",
+                          use="教程 / 实操 / 部署配置（奶油渐变 + 胶囊标签 + 三张白卡，素材可选）",
+                          keys=("教程", "实操", "演示", "部署", "配置", "安装", "跟着", "入门",
+                                "保姆级", "手把手")),
+    "closeup": dict(cn="人物特写", fn=_closeup, need_bg=True, tier="常用",
+                    cat="人物向",
                     use="强人设 / 口播 / 情绪（脸占满画面）",
                     keys=("我", "你们", "人设", "情绪", "心里", "为什么我")),
-    "list": dict(cn="清单三条", fn=_list, need_bg=True,
+    "magazine": dict(cn="杂志白卡", fn=_magazine, need_bg=True, tier="按主题",
+                     cat="观点向",
+                     use="观点 / 认知 / 书单 / 深度（高级感）",
+                     keys=("观点", "认知", "方法论", "为什么", "本质", "思考", "书")),
+    "bold_block": dict(cn="撞色色块", fn=_bold_block, need_bg=True, tier="按主题",
+                       cat="反差向",
+                       use="反差 / 结论 / 硬核干货 / 数据",
+                       keys=("钱", "效率", "翻倍", "错", "坑", "真相", "对比", "多少")),
+    "split": dict(cn="上下分屏", fn=_split, need_bg=True, tier="按主题",
+                  cat="对比向",
+                  use="改造 / 前后对比 / 转折",
+                  keys=("以前", "现在", "改造", "前后", "变成", "升级")),  # std:allow
+    "list": dict(cn="清单三条", fn=_list, need_bg=True, tier="按主题",
+                 cat="清单向",
                  use="干货 / 教程 / 步骤 / 盘点",
-                 keys=("三", "步", "清单", "方法", "流程", "怎么", "教程", "盘点")),
-    "still": dict(cn="剧照压底", fn=None, need_bg=True,
+                 keys=("三步", "步骤", "清单", "方法", "流程", "怎么", "盘点", "三条")),
+    "still": dict(cn="剧照压底", fn=None, need_bg=True, tier="按主题",
+                  cat="剧情向",
                   use="短剧 / MV / 数字人（成片剧照当底）", keys=("短剧", "剧", "MV", "集")),
 }
 
 
-def auto_style(text):
-    """按主题词打分选样式，返回 (key, 分数表)。打不出分就回 photo_big。"""
+def auto_style(text, has_bg=None):
+    """按标题文字选样式，返回 (key, 分数表)。
+
+    打分＝命中关键词个数，最高者胜；一条都没命中就走兜底：
+      has_bg=False（确认没底图）→ cream_capsule（唯一 need_bg=False，不会报错）
+      has_bg=True / None            → photo_big（人物向最常见）
+    """
     score = {k: 0 for k in STYLES}
     for k, v in STYLES.items():
         for kw in v["keys"]:
@@ -584,16 +802,31 @@ def auto_style(text):
                 score[k] += 1
     best = max(score, key=lambda k: score[k])
     if score[best] == 0:
-        best = "photo_big"
+        best = "cream_capsule" if has_bg is False else "photo_big"
     return best, score
+
+
+def print_styles():
+    """命令行 `--list-styles`：按「常用 / 按主题」两档列出模板。"""
+    for tier in ("常用", "按主题"):
+        rows = [(k, v) for k, v in STYLES.items() if v.get("tier") == tier]
+        print("\n【%s】%d 个" % (tier, len(rows)))
+        print("  %-14s %-6s %-6s %-5s %s" % ("模板名", "中文名", "类别", "底图", "适用"))
+        for k, v in rows:
+            print("  %-14s %-6s %-6s %-5s %s" % (
+                k, v["cn"], v.get("cat", ""),
+                "必填" if v.get("need_bg", True) else "可选", v["use"]))
+    print("\n没写 style 时按标题自动选；没底图只会落到 cream_capsule。")
+    print("兜底：有底图 → photo_big，没底图 → cream_capsule。")
 
 
 def render(style, out_dir, name, bg=None, w=1080, h=1920, **kw):
     st = STYLES[style]
     if st["fn"] is None:
         raise SystemExit("样式 %s 的底图必须是成片剧照，走 poster.py --mode hybrid" % style)
-    if not bg:
-        raise SystemExit("样式 %s 需要 --bg 底图" % style)
+    if not bg and st.get("need_bg", True):
+        raise SystemExit("样式 %s 需要 --bg 底图（cream_capsule 的人物/截图是可选的，"
+                         "可改用 shot= 或都不传）" % style)
     html = st["fn"](bg, w=w, h=h, **kw)
     html = html.replace("</head>", "<style>%s</style></head>" % slides._font_face_css(), 1)
     return slides.render(name, html, pathlib.Path(out_dir), w=w, h=h)

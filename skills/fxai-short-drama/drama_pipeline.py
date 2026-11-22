@@ -1198,6 +1198,10 @@ def _shot_query_mod():
 
 
 def submit_workflow(wf):
+    # 短剧这条提交链上的任务全是视频生成：提交前走公共显存门禁（清上一轮残留模型）。
+    # 判据唯一实现在 fxai-standard/scripts/check_gpu_gate.py，这里只调公共层封装 comfy_client.gpu_gate()，
+    # 不在短剧里复制第二份。生图/配乐等其它技能各自走 comfy_client 的 kind 分流，不受此处影响。
+    C.gpu_gate(url=COMFY, tag="短剧")
     data = json.dumps({"prompt": wf}).encode("utf-8")
     req = urllib.request.Request(
         COMFY + "/prompt", data=data, headers={"Content-Type": "application/json"}

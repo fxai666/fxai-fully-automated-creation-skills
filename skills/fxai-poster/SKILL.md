@@ -1,6 +1,6 @@
 ---
 name: fxai-poster
-description: 图片设计（全类型：视频封面 / 海报 / 文章配图 / 社交图 / 电商图 / 信息图 / 视频内嵌图）。主线是 AI 生图打底再叠文案层：hybrid（默认，生图+叠字）/ image（纯画面）/ web（中文须精确或大段文字）；类型与必备要素见 `08` 册，三道质检门（规格预检 / 提示词要素 / 成图指标）见 `09` 册。封面另有 8 种样式（含竖排），可自动选也可指定（`cover_styles.py`），产物 PNG 可直接铺到视频首帧。不做：视频本体生成（→fxai-audio-video / fxai-mv-pipeline / fxai-short-drama）、纯配音（→fxai-voiceover）。
+description: 图片设计（全类型：视频封面 / 海报 / 文章配图 / 社交图 / 电商图 / 信息图 / 视频内嵌图）。主线是 AI 生图打底再叠文案层：hybrid（默认，生图+叠字）/ image（纯画面）/ web（中文须精确或大段文字）；类型与必备要素见 `08` 册，三道质检门（规格预检 / 提示词要素 / 成图指标）见 `09` 册。封面另有 9 种样式（含竖排、奶油胶囊卡），按类别自动选也可指定（`cover_styles.py`，`--list-styles` 查表），产物 PNG 可直接铺到视频首帧。不做：视频本体生成（→fxai-audio-video / fxai-mv-pipeline / fxai-short-drama）、纯配音（→fxai-voiceover）。
 agent_created: true
 ---
 
@@ -17,7 +17,7 @@ agent_created: true
 | `references/02-网页模式版式.md` | web / hybrid 排版、主题、文案结构、吸睛 |
 | `references/03-生图与混合模式.md` | 写生图提示词、调底图蒙板 |
 | `references/04-接入视频首帧.md` | 把海报铺到 MP4 前（接入、两个致命点、校验） |
-| `references/05-封面模板库.md` | **做封面必读**：8 种样式、封面段长度与音轨 |
+| `references/05-封面模板库.md` | **做封面必读**：9 种样式、封面段长度与音轨 |
 | `references/06-图文信息图版式.md` | 信息块 ≥3：结构选型、编号卡、图标配色 |
 | `references/07-叙事与信息层级.md` | 定主张、情绪强度、画幅与可读性门禁 |
 | `references/08-图片类型矩阵.md` | **定类型必读**：15 类用途的尺寸、要素、质检重点 |
@@ -26,7 +26,7 @@ agent_created: true
 | `references/11-封面多尺寸与平台规格.md` | 跨平台封面：尺寸 key / 留白侧 / 生图优先 / 验收 |
 | `references/svg-icons.md`、`references/infographic-template.html` | 23 组内联 SVG 图标；信息图版式实例（只作参考） |
 | `poster.py`、`cover_batch.py` | 出图入口；`--gen-cover` 带字 / `--gen-base` 底图 |
-| `cover_styles.py`、`cover_side.py` | 8 种样式（`render` / `render_matrix`）；按留白判文字侧 |
+| `cover_styles.py`、`cover_side.py` | 9 种样式（`render` / `render_matrix`）；按留白判文字侧 |
 | `cover_prompt.py` | 版式 → 生图提示词，六段骨架第三段写足排版 |
 | `cover_sizes.json` | 尺寸与站点规格唯一真源 |
 | `qc.py` | 三检 `pre`/`prompt`/`post`/`types` |
@@ -37,6 +37,23 @@ agent_created: true
 
 `hybrid`（生图打底 + 叠字）/ `image`（生图，文案写进提示词落在画面）/ `web`（纯文字排版）；**封面首选 image 带字**。
 判据与顺序见 `01` 册，15 类用途默认模式见 `08` 册，样式 key 见 `05` 册，多尺寸见 `11` 册；**一条视频至少出 2 版**（有人 / 无人）。
+
+## 封面模板速查（按类别默认，`--list-styles` 打印全表）
+
+| 内容类别 | 默认模板 | 底图 |
+|---|---|---|
+| 教程 / 实操 / 部署配置 | `cream_capsule` 奶油胶囊卡 | **可选** |
+| MV / 音乐 / 情绪向 | `vert_title` 竖排贴左 | 必填 |
+| 人物出镜 / 故事 / 情感 | `photo_big` 写真大字 | 必填 |
+| 强人设 / 口播 | `closeup` 人物特写 | 必填 |
+| 观点 / 认知 / 书单 | `magazine` 杂志白卡 | 必填 |
+| 反差 / 结论 / 数据 | `bold_block` 撞色色块 | 必填 |
+| 改造 / 前后对比 | `split` 上下分屏 | 必填 |
+| 步骤 / 盘点 | `list` 清单三条 | 必填 |
+| 短剧 / 剧集截帧 | `still` 剧照压底 | 成片剧照 |
+
+前 4 个是常用档，后 5 个由标题专属词触发（词表见 `05` 册）。`封面.json` 不写 `style` 就自动选，
+全不命中时有底图走 `photo_big`、没底图走 `cream_capsule`；显式指定永远优先。
 
 ## 质检门禁（交付前必过，三道门）
 

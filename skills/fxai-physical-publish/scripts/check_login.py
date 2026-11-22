@@ -20,12 +20,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from human import api, browser, clipboard, keyboard, regions, screen  # noqa: E402
 
 ORDER = ["douyin", "kuaishou", "weixin_channels", "baijiahao", "toutiao",
-         "youtube", "tiktok", "bilibili", "xiaohongshu"]
+         "youtube", "tiktok", "bilibili"]
 
 LABEL = {
     "douyin": "抖音", "kuaishou": "快手", "weixin_channels": "视频号",
     "baijiahao": "百家号", "toutiao": "今日头条", "youtube": "YouTube",
-    "tiktok": "TikTok", "bilibili": "B站", "xiaohongshu": "小红书",
+    "tiktok": "TikTok", "bilibili": "B站",
 }
 
 SUSPECT = ["登录", "登陆", "log in", "login", "sign in", "扫码", "验证码",
@@ -37,7 +37,7 @@ SUSPECT = ["登录", "登陆", "log in", "login", "sign in", "扫码", "验证�
 ARRIVE = {
     "douyin": "抖音", "kuaishou": "快手", "weixin_channels": "视频号",
     "baijiahao": "百家号", "toutiao": "头条", "youtube": "YouTube",
-    "tiktok": "TikTok", "bilibili": "哔哩哔哩", "xiaohongshu": "小红书",
+    "tiktok": "TikTok", "bilibili": "哔哩哔哩",
 }
 
 

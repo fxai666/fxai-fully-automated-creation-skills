@@ -11,8 +11,8 @@
 | `SKILL.md` | 规范、约束、调用方式、字幕/速度/档案约定 |
 | `drama_pipeline.py` | 唯一真相源：组装/提交/轮询/合并 + 项目档案辅助函数 + 验收烧录 SOP |
 | `gen_subtitle_aligned.py` | **内置**镜头锚定词级对齐（文字取剧本 `<d>` 真值、whisper 只借时间；不依赖 MV 的三段式补齐） |
-| `platform_publish.py` | **多平台发布交付套件生成器**：按 `platform_publish_specs.json` 规格，一键产出红果/番茄/快手/火龙漫剧所需图片（按各平台 `required_images` 真实数量出图，poster 盖标题封面 + avatar 中心裁切头像/小图）+ 系列共享 `剧情介绍.md` + 每平台 `展示页.md`（投稿表单预填可复制）+ `总览_交付清单.md` |
-| `platform_publish_specs.json` | 各平台 `required_images`(key/label/role/w/h/ratio/note)/必填字段/特别要求/AI声明 的真实规格表（改尺寸/加平台/调所需图片只动这里） |
+| `platform_publish.py` | **（可选增强 · 默认不跑）多平台发布交付套件生成器**：显式要求时才按 `platform_publish_specs.json` 规格产出红果/番茄/快手/火龙漫剧所需图片（各平台 `required_images`，poster 标题封面 + avatar 头像/小图）+ 系列共享 `剧情介绍.md` + 每平台 `展示页.md` + `总览_交付清单.md`。最终发布一律走 `fxai-browser-publish`，本套件不进默认链路；每集封面主图（铁律 14）仍由本技能的生图链路产出 |
+| `platform_publish_specs.json` | （配合可选套件）各平台 `required_images`(key/label/role/w/h/ratio/note)/必填字段/特别要求/AI声明 的真实规格表（改尺寸/加平台/调所需图片只动这里） |
 | `examples/episode_template.py` | 新项目起步模板（参数化、无绝对路径） |
 | 全局配置 `~/.workbuddy/fxai_global.json` | **唯一真相源**，全部 `fxai-*` 技能共用一份（地址/软件目录/数据目录），不随包发 |
 
@@ -37,7 +37,7 @@
    - whisper 环境是独立 conda env：`{software_data_dir}/conda/env/whisper`（解释器 `python.exe` 在环境根目录，按规范置于软件数据目录下的 conda/env 中）；脚本统一按 `software_data_dir` 定位它，字幕识别前先使用此环境；传统 venv 布局不适用。
    - 自查：`ffmpeg -filters | grep -w subtitles` 应能看到 `subtitles`；`{software_data_dir}/conda/env/whisper\python.exe -c "import faster_whisper"` 不应报错。
 3. **whisper 模型**：由 whisper 程序自己管（`whisper_server.py` 顶部 `MODEL_NAME`，当前 large-v3 满血版，随程序包分发在程序目录 `model\` 下）；`fxai_global.json` 只记 `whisper_dir`（程序安装位置），模型不进全局配置。
-4. **Python 依赖 Pillow**：多平台发布套件（`platform_publish.py`）需要 `PIL`（封面合成）。在跑脚本的 Python 环境装 `pip install Pillow` 即可；若用 WorkBuddy 托管 Python，在它的 venv 里装。封面中文字体走 `%WINDIR%/Fonts/simhei.ttf`（黑体，Windows 自带），缺失则退回系统默认字体（中文可能渲染异常）。
+4. **Python 依赖 Pillow（仅可选套件需要）**：多平台发布套件（`platform_publish.py`）默认不跑；只有显式要求逐站物料时才需要 `PIL` 做封面裁切。到时装 `pip install Pillow` 即可；若用 WorkBuddy 托管 Python，在它的 venv 里装。封面中文字体走 `%WINDIR%/Fonts/simhei.ttf`（黑体，Windows 自带），缺失则退回系统默认字体（中文可能渲染异常）。
 
 ## 三、安装步骤（使用者侧）
 
@@ -78,4 +78,4 @@ python acceptance_burn_epN.py        # 内部调 drama_pipeline.acceptance_burn(
 - **SRT 路径必须相对 basename**：烧录时 `subprocess.run(..., cwd=SRT所在目录)`，滤镜里只写 `subtitles=文件名.srt`（os.path.basename）——`subtitles` 滤镜里 `:` 是选项分隔符、`\` 是转义符，Windows 绝对路径会被误解析。
 - **字幕规范**：对白用 `<d>[Chinese]台词</d>`（语音+口型）；可见字幕条用双引号「画面弹出字幕："xxx"」（宜短句）；大段对白字幕走后期烧录（`gen_subtitle_aligned` 镜头锚定，文字取剧本真值，whisper 只借时间）。
 - **项目档案**：新项目首次生成→存项目档案，缺什么补什么；`sync_project_to_comfyui` 仅用于从本地备份恢复服务端资源（HTTP 覆盖回传），正常生图流程不必。
-- **多平台发布套件**：封面底图走 ComfyUI 生图或系列最亮场景/角色图，中文标题/集数由本地 PIL 盖（模型只出画面，中文留给 PIL）；按各平台 `required_images` 真实需要的图片数量出图（poster 盖标题封面、avatar 中心裁切头像/小图），不重复不漏。平台尺寸会变，改尺寸/加平台只动 `platform_publish_specs.json`。系列共享 `剧情介绍.md`；`project_def.json` 加 `synopsis`/`one_liner`/`tags`/`category` 可自动带全。
+- **多平台发布套件（可选、默认不跑）**：最终发布一律走 `fxai-browser-publish`；本套件仅在显式要求逐站物料时执行。执行时：封面底图走 ComfyUI 生图或系列最亮场景/角色图，中文标题/集数由本地 PIL 盖（模型只出画面，中文留给 PIL）；按各平台 `required_images` 真实需要的图片数量出图（poster 盖标题封面、avatar 中心裁切头像/小图），不重复不漏。平台尺寸会变，改尺寸/加平台只动 `platform_publish_specs.json`。系列共享 `剧情介绍.md`；`project_def.json` 加 `synopsis`/`one_liner`/`tags`/`category` 可自动带全。

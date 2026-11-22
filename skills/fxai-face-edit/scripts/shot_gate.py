@@ -8,6 +8,8 @@
 用法：
     python shot_gate.py SRC [--out-dir DIR]
     python shot_gate.py SRC --assert-route single_shot   # 判定不符时退出码 2
+    python shot_gate.py SRC --reuse-seg 旧片段.mp4 --reuse-range 660,915
+                                                         # 提交前核复用段时间轴
     python shot_gate.py --self-check                     # 规则与程序一致性自检
 
 切点判据复用 shot_split.py 的 detect_cuts / merge_short，两处共用一份实现。
@@ -15,6 +17,8 @@
 import argparse
 import json
 import os
+import subprocess
+import sys
 
 from shot_split import detect_cuts, merge_short, probe_streams
 
@@ -68,7 +72,8 @@ def self_check(skill_root):
     checks = []
     scripts = os.path.join(skill_root, "scripts")
     for name in ("shot_split.py", "shot_assemble.py", "shot_verify.py",
-                 "char_swap.py", "shot_gate.py"):
+                 "char_swap.py", "shot_gate.py", "shot_qc.py",
+                 "shot_seam_check.py"):
         checks.append(("脚本落点 " + name, os.path.isfile(os.path.join(scripts, name))))
 
     ref = os.path.join(skill_root, "references", "06-角色替换ComfyUI链.md")
@@ -93,6 +98,18 @@ def self_check(skill_root):
             split_src = f.read()
     checks.append(("切段与门禁判据同源", "def detect_cuts" in split_src
                    and "def merge_short" in split_src))
+
+    checks.append(("06 册登记全片扫描", "--scan-step" in ref_text))
+    checks.append(("06 册登记接缝门禁", "shot_seam_check.py" in ref_text))
+    checks.append(("SKILL.md 登记双质检门禁",
+                   "shot_seam_check.py" in skill_text and "--scan-step" in skill_text))
+    seam_path = os.path.join(scripts, "shot_seam_check.py")
+    seam_src = ""
+    if os.path.isfile(seam_path):
+        with open(seam_path, encoding="utf-8") as f:
+            seam_src = f.read()
+    checks.append(("接缝阈值口径 15 与程序一致",
+                   "阈值 15" in ref_text and "CUT_TH = 15.0" in seam_src))
     return checks
 
 
@@ -110,6 +127,12 @@ def main():
                     default="", help="声明拟走链路；与判定不符时退出码 2")
     ap.add_argument("--self-check", action="store_true",
                     help="规则与程序一致性自检")
+    ap.add_argument("--reuse-seg", default="",
+                    help="拟复用的既有成片段；给出即核其时间轴")
+    ap.add_argument("--reuse-range", default="",
+                    help="既有片段对应的源片帧区间 a,b（配 --reuse-seg）")
+    ap.add_argument("--reuse-offset", type=int, default=0,
+                    help="既有片段自身起点对应的源片帧号")
     a = ap.parse_args()
 
     if a.self_check:
@@ -130,6 +153,20 @@ def main():
         print("门禁拦截：判定 %s（%d 镜），拟走 %s；链路已锁定，不得跨链路提交。"
               % (result["route"], result["shot_count"], a.assert_route))
         raise SystemExit(2)
+
+    # 复用既有成片段的提交前核对：时间轴错位即拦下，按源片切点为锚重定位
+    if a.reuse_seg:
+        if not a.reuse_range:
+            ap.error("--reuse-seg 需要同时给 --reuse-range a,b")
+        seam = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "shot_seam_check.py")
+        cmd = [sys.executable, seam, "--mode", "align", "--seg", a.reuse_seg,
+               "--src", a.src, "--range", a.reuse_range,
+               "--seg-offset", str(a.reuse_offset)]
+        if subprocess.run(cmd).returncode != 0:
+            print("门禁拦截：拟复用的既有片段与原片时间轴不一致，"
+                  "须以源片切点为锚重定位或重跑该段，再提交。")
+            raise SystemExit(2)
 
     if a.out_dir:
         os.makedirs(a.out_dir, exist_ok=True)

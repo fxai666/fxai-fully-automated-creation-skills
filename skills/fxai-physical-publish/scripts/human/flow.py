@@ -369,16 +369,19 @@ class Runner:
         t0 = time.time()
         exe_name = os.path.basename((self.site_data.get("window", {}) or {}).get("exe", "chrome.exe")).lower()
         dialogs = ("#32770", "Alternate Modal Top Most")
+        # 2026-11-20 实测：Win11 下文件选择器有时不是 #32770（现代选择器 / 由网络位置
+        # 命名空间托管），按类名匹配会「等不到」而其实窗口已经弹出来了，后面全被它挡住。
+        # 补一条按标题兜底：只要是浏览器进程、宽 ≥200、标题叫「打开/Open/选择文件」就当对话框。
+        titles = ("打开", "Open", "选择文件", "Select File")
         while time.time() - t0 < timeout_s:
             self.check_abort()
             for w in api.list_windows():
-                if w["class"] not in dialogs:
-                    continue
                 if os.path.basename(w["exe"]).lower() != exe_name:
                     continue
                 if w["client_size"][0] < 200:
                     continue
-                return w["hwnd"]
+                if w["class"] in dialogs or (w.get("title") or "").strip() in titles:
+                    return w["hwnd"]
             time.sleep(0.35)
         raise RuntimeError("等不到系统文件对话框（点击上传后应弹出「打开」窗口）")
 
@@ -533,6 +536,19 @@ class Runner:
             if gone:
                 self.log("open_modal_dismissed", n=len(gone))
                 time.sleep(wait / 1000.0)
+            # 🔴 2026-11-20 实测：Ctrl+L 粘贴地址后回车，焦点常留在地址栏，
+            # 之后所有点击/输入要么落进联想下拉、要么把内容打进地址栏。
+            # 所以导航后要按一下 Escape 把下拉收掉、焦点交回页面。
+            # 🔴 但 Escape 在页面「还在加载」时会中止 Chrome 的加载，留下全白页
+            # （百家号 2026-11-20 01:54 就是这么白掉的）。必须先等画面稳定再按。
+            stable = False
+            try:
+                stable = screen.wait_stable_win(self.hwnd, None, stable_ms=700, timeout_ms=25000)
+            except Exception as e:
+                self.log("wait_stable_err", err=str(e))
+            api.key_press(keyboard.VK["escape"], hold_ms=30)
+            time.sleep(0.25)
+            self.log("defocus", why="页面稳定后交还焦点", stable=stable)
             self.log("open", url=url, wait_ms=wait)
 
         elif op in ("click", "rightclick"):
@@ -586,7 +602,21 @@ class Runner:
         elif op == "drag":
             # 用真实鼠标拖选文本，替代 Ctrl+A（抖音复合编辑框会把 Ctrl+A 变成整页全选）
             cx, cy = self.client()[0], self.client()[1]
-            if st.get("region"):
+            if st.get("region") and ("dx" in st or "dy" in st):
+                # 拖控件（缩放滑块 / 把手）：从区域中心按下，按 dx,dy 拖到位。
+                # 偏移量按当前/录制客户区宽度等比缩放，视口换尺寸也能对准。
+                rx, ry, rw, rh = self.rect_of(st["region"])
+                mx, my = rx + rw // 2, ry + rh // 2
+                reg = (regions.get_region(self.site, st["region"]) or {}).get("client")                     or (self.site_data.get("client") or [0, 0])
+                sx = (self.client()[2] / float(reg[0])) if reg and reg[0] else 1.0
+                x0, y0 = mx, my
+                x1 = mx + int(round(int(st.get("dx", 0)) * sx))
+                y1 = my + int(st.get("dy", 0))
+                api.activate_window(self.hwnd) if self.hwnd and api.foreground_window() != self.hwnd else None
+                mouse.drag(x0, y0, x1, y1, self.rnd)
+                self.log("drag", region=st.get("region", ""), frm=[x0 - cx, y0 - cy],
+                         to=[x1 - cx, y1 - cy])
+            elif st.get("region"):
                 rx, ry, rw, rh = self.rect_of(st["region"])
                 x0, y0 = rx + 4, ry + rh // 2
                 x1, y1 = rx + rw - 4, ry + rh // 2

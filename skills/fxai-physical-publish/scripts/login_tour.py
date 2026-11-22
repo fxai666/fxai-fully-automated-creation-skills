@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from human import api, browser, clipboard, keyboard, regions, screen  # noqa: E402
 
 DEFAULT_ORDER = ["douyin", "kuaishou", "weixin_channels", "baijiahao",
-                 "bilibili", "xiaohongshu"]
+                 "bilibili"]
 
 LABEL = {
     "douyin": "抖音",
@@ -32,14 +32,13 @@ LABEL = {
     "youtube": "YouTube",
     "tiktok": "TikTok",
     "bilibili": "B站",
-    "xiaohongshu": "小红书",
 }
 
 # 到达判据：标题里出现这些词才算真的跳到该站
 ARRIVE = {
     "douyin": "抖音", "kuaishou": "快手", "weixin_channels": "视频号",
     "baijiahao": "百家号", "toutiao": "头条", "youtube": "YouTube",
-    "tiktok": "TikTok", "bilibili": "哔哩哔哩", "xiaohongshu": "小红书",
+    "tiktok": "TikTok", "bilibili": "哔哩哔哩",
 }
 
 

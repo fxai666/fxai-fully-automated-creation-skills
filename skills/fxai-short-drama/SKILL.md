@@ -1,6 +1,6 @@
 ---
 name: fxai-short-drama
-description: 短剧自动化生成管线（用户级，可分享整合包）。当用户说「做一集短剧/自动生成短剧/用双采版工作流出短剧/出新一集/批量生成多镜头短剧/短剧发布交付物料」时使用。流程：剧本→分镜→**（打斗镜先向 fxai-combat-design 取招式术语）**→角色四视图+场景图（复用 fxai-fourview-gen/fxai-scene-gen）→H3六段式对白提示词（**打斗镜触发词由 build_lines_data 自动挂载**）→组装 lines_data→提交双采版 Ref2VA 工作流批量生成→自动合并→字幕烧录→多平台交付。不做：MV/唱歌视频（→fxai-mv-pipeline）、口播配音（→fxai-digital-human-video）、纯生图（→fxai-comfyui-image-gen）、剧本创作（→fxai-short-drama-script）。
+description: 短剧自动化生成管线（用户级，可分享整合包）。当用户说「做一集短剧/自动生成短剧/用双采版工作流出短剧/出新一集/批量生成多镜头短剧/短剧封面物料」时使用。流程：剧本→分镜→**（打斗镜先向 fxai-combat-design 取招式术语）**→角色四视图+场景图（复用 fxai-fourview-gen/fxai-scene-gen）→H3六段式对白提示词（**打斗镜触发词由 build_lines_data 自动挂载**）→组装 lines_data→提交双采版 Ref2VA 工作流批量生成→自动合并→字幕烧录→封面交付。不做：MV/唱歌视频（→fxai-mv-pipeline）、口播配音（→fxai-digital-human-video）、纯生图（→fxai-comfyui-image-gen）、剧本创作（→fxai-short-drama-script）、多平台发布与各站点封面派生（→fxai-browser-publish）。
 ---
 
 # 短剧自动化管线（fxai-short-drama）
@@ -15,7 +15,7 @@ description: 短剧自动化生成管线（用户级，可分享整合包）。�
 | `references/03-字幕与对齐.md` | 做字幕时（抑制、`<d>` 写法、烧录、镜头锚定） |
 | `references/04-分段与时长.md` | 算时长、判段位、定重渲镜时（H3 公式、段映射表） |
 | `references/05-项目档案与资源.md` | 建项目 / 新一集、配目录、搬资源、换服务器 |
-| `references/06-生成与交付.md` | 提交渲染、单镜重生成、发布物料（含封面）、验收 |
+| `references/06-生成与交付.md` | 提交渲染、单镜重生成、封面主图（必交付）、验收；多平台物料套件为可选增强（默认不跑，见该册末节） |
 
 **确定本次要做什么之后，只读对应的那一两册，其余一律不读。**
 
@@ -44,6 +44,7 @@ description: 短剧自动化生成管线（用户级，可分享整合包）。�
 14. **封面必交付**：全剧一张 + 每集一张，全部走 `fxai-comfyui-image-gen`；`COVER_PROMPT` / `COVER_ROLE`（+可选 `COVER_HOOK`）写进该集 `run_qsl1_epN.py` 顶部，缺则 `_audit` 第 1 轮硬卡（06 册）。
    设计规范与质检门禁见 `fxai-poster`：类型与必备要素按 `08` 册、三道门按 `09` 册、提示词按 `10` 册，封面出图后跑 `qc.py post` 过门。
 15. **尺寸 / 音频模式 / 服务端目录 / 路径占位 / 打斗取词 / 封面模板路由 / 按集落盘**：判据见 06 册「交付铁律」节。
+16. 🔴 **多站点物料可选、发布移交发布技能（用户 2026-11-22 定）**：按红果/番茄/快手/火龙等**各站点派生封面尺寸 / 头像 / 榜单 / 展示页 / 剧情介绍**这套（`platform_publish.py`）**默认不跑**，仅当用户显式要求时才执行，规格真相源仍是 `platform_publish_specs.json`。**最终发布一律以 `fxai-browser-publish` 为准**：平台封面策略、标题、简介、标签、AI/原创声明、发布单与回执都走该技能；本技能只负责交出成片 + 封面主图（铁律 14），不再默认产出逐站物料。
 
 ## 开工前
 
@@ -59,7 +60,7 @@ HTTP；8188 探不通走云或提示人启动。地址取 `~/.workbuddy/fxai_glo
 
 ## 入口命令
 
-`python drama_pipeline.py --check`（自检）/ `examples/episode_template.py --project "<项目目录>"`（新项目模板）/ `comfy_watch.py wait <pid> --timeout 5400`（等合并）。单镜重渲、字幕、发布物料见 06 册。
+`python drama_pipeline.py --check`（自检）/ `examples/episode_template.py --project "<项目目录>"`（新项目模板）/ `comfy_watch.py wait <pid> --timeout 5400`（等合并）。单镜重渲、字幕、封面主图见 06 册；逐站物料套件见 06 册末节（可选，默认不跑）；发布走 `fxai-browser-publish`。
 
 **渲染中问进度**：`shot_query.py <prompt_id>`（不记 pid 用 `now`），判据见 fxai-standard 01 册。
 
