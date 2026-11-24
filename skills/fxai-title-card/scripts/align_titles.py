@@ -13,13 +13,17 @@
 与 cardkit.TIERS 小档（顶 80 / 边 96）一致。
 
 · 默认所有卡钉 (left, top)。传 --timeline 时按每张卡的 `side` 字段分边：
-  side=left → 钉 (left, top)；side=right → 右缘钉 (W-left-内容宽, top)，
-  即左右镜像等距——多拍引导卡左右交替换边时用它消掉同位硬切。
+  left → 钉 (left, top)；right → 右缘钉 (W-left-内容宽, top)，即左右镜像等距；
+  top → 水平居中、顶部钉 top；bottom → 水平居中、**块底距画布底 = --bottom**，
+  底部留出的这段用来避开字幕区。多拍引导卡左右/上下交替换边时用它消掉同位硬切。
 """
 import argparse
 import json
 import os
 import glob
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
 def parse_size(s):
@@ -34,16 +38,20 @@ def main():
     ap.add_argument("--size", required=True, help="画布尺寸 WxH，与 gen_cards 的 --size 一致")
     ap.add_argument("--left", type=int, default=None)
     ap.add_argument("--top", type=int, default=None)
+    ap.add_argument("--bottom", type=int, default=None,
+                    help="底部锚：块底距画布底的距离，默认取字号档 bottom_pad（小档 300）")
     ap.add_argument("--timeline", default=None,
-                    help="timeline.json：按每张卡的 side 字段分边（right 镜像等距），左右交替换边用")
+                    help="timeline.json：按每张卡的 side 字段分边（right 镜像等距 / bottom 贴底）")
     args = ap.parse_args()
 
     from PIL import Image
+    import cardkit as K
 
     W, H = parse_size(args.size)
     short = min(W, H)
     left = args.left if args.left is not None else int(round(short * 0.12))
     top = args.top if args.top is not None else int(round(short * 0.10))
+    bottom = args.bottom if args.bottom is not None else K.tier_for(W, H)["bottom_pad"]
 
     sides = {}
     if args.timeline:
@@ -61,23 +69,29 @@ def main():
         im = Image.open(p).convert("RGBA")
         bb = im.getbbox()
         key = os.path.splitext(os.path.basename(p))[0].split("_")[-1]
-        right = sides.get(key) == "right"
+        sd = sides.get(key, "left")
         if bb is None:
             # 空卡（这一拍没字）→ 输出全透明同尺寸卡，保持拍数对齐
             canvas = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+            done.append((os.path.basename(p), None, "-"))
         else:
             body = im.crop(bb)
             canvas = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-            bw = bb[2] - bb[0]
-            # 右缘镜像等距：右锚内容贴 (W-left) 处，与左锚 left 严格对称
-            x = (W - left - bw) if right else left
-            canvas.paste(body, (x, top), body)
-        name = os.path.basename(p)
-        canvas.save(os.path.join(args.out, name))
-        done.append((name, None if bb is None else bb[3] - bb[1], "R" if right else "L"))
+            bw, bh = bb[2] - bb[0], bb[3] - bb[1]
+            if sd == "right":
+                x, y = W - left - bw, top          # 右缘镜像等距
+            elif sd == "bottom":
+                x, y = (W - bw) // 2, H - bottom - bh   # 块底距底 = bottom，让出字幕区
+            elif sd in ("top", "center"):
+                x, y = (W - bw) // 2, top
+            else:
+                x, y = left, top
+            canvas.paste(body, (x, y), body)
+            done.append((os.path.basename(p), bh, sd[:1].upper()))
+        canvas.save(os.path.join(args.out, os.path.basename(p)))
 
-    print("对齐 %d 张 → %s  左锚 (%d,%d) / 右缘锚 (%d,%d)"
-          % (len(done), args.out, left, top, W - left, top))
+    print("对齐 %d 张 → %s  左锚 (%d,%d) / 右缘锚 (%d,%d) / 底锚 (居中,%d)"
+          % (len(done), args.out, left, top, W - left, top, H - bottom))
     for n, h, s in done:
         print("  %s [%s] 内容高 %s" % (n, s, h if h else "空"))
 

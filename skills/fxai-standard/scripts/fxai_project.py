@@ -68,6 +68,9 @@ MEMORY_TPL = u"""# 项目记忆 · {title}
 """
 SCHEMA = 2
 STAGES = ('script', 'image', 'audio', 'video', 'publish')
+# 交付登记里除五段之外的条目：可复用模板（引导卡母版 / 提示词模板 / 分镜模板）
+DELIVER_EXTRA = ('template',)
+DELIVER_KEYS = STAGES + DELIVER_EXTRA
 STAGE_CN = {'script': '剧本', 'image': '画面', 'audio': '音频', 'video': '成片', 'publish': '发布'}
 try:
     from catkit import CATEGORIES  # 类别表：fxai-standard/categories.json（唯一事实源）
@@ -301,24 +304,31 @@ def cmd_stage(root, a):
 
 def cmd_deliver(root, a):
     obj = norm(load(root))
+    # 有 --no 登记到某一集；不给 --no 登记到项目级（单条成片的 MV / 单篇 / 单条口播）
     if a.no is None:
-        raise ValueError('deliver 必须给 --no <集号>')
-    ep = find_ep(obj, a.no)
-    if ep is None:
-        ep = {'no': int(a.no), 'name': '', 'dir': '', 'stages': {}, 'deliver': {}}
-        obj['episodes'].append(ep)
-        obj['episodes'].sort(key=lambda e: int(e.get('no') or 0))
+        holder = obj
+    else:
+        ep = find_ep(obj, a.no)
+        if ep is None:
+            ep = {'no': int(a.no), 'name': '', 'dir': '', 'stages': {}, 'deliver': {}}
+            obj['episodes'].append(ep)
+            obj['episodes'].sort(key=lambda e: int(e.get('no') or 0))
+        holder = ep
+    d = holder.get('deliver')
+    if not isinstance(d, dict):
+        d = {}
+        holder['deliver'] = d
     n = 0
-    for key in STAGES:
+    for key in DELIVER_KEYS:
         v = getattr(a, key, None)
         if v:
-            ep['deliver'][key] = v.replace('/', '\\').strip('\\')
+            d[key] = v.replace('/', '\\').strip('\\')
             n += 1
     if not n:
-        raise ValueError('没有给任何交付项（--video/--script/--audio/--image/--publish）')
+        raise ValueError('没有给任何交付项（--video/--script/--audio/--image/--publish/--template）')
     rollup(obj)
     save(root, obj)
-    return 0, '第 %s 集登记交付 %d 项' % (a.no, n)
+    return 0, '登记交付 %d 项（%s）' % (n, '项目级' if a.no is None else '第 %s 集' % a.no)
 
 
 def report(obj):
@@ -493,11 +503,13 @@ def main(argv):
     p.add_argument('root')
     add_stage_args(p)
 
-    p = sub.add_parser('deliver', help='登记某集的交付文件名')
+    p = sub.add_parser('deliver', help='登记交付文件名（不给 --no 记到项目级）')
     p.add_argument('root')
-    p.add_argument('--no', type=int, required=True)
-    for k in STAGES:
-        p.add_argument('--' + k, default=None, help='%s文件（相对项目根）' % STAGE_CN[k])
+    p.add_argument('--no', type=int, default=None,
+                   help='集号；不给则登记到项目级（单条成片项目）')
+    for k in DELIVER_KEYS:
+        p.add_argument('--' + k, default=None,
+                       help='%s文件（相对项目根）' % STAGE_CN.get(k, '可复用模板'))
 
     p = sub.add_parser('memory', help='项目记忆：--add 追加一条，不给即打印全文')
     p.add_argument('root')

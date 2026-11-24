@@ -32,8 +32,8 @@
 均返回 list[str]，空列表 = 通过。调用方按 fail-closed 处理：加载失败也算不通过。
 
 本文件是门禁的**唯一事实源**（2026-11-24 依编译件行为反向重建，源码在一次蓝屏写盘中丢失）。
-语义改动后与 `_backup/h3_format_gate.pyc.good-*` 做差分回归，确认违规集合一致；维护流程见
-`references/09-门禁模块维护.md`。
+改动后重编同目录兜底件 `h3_format_gate.pyc`，并与 `_backup/h3_format_gate.pyc.good-*` 做差分回归，
+确认违规集合一致；维护流程见 `references/09-门禁模块维护.md`。
 """
 
 import re

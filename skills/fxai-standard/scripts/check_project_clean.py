@@ -8,8 +8,10 @@
 判据见 references/01-产出铁律.md，与客户端 tool/project/js/projectkit.js 同源：
   - 垃圾：__pycache__ / *.pyc / node_modules / .git / .ipynb_checkpoints /
     Thumbs.db / desktop.ini / ~$* / *.tmp / *.part —— 出现在项目根与交付目录即不合规。
-  - 过程目录：`_` 前缀目录（白名单 _base 除外）属中间产物/备份，应清空或并入 _tmp/。
-  - 过程文件：代码 / 日志 / 进程号 / 中间态 / 自检帧 / 备份副本，应移入 _tmp/。
+  - 过程目录：`_` 前缀目录（白名单 _base 除外）属中间产物，交付时删除。
+  - 归档目录：`_归档*` / `_backup*` / `备份` / `历史版本` / `旧版` 一律不合规（不得留档）。
+  - 过程文件：代码 / 日志 / 进程号 / 中间态 / 自检帧，交付时删除。
+  - 过程区残留：`_tmp` 等过程区内仍有文件即不合规（交付前清空到 0）。
   - 历史版本：交付目录里同一交付物的旧版 / 变体（去品牌条 / v2 / 备份 / draft…）
     与最终版并存即不合规，判据见 01 册「产物落点」。
   - 分层目录：video / music / doc / audio / output 属旧布局，交付物一律放项目根
@@ -18,7 +20,8 @@
   - 项目记忆：项目根应写 _fxai_memory.md（跨会话续做靠它接口径）。
 
 退出码：0 = 干净；1 = 有不合规项；2 = 目录不存在。
---strict 把「过程目录 / 过程文件 / 分层目录 / 历史版本 / 清单缺失」一并计入失败。
+--strict 把「过程目录 / 归档目录 / 过程区残留 / 过程文件 / 分层目录 / 历史版本 / 清单缺失」
+一并计入失败。
 不删除、不移动、不修改任何文件——只出报告，整改由调用方执行。
 """
 import sys
@@ -38,8 +41,12 @@ JUNK_DIRS = {
 JUNK_FILES = {'thumbs.db', 'ehthumbs.db', 'desktop.ini', '.ds_store'}
 JUNK_EXT = {'.pyc', '.pyo', '.pyd', '.tmp', '.temp', '.part', '.crdownload', '.download', '.swp', '.swo'}
 
-# 技能约定的中间产物目录：允许存在，内容不计为交付物
+# 技能约定的中间产物目录：允许存在，内容不计为交付物；交付时须清空
 WORK_DIRS = {'_tmp', '_work', '_cache', '_logs', '_debug'}
+
+# 归档 / 备份类目录：项目内一律不得存在（源码在仓库、成片已交付，本地留副本只占空间）
+ARCHIVE_DIR_RE = re.compile(
+    r'^(?:_?归档|_?备份|_?backup|_?archive|_?历史版本|_?旧版|_?历史|_?存档)', re.I)
 
 # 「_」开头但确实是交付物的目录（发布/_base 存各平台封面）
 PROCESS_DIR_ALLOW = {'_base'}
@@ -112,6 +119,9 @@ def scan(root):
         for d in sorted(dirs):
             low = d.lower()
             path = (rel + '/' + d).lstrip('/')
+            if ARCHIVE_DIR_RE.match(low):
+                junk.append({'path': path, 'kind': 'dir', 'why': '归档/备份目录（交付即删，不得留档）'})
+                continue
             if low in WORK_DIRS:
                 work.append(path)
                 continue
@@ -134,7 +144,17 @@ def scan(root):
                 procs.append(path)
             elif is_stale_version(f):
                 stale.append(path)
-    return junk, work, stray, procs, layers, stale
+    # 过程区残留：_tmp 等交付时应清空到 0
+    tmp_left = {'files': 0, 'bytes': 0}
+    for w in work:
+        for cur, _, fs in os.walk(os.path.join(root, w.replace('/', os.sep))):
+            for f in fs:
+                tmp_left['files'] += 1
+                try:
+                    tmp_left['bytes'] += os.path.getsize(os.path.join(cur, f))
+                except OSError:
+                    pass
+    return junk, work, stray, procs, layers, stale, tmp_left
 
 
 def check_manifest(root):
@@ -191,10 +211,11 @@ def main(argv):
         print('目录不存在：%s' % root)
         return 2
 
-    junk, work, stray, procs, layers, stale = scan(root)
+    junk, work, stray, procs, layers, stale, tmp_left = scan(root)
     man = check_manifest(root)
     mem = check_memory(root)
     soft = (len(stray) + len(procs) + len(layers) + len(stale)
+            + (1 if tmp_left['files'] else 0)
             + (0 if man['ok'] else 1) + (0 if mem['ok'] else 1))
     failed = bool(junk) or (strict and soft > 0)
 
@@ -204,6 +225,7 @@ def main(argv):
             'ok': not failed,
             'junk': junk,
             'work_dirs': work,
+            'tmp_left': tmp_left,
             'stray_dirs': stray,
             'process_files': procs,
             'layer_dirs': layers,
@@ -215,17 +237,20 @@ def main(argv):
 
     print('项目目录：%s' % root)
     if junk:
-        print('不合规项 %d 个（过程文件须移入 _tmp/ 或删除）：' % len(junk))
+        print('不合规项 %d 个（交付即删，不留档、不迁 _tmp）：' % len(junk))
         for j in junk:
             print('  [%s] %s    <- %s' % ('目录' if j['kind'] == 'dir' else '文件', j['path'], j['why']))
     else:
         print('垃圾文件：干净（无 __pycache__ / .git / *.pyc / Thumbs.db 等）')
-    print('中间产物目录：%s' % ('、'.join(work) if work else '无（过程文件无处可归，见 01 册 _tmp/ 约定）'))
+    print('过程区：%s' % ('、'.join(work) if work else '无'))
+    if tmp_left['files']:
+        print('过程区残留 %d 个文件 / %.1f MB（交付前清空到 0，见 01 册「交付即清中间产物」）'
+              % (tmp_left['files'], tmp_left['bytes'] / 1048576.0))
     if stray:
-        print('过程/备份目录 %d 个（_ 前缀，应清空或并入 _tmp/）：' % len(stray))
+        print('过程/备份目录 %d 个（_ 前缀，交付时删除）：' % len(stray))
         print('\n'.join(brief(stray)))
     if procs:
-        print('过程文件 %d 个（代码/日志/自检帧，应移入 _tmp/）：' % len(procs))
+        print('过程文件 %d 个（代码/日志/自检帧，交付时删除）：' % len(procs))
         print('\n'.join(brief(procs)))
     if layers:
         print('分层目录 %d 个（旧布局，交付物放项目根；图片多才允许 image/）：' % len(layers))

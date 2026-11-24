@@ -29,8 +29,9 @@ description: MiniMax Hailuo H3 视频提示词写作规范（用户级，通用�
 
 **确定模式后只读对应那一册，其余一律不读。** 官方 txt 只在逐字段核对时翻。
 
-门禁以**可读源码**形态随目录同行：`h3_format_gate.py` 是唯一事实源，`import h3_format_gate` 直接加载它。
-**不得改名、不得移出技能根目录**；须用 CPython 3.12 加载。兜底编译件在 `__pycache__/`，恢复副本在 `_backup/*.good-*`，流程见 09 册。
+门禁以**可读源码**形态随目录同行：`h3_format_gate.py` 是唯一事实源，`import h3_format_gate` 优先加载它。
+同目录的 `h3_format_gate.pyc` 是兜底编译件（源码缺失时由解释器 sourceless 加载），须与源码同步重编。
+两者**不得改名、不得移出技能根目录**；须用 CPython 3.12 加载。恢复副本在 `_backup/*.good-*`，流程见 09 册。
 
 ## 0. 我们管线的模式映射（决定写哪套）
 
