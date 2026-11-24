@@ -41,6 +41,12 @@
   python xgy_api.py ssh <instance_id>               # 打印该实例的 SSH 连接串
   python xgy_api.py comfy-url <instance_id>         # 打印 ComfyUI 的 web_url
 
+缺卡自动抢卡（deploy-image / boot 同一套）：缺卡在服务端是 HTTP 200 + success=false
+（code=1000 部署 / 1003 开机），不下发实例也就不扣费，所以默认**每隔 5 秒重抢一次、
+不限次数**，抢到为止（Ctrl+C 停）；`--grab N` 限次、`--no-grab` 关闭。
+🔴 抢卡必须走软调用 `call(..., soft=True)`（deploy/boot 都有 soft 开关），
+否则缺卡抛 ApiError，重试分支成死代码 —— v2.x 的 deploy-image 就是这么翻的。
+
 令牌读取优先级：
   1) --token 参数
   2) 环境变量 XGY_API_TOKEN
@@ -141,7 +147,13 @@ def get_token(args):
         "令牌在仙宫云控制台「访问令牌」页生成（注意不是 SSH 密码，也不是 api_key）。")
 
 
-def call(method, path, token, body=None, timeout=30):
+def call(method, path, token, body=None, timeout=30, soft=False):
+    """调一个接口。
+
+    soft=True 时「缺卡」原样返回 JSON，交给抢卡循环判 —— 缺卡是「现在没卡」而非错误，
+    抛异常会把外层的重试逻辑直接掀翻（见 grab()）。其他业务失败
+    （令牌失效 / 镜像不存在 / 参数校验）照常 raise，重试无意义。
+    """
     url = f"{BASE.rstrip('/')}/{path.lstrip('/')}"
     data = json.dumps(body).encode("utf-8") if body is not None else None
     req = urllib.request.Request(url, data=data, method=method)
@@ -167,6 +179,9 @@ def call(method, path, token, body=None, timeout=30):
         # 没给 success 字段时退回看 code
         ok = j.get("code") in (0, 200)
     if not ok:
+        if soft and is_gpu_shortage(j):
+            # 缺卡：原样返回，由上层的 grab() 决定是否再抢一次。
+            return j
         raise ApiError(f"{method} {path} 失败：code={j.get('code')} msg={j.get('msg')}")
     return j
 
@@ -181,8 +196,11 @@ def get_instance(t, iid):
     return call("GET", f"/instance/{iid}", t)
 
 
-def boot(t, iid, gpu_model=None, gpu_count=None):
-    """开机。gpu_model / gpu_count 缺省时自动从实例信息里取当前值。"""
+def boot(t, iid, gpu_model=None, gpu_count=None, soft=False):
+    """开机。gpu_model / gpu_count 缺省时自动从实例信息里取当前值。
+
+    soft=True = 缺卡（code=1003）不抛异常，返回给 grab() 重试。
+    """
     body = {"id": iid}
     if gpu_model or gpu_count:
         if not (gpu_model and gpu_count):
@@ -193,7 +211,7 @@ def boot(t, iid, gpu_model=None, gpu_count=None):
         # API 要求 gpu_count 是字符串
         body["gpu_model"] = gpu_model
         body["gpu_count"] = str(gpu_count)
-    return call("POST", "/instance/boot", t, body)
+    return call("POST", "/instance/boot", t, body, soft=soft)
 
 
 def shutdown(t, iid):
@@ -206,7 +224,7 @@ def shutdown_release_gpu(t, iid):
     return call("POST", "/instance/shutdown_release_gpu", t, {"id": iid})
 
 
-def deploy(t, **kw):
+def deploy(t, soft=False, **kw):
     """部署实例。
 
     官方文档（instance/3）的字段名，注意是 data_center_id 不是 data_center：
@@ -223,19 +241,20 @@ def deploy(t, **kw):
     body["gpu_count"] = int(body.get("gpu_count") or 1)
     body.setdefault("data_center_id", 1)
     body["data_center_id"] = int(body["data_center_id"])
-    return call("POST", "/instance/deploy", t, body)
+    return call("POST", "/instance/deploy", t, body, soft=soft)
 
 
 def is_gpu_shortage(r):
     """部署返回是否「可用 GPU 不足」（此时应触发抢卡重试，而不是判失败）。
 
-    服务端对缺卡返回 HTTP 200 + code=1000 + msg 含「可用GPU不足」之类文字；
-    和「未认证 / 镜像不存在 / 参数校验错」是同一个 code=1000，必须看 msg 文字区分。
-    海外节点偶尔回英文 insufficient / no available，一并兜底。
+    服务端对缺卡返回 HTTP 200 + code=1000 + msg 含「可用GPU不足」之类文字
+    （开机那支是 code=1003，同样不扣费）；和「未认证 / 镜像不存在 / 参数校验错」
+    是同一类失败，必须看 msg 文字区分。海外节点偶尔回英文
+    insufficient / no available，一并兜底。
     """
     if not isinstance(r, dict):
         return False
-    if r.get("code") not in (1000, "1000"):
+    if str(r.get("code")) not in ("1000", "1003"):
         return False
     msg = " ".join(str(r.get(k, "")) for k in ("msg", "message", "error", "err"))
     m = msg.lower()
@@ -253,6 +272,68 @@ def _short_msg(r):
         if v:
             return str(v)
     return f"code={r.get('code')}"
+
+
+# 网络类临时故障的表现（重试能好）；不含缺卡 —— 缺卡由软调用返回、不抛异常。
+_TRANSIENT_HINTS = (
+    "连不上", "timed out", "timeout", "connection", "reset by peer", "temporarily",
+    "http 429", "http 5", "返回不是 json",
+)
+
+
+def is_transient_error(s):
+    """这条 ApiError 值不值得再试一次（超时/5xx/断连）；认证、镜像、参数错不算。"""
+    m = str(s).lower()
+    return any(k in m for k in _TRANSIENT_HINTS)
+
+
+def grab(label, fn, interval=5, max_tries=-1, max_transient=30):
+    """缺卡自动抢卡：反复下发，直到抢到卡 / 用尽次数 / 撞上不可重试的错误。
+
+    为什么非得自己包一层：缺卡时服务端回 HTTP 200 + success=false，call() 默认
+    会 raise ApiError。重试分支只要写在 raise 之后就是**死代码** —— 这是 v2.x
+    `deploy-image` 的真实翻车点（一缺卡直接崩，一次都不重试）。
+    所以 fn 必须是软调用：`deploy(t, soft=True, **body)` / `boot(..., soft=True)`。
+
+    max_tries：-1 = 不限次数（抢到为止，Ctrl+C 停，默认）；
+               N>0 = 最多 N 次；0 = 不抢，只试一次就把缺卡报出来。
+    缺卡不扣费，所以默认敢不限次数；网络抖动也重试，但连续 max_transient 次
+    （默认 30）就放弃，免得断网时无限空转。
+
+    返回 (r, tries)；用尽次数仍缺卡时 r 为 None。
+    """
+    tries = 0
+    transient = 0
+    t0 = time.time()
+    while True:
+        tries += 1
+        reason = ""
+        try:
+            r = fn()
+            if not is_gpu_shortage(r):
+                if tries > 1:
+                    print(f"[抢卡] 第 {tries} 次下发成功（共等 {int(time.time() - t0)}s）", flush=True)
+                return r, tries
+            reason = _short_msg(r)
+        except ApiError as e:
+            if not is_transient_error(str(e)):
+                raise                      # 令牌/镜像/参数错：立刻报，别在这儿空转
+            transient += 1
+            if max_transient and transient >= max_transient:
+                raise
+            reason = f"网络抖动：{e}"
+
+        if 0 <= max_tries <= tries:
+            return None, tries
+
+        scope = f"/{max_tries}" if max_tries > 0 else "（不限次，Ctrl+C 停）"
+        print(f"[抢卡 {tries}{scope}] {label} 未抢到卡（{reason}），"
+              f"{interval}s 后重试… 已等 {int(time.time() - t0)}s", flush=True)
+        try:
+            time.sleep(interval)
+        except KeyboardInterrupt:
+            print(f"\n[抢卡] 手动中断，已尝试 {tries} 次（抢卡不下发实例，不扣费）。", flush=True)
+            raise SystemExit(130) from None
 
 
 def comfy_host(inst, port=8188):
@@ -684,13 +765,14 @@ def main():
     p.add_argument("--no-verify", action="store_true",
                    help="deploy-image: 建完不做服务验收（默认等 running 后自动探四个服务："
                         "ComfyUI 8188 的 /fxai/health+/system_stats，语音 8182/8086/8185 各 /health）")
-    p.add_argument("--grab", type=int, default=30,
-                   help="deploy-image: 缺卡时自动抢卡的重试上限次数（默认 30，约 2.5 分钟；"
-                        "0 或 --no-grab 关闭）。每次间隔 --grab-interval 秒（默认 5）")
+    p.add_argument("--grab", type=int, default=-1,
+                   help="deploy-image/boot: 缺卡时自动抢卡的重试上限次数。默认 -1 = "
+                        "不限次数、一直抢到为止（Ctrl+C 停）；0 或 --no-grab 关闭；"
+                        "N>0 最多抢 N 次。每次间隔 --grab-interval 秒（默认 5），缺卡不扣费")
     p.add_argument("--grab-interval", type=int, default=5,
-                   help="deploy-image: 抢卡重试间隔秒数（默认 5）")
+                   help="deploy-image/boot: 抢卡重试间隔秒数（默认 5）")
     p.add_argument("--no-grab", action="store_true",
-                   help="deploy-image: 关闭缺卡自动抢卡（等价 --grab 0），缺卡即直接报告失败")
+                   help="deploy-image/boot: 关闭缺卡自动抢卡（等价 --grab 0），缺卡即直接报告失败")
     p.add_argument("--keyword", default=OWN_KEYWORD,
                    help="resolve-instance/resolve-image: 搜不到时的关键字（默认凤希AI）")
     a = p.parse_args()
@@ -790,21 +872,17 @@ def main():
         if img == OWN_IMAGE_ID:
             print("（不传镜像 ID 就默认用凤希自己的 ComfyUI 全家桶镜像）")
         print(json.dumps(body, ensure_ascii=False, indent=2))
+        grab_max = 0 if a.no_grab else a.grab
+        plan = "关闭" if grab_max == 0 else ("不限次数（Ctrl+C 停）" if grab_max < 0 else f"最多 {grab_max} 次")
         if not a.yes:
             print("\n[演练] 上面就是要下发的请求体。建实例会扣费，确认无误再加 --yes。")
+            print(f"抢卡：缺卡时每 {a.grab_interval}s 重抢一次，{plan}；缺卡不扣费。")
             return
-        grab_max = 0 if a.no_grab else (a.grab or 0)
-        r = deploy(t, **body)
-        attempt = 1
-        while grab_max and is_gpu_shortage(r) and attempt < grab_max:
-            attempt += 1
-            print(f"\n[抢卡 {attempt-1}/{grab_max}] 服务端暂无可用 GPU（{_short_msg(r)}），"
-                  f"{a.grab_interval} 秒后重试…")
-            time.sleep(a.grab_interval)
-            r = deploy(t, **body)
-        if is_gpu_shortage(r):
-            print("\n→", json.dumps(r, ensure_ascii=False))
-            print(f"\n[失败] 已尝试 {attempt} 次仍无可用 GPU，放弃。未扣费。")
+        r, tries = grab("deploy-image", lambda: deploy(t, soft=True, **body),
+                        interval=a.grab_interval, max_tries=grab_max)
+        if r is None:
+            print(f"\n[失败] 已尝试 {tries} 次仍无可用 GPU，放弃。未扣费。")
+            print("       （缺卡重试不扣费；可过段时间再跑，或 --grab N 限定次数、--no-grab 关掉）")
             return
         print("\n→", json.dumps(r, ensure_ascii=False))
         iid = ""
@@ -832,7 +910,16 @@ def main():
     if act == "info":
         show(pick_instance(get_instance(t, a.instance_id), a.instance_id))
     elif act == "boot":
-        print("→", json.dumps(boot(t, a.instance_id, a.gpu, a.gpu_count), ensure_ascii=False))
+        # 开机同样会缺卡（code=1003，不扣费），和 deploy-image 共用一套抢卡。
+        grab_max = 0 if a.no_grab else a.grab
+        r, tries = grab(f"boot {a.instance_id}",
+                        lambda: boot(t, a.instance_id, a.gpu, a.gpu_count, soft=True),
+                        interval=a.grab_interval, max_tries=grab_max)
+        if r is None:
+            print(f"\n[失败] 已尝试 {tries} 次仍无可用 GPU，开机没下发。未扣费。")
+            print("       实例还在 shutdown，过段时间再 boot；或 --grab N 限定次数。")
+            return
+        print("→", json.dumps(r, ensure_ascii=False))
         if not a.no_wait:
             wait_state(t, a.instance_id, "running", a.timeout)
     elif act == "shutdown":

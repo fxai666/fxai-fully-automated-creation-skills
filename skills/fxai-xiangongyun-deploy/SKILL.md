@@ -38,6 +38,7 @@ description: 仙宫云 GPU 实例一键部署凤希技能包（ComfyUI + fxai-to
 13. 🔴 **V1.9 及更早须重建实例**（V2.0 常规更新即可）：模型在实例系统盘，旧镜像实例缺本版模型，升级/重下/改名/重启都补不齐。仙宫云须用镜像 ID `9463d4ca-2f86-45cf-b0a3-a81ba6f3b27c` **新建**。报「模型不存在」即判缺底座 → 提示新建并给 `deploy-image <ID> --yes`；**只提示、不自动建**。细则见 `references/01`。
 14. 🔴 **工作流唯一来源 = ComfyUI 工作区 `user/default/workflows/发布版`**（2026-11-13 定，旧名「仙宫云」已改）。一律单向同步、线上只收不编。用 `sync_workflows.py --profile <实例ID>`（先 `--dry-run`，md5 对账）；来源读全局配置 `workflows.release_dir`（配 `comfy_root` 时拼接，`--src`/`FXAI_XGY_WF_SRC` 覆盖），禁硬编码。勿混 `workflows/凤希AI/`（本机 dev）。细则见 `references/04「工作流唯一来源」`。
    品牌条 = 发布版标记：开发版占位图、发布版真实图；`sync_workflows.py` 默认 `--release` 推送临时换图，来源指开发版也能推。见 `references/04「工作流品牌条」`。
+15. 🔴 **缺卡不是错，默认抢到为止**：`deploy-image` / `boot` 缺卡（部署 `code=1000`、开机 `code=1003`，不扣费）自动每 5 秒重抢一次、**不限次数**，`Ctrl+C` 停；`--grab N` 限次、`--no-grab` 关闭。缺卡必须走软调用 `call(..., soft=True)`，抛异常会把重试变成死代码（v2.x 真实翻车点）。
 
 ## 三种跑法，按现场条件选
 

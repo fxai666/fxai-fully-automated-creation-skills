@@ -55,9 +55,9 @@ python xgy_api.py images                     # 私有镜像列表
 python xgy_api.py image-info <image_id>      # 镜像详情
 python xgy_api.py public-images              # 打印公共镜像 ID / GPU 型号 / 镜像类型枚举
 python xgy_api.py deploy-image <镜像ID>       # 按镜像 ID 建实例（只打印请求体）
-python xgy_api.py deploy-image <镜像ID> --yes  # 同上，真建（会扣费）。缺卡时默认自动抢卡：每 5 秒重试一次、最多 30 次（约 2.5 分钟），仍无卡才报失败且不扣费；--no-grab 关闭、--grab N 改次数
+python xgy_api.py deploy-image <镜像ID> --yes  # 同上，真建（会扣费）。缺卡默认自动抢卡：每 5 秒一次、**不限次数**抢到为止（Ctrl+C 停），不下发实例不扣费；--grab N 限次、--grab 0/--no-grab 关闭
 python xgy_api.py recharge --amount 10 --payment alipay   # 创建充值订单并打印支付链接
-python xgy_api.py boot <id>                  # 开机（默认轮询到 running）
+python xgy_api.py boot <id>                  # 开机（默认轮询到 running；缺卡同样自动抢卡，参数同上）
 python xgy_api.py shutdown <id>              # 关机但**保留 GPU** —— 卡还占着，照全价计费
 python xgy_api.py release-gpu <id>           # 关机**释放 GPU** —— 最省钱的停法
 python xgy_api.py wait <id> --name running   # 阻塞等状态（--name 就是目标状态，别 positional 传）
@@ -173,6 +173,22 @@ python xgy_api.py deploy-image --gpu "NVIDIA GeForce RTX 4090" --yes
   「建/开一个实例/按这个镜像建」这类话，`--yes` 前先把请求体给用户看一眼。
 - 建完把返回的实例 ID 用 `python xgy_guard.py use <新实例ID>` 写进全局配置，
   之后的生图/四视图/场景/MV/短剧技能会自动开机到这台新实例。
+
+### 缺卡自动抢卡（deploy-image / boot 同一套）
+
+缺卡不是「报错」，是「此刻没有空卡」：服务端回 HTTP 200 + `success=false`
+（部署 `code=1000`、开机 `code=1003`），**实例没下发就不扣费**。所以：
+
+- **默认不限次数**，每 `--grab-interval` 秒（默认 5）重抢一次，抢到为止；
+  `Ctrl+C` 随时停（只停抢卡，不会产生实例）。
+- `--grab N` 限定最多 N 次；`--grab 0` 或 `--no-grab` 关掉，缺卡立刻报失败。
+- 网络抖动（超时 / 5xx / 断连）也重试，连续 30 次不通才放弃；
+  **令牌失效 / 镜像不存在 / 参数校验错**一律立刻报错，不在抢卡里空转。
+- 日志：`[抢卡 12（不限次，Ctrl+C 停）] deploy-image 未抢到卡（可用GPU不足），5s 后重试… 已等 60s`。
+
+🔴 实现红线：缺卡必须走**软调用**（`call(..., soft=True)`，`deploy` / `boot` 都有 `soft` 开关），
+让缺卡原样返回 dict 交给 `grab()` 判。v2.x 把重试分支写在 `call()` 抛异常之后，
+缺卡一次就崩、抢卡代码全是死代码 —— 别改回去。
 
 **服务验收的顺序是死的**：`deploy-image --yes` → 等 `running` → 四服务全探 → 全 200 才算装好。
 部署/启动期间容器没起来，探接口必然 503/10061，那不是装坏。
