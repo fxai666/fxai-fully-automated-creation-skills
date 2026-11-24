@@ -245,22 +245,28 @@ def deploy(t, soft=False, **kw):
 
 
 def is_gpu_shortage(r):
-    """部署返回是否「可用 GPU 不足」（此时应触发抢卡重试，而不是判失败）。
+    """返回体是否「可用 GPU 不足」（该抢卡重试，而非判失败）。
 
-    服务端对缺卡返回 HTTP 200 + code=1000 + msg 含「可用GPU不足」之类文字
-    （开机那支是 code=1003，同样不扣费）；和「未认证 / 镜像不存在 / 参数校验错」
-    是同一类失败，必须看 msg 文字区分。海外节点偶尔回英文
-    insufficient / no available，一并兜底。
+    缺卡在服务端是 HTTP 200 + success=false，实例没下发也就不扣费：
+      开机 POST /instance/boot   → code=1003（这个码就是缺卡，不必看文案）
+      部署 POST /instance/deploy → code=1000 + msg 含「可用GPU不足」之类文字
+    部署的 1000 与「未认证 / 镜像不存在 / 参数校验错」同码，只能看 msg 文字区分；
+    海外节点回英文 insufficient / no available / sold out，一并兜底。
     """
     if not isinstance(r, dict):
         return False
-    if str(r.get("code")) not in ("1000", "1003"):
+    code = str(r.get("code"))
+    if code == "1003":
+        return True
+    if code != "1000":
         return False
     msg = " ".join(str(r.get(k, "")) for k in ("msg", "message", "error", "err"))
     m = msg.lower()
-    return ("gpu" in m) and (
-        "不足" in msg or "insufficient" in m or "no available" in m or "unavailable" in m
-    )
+    if "gpu" not in m:
+        return False
+    zh = ("不足", "没有可用", "无可用", "已售罄", "满载")
+    en = ("insufficient", "no available", "unavailable", "sold out")
+    return any(w in msg for w in zh) or any(w in m for w in en)
 
 
 def _short_msg(r):
