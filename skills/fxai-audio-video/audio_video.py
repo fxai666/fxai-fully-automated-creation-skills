@@ -60,6 +60,16 @@ MULTIREF_SIZE_LANDSCAPE = (1280, 768)  # 横屏（显式要求时）
 KEEP_PERSON = "保留人物身份、面部特征、发型发色、服装样式与颜色、头饰与配饰（帽子/项链/耳饰）、鞋履。"
 KEEP_SCENE = "保留场景的环境元素、空间层次与光线氛围。"
 KEEP_PROP = "保留道具的形制、材质与颜色。"
+
+# 🔴 2026-11-24 用户定：保留类目句改成**官方白名单整行模板**（此前各链自写句子，
+#   六段式门禁无法校验，MV 的写法与短剧长期分叉）。`%d` = 对应的 <Picture N> 号。
+#   门禁 `h3_format_gate._PRESERVED_KINDS` 逐字匹配这三句，改一个字都过不了门禁。
+KEEP_PERSON_TPL = ("人物身份、五官发型、以及参考图中的全部穿着与配件完全沿用 <Picture %d>；"
+                   "不新增、不替换图里没有的任何服饰细节。")
+KEEP_SCENE_TPL = ("场景环境、背景与画面中已有元素完全沿用 <Picture %d>；"
+                  "不新增参考图里没有的任何内容。")
+KEEP_PROP_TPL = ("道具形制、材质与颜色完全沿用 <Picture %d>；"
+                 "不新增参考图里没有的任何部件。")
 DEFAULT_CHAR_DESC = "人物"
 DEFAULT_SCENE_DESC_SING = "场景"
 DEFAULT_SCENE_DESC_SPEAK = "场景"
@@ -200,12 +210,17 @@ _NARR = {
         "scene_role": "作为人物演唱的环境。",
         "summary_act": "演唱",
         "style": "目标视频采用电影感、自然主义的音乐视频风格。",
-        "action": ("At 00:02.000, 她开始演唱，嘴唇与 <Audio 1> 中的歌声精准同步开合，"
-                   "身形随乐句在画面中轻步移动（向镜头 / 向侧方 / 原地轻踏），"
-                   "双手随乐句在身前做出柔和而富有表现力的手势；"),
-        "pre": "她轻轻吸气，仿佛在回忆旋律；",
-        "end": "结尾随最后一个音符自然放松，定格为柔和宁静的微笑。",
-        "soundscape": "来自 <Audio 1> 的复制环境声音与歌声贯穿全程。",
+        # 🔴 2026-11-24 用户定（规范 fxai-mv-pipeline/references/10 §3.2/3.3）：
+        #   提供原音频＝整段人声已存在，第一帧声音就在响，人必须从第一帧就开口；
+        #   整段唱到尾＝一句全程同步，不写任何时间锚点。旧的「她轻轻吸气 + At 00:02.000
+        #   她开始演唱」是被规范点名的反面教材（段首先闭唇 + 起唱时间戳 → 唇形整体错位）。
+        #   pre 只在「首帧钉死句」之后接第一事件，本身不得带闭唇/吸气/起唱时刻。
+        "action": ("面向镜头持续开口演唱，唇形从第一帧到最后一个音符全程逐字跟随 "
+                   "<Audio 1> 的歌声波形自然开合，只有 <Subject 1> 一人开口；"
+                   "身形随乐句轻步移动，双手随乐句做柔和而富有表现力的手势；"),
+        "pre": "",   # 第一帧即开口，不写「吸气/闭唇/回忆旋律」这类段首过渡
+        "end": "唱到音频人声结束自然收音，定格为柔和宁静的微笑。",
+        "soundscape": "来自 <Audio 1> 的复制人声演唱与伴奏贯穿全程。",
     },
     "speak": {
         "label": "原声口播音轨",
@@ -335,14 +350,22 @@ subject_keep_body = subject_identity
 # 身份词里至少要有一个「人」的痕迹，否则说明调用方传的是穿搭 / 类目（如 `白色长裙，长发`），
 # 主体定义会写出「<Subject 1> 是 <Picture 1> 中的白色长裙。」这种病句 —— 兜底回「人物」。
 PERSON_HINTS = ("人", "者", "女", "男", "角色", "主角")
+# 🔴 2026-11-24 用户定（严格对齐官方 §2.2 + 六段式门禁白名单）：主体定义只到**身份词**这一层。
+#   传入「清瘦温婉的年轻女子」这种带修饰的描述时，只取其中最小的身份词（`女子`）——
+#   修饰一律不进主体定义（它们会顶掉参考图里的脸与外形），外观交给「延续分析」与参考图。
+_IDENT_WORDS = ("女子", "男子", "女人", "男人", "女孩", "男孩", "女性", "男性",
+                "老人", "小孩", "人物", "少女", "少年", "动物", "角色")
 
 
 def person_identity(desc, default="人物"):
-    """人物主体定义用的身份词：取到的是穿搭/类目就回退成 default。"""
+    """人物主体定义用的身份词：只返回身份词本身（不带上任何修饰 / 外观 / 穿搭）。"""
     head = subject_identity(desc, default="")
-    if head and any(w in head for w in PERSON_HINTS):
-        return head
-    return default
+    if not head:
+        return default
+    hits = [w for w in _IDENT_WORDS if w in head]
+    if hits:
+        return max(hits, key=len)          # 「年轻女子」→「女子」
+    return default if not any(w in head for w in PERSON_HINTS) else head
 
 
 def build_ref2va_prompt(char_descs, scene_desc, audio_label=None, kind="sing",
@@ -382,7 +405,12 @@ def build_ref2va_prompt(char_descs, scene_desc, audio_label=None, kind="sing",
     # （场景背景图）的定义 → 模型读到的是「S1 没台词、S2 在讲一整段话」，
     # 与 detailed_description 里的讲话指令互相打架，实测成片嘴是闭的。
     # 场景图就是环境，台词归人物：<Subject 1> 是正在说话的那个。
-    line_txt = (str(lines).strip() if lines else "")
+    # 🔴 2026-11-24 修正：lines 传 list 时曾被 `str()` 拼成 `['…']`（Python 列表字面量）
+    #   直接写进提示词，模型读到的是方括号和引号。这里统一摊平成自然文本。
+    if isinstance(lines, (list, tuple)):
+        line_txt = "；".join(str(x).strip() for x in lines if str(x).strip())
+    else:
+        line_txt = (str(lines).strip() if lines else "")
     if line_txt:
         line_txt = line_txt.rstrip("。！？!?")
     subj_defs = []
@@ -410,20 +438,23 @@ def build_ref2va_prompt(char_descs, scene_desc, audio_label=None, kind="sing",
     subj_block = "\n".join(subj_defs) + "\n"
     # 保留类目清单写在这里（铁律 17）：主体定义只说「是什么」，这里说「保住哪几类」。
     retain_block = "\n".join(
-        "<Subject %d> (appears in [Shot 1]): fully_preserved - %s" % (i, KEEP_PERSON)
+        "<Subject %d> (appears in [Shot 1]): fully_preserved - %s" % (i, KEEP_PERSON_TPL % i)
         for i in range(1, k + 1))
     retain_block += ("\n<Subject %d> (appears in [Shot 1]): fully_preserved - %s\n"
-                     % (scene_idx, KEEP_SCENE))
+                     % (scene_idx, KEEP_SCENE_TPL % scene_idx))
     for _j, _pd in enumerate(_prop_descs, 1):
         _p = scene_idx + _j
         retain_block += ("<Subject %d> (appears in [Shot 1]): fully_preserved - %s\n"
-                         % (_p, KEEP_PROP))
+                         % (_p, KEEP_PROP_TPL % _p))
     retain_block += "<Audio 1>: fully_copy - <Audio 1> 作为目标视频的完整最终音轨直接复用。\n"
     _prop_pics = "、".join("<Picture %d>" % (scene_idx + _j) for _j in range(1, len(_prop_descs) + 1))
+    # 🔴 2026-11-24：summary 里**不写** `<Picture N>`（官方 §2.2/§7 口径：按人物/场景用的图不建
+    #   Picture 条目，绑定只靠 subject_definitions）。写了会被 H3 当成「具体帧锚点」→
+    #   把白底参考图直接画成第一帧（首帧污染，实测前 1~1.5s 是棚拍半身像）。
     summary = ("[reference generation + audio reuse] 目标视频展示 %s 在 <Subject %d> 中%s。"
-               "%s 作为人物外观参考，<Picture %d> 作为场景背景参考，<Audio 1> 作为原声音频。"
+               "<Audio 1> 作为原声音频。"
                "%s\n"
-               % (people, scene_idx, nar["summary_act"], pics, scene_idx,
+               % (people, scene_idx, nar["summary_act"],
                   (" %s 作为道具参考，需完整保留其形制与质感。" % _prop_pics) if _prop_descs else ""))
     cam = ("镜头以缓慢的轻微推近（slow push-in）跟随人物，幅度小、速度慢。"
            if not camera else (camera if camera.endswith(("。", "！", "？")) else camera + "。"))
@@ -455,19 +486,32 @@ def build_ref2va_prompt(char_descs, scene_desc, audio_label=None, kind="sing",
     shot_spec = SHOT_SPEC.get(shot_size or "中景", "%s镜头" % (shot_size or "中景"))
     # 🔴 铁律 17 配套：详细描述**不复述外观**，只用编号引用 —— 复述一次等于又下一遍文字指令，
     # 参考图的服装/发型会被这段文字重新覆盖（2026-11-12 实测）。
-    detail = ("[Shot 1] %s，以 <Subject %d> 作为场景背景。<Subject 1> (S1) %s，"
+    # 🔴 2026-11-24 规范对齐（fxai-mv-pipeline/references/10 §2.4 / §3.2）：
+    #   首帧钉死句必须写在 `[Shot 1]` 之前——图生视频首帧天生等于参考图构图，
+    #   不写就从白底人像起手（前 1~1.5s 棚拍半身像）。后面第一事件不写时间戳，
+    #   人从第一帧就开口（sing 的 pre 已清空、action 直接「面向镜头持续开口演唱」）。
+    # 首帧钉的是「实景」（防白底参考图顶成第一帧），不写死景别；景别按镜头需要由 shot_size / 业务册决定。
+    first_frame = ("画面第一帧就是 <Subject %d> 的实景：<Subject 1> 身处场景中。\n"
+                   % scene_idx)
+    detail = (first_frame
+              + "[Shot 1] %s，以 <Subject %d> 作为场景背景。<Subject 1> (S1) %s，"
               "%s，表情自然专注。%s%s %s%s\n"
               % (shot_spec, scene_idx, pos_text, face,
                  stable_rule, cam, _join_pre_act(pre_text, act_text), nar["end"]))
     if _prop_descs:
         detail += ("视频中出现的道具须严格参照 %s 等道具参考图，形制与质感保持一致，不可凭空改动。\n"
                    % _prop_pics)
-    return ("subject_definitions:\n" + subj_block
-            + "\nsummary:\n" + summary
-            + "\nretention_analysis:\n" + retain_block
-            + "\ndetailed_description:\n" + _trigger_line(trigger_words) + nar["style"] + "\n" + detail
-            + "\noverall_soundscape:\n" + nar["soundscape"]
-            + "\nnon_diegetic_music:\n无")
+    # 触发词：显式传了就用传入的（打斗镜 prfight1 等）；没传且默认带运镜 → 挂 camera motion。
+    # 规范 07 册：camera motion 是运镜总开关，漏挂 = LoRA 不生效。
+    trig = _trigger_line(trigger_words) if trigger_words else "camera motion\n"
+    # 🔴 六段小标题一律中文（2026-11-24 用户定，与 produce_song.py / 短剧统一；
+    #   门禁 h3_format_gate 已支持中文段名归一化）。英文段名是旧格式，现只产出中文段名。
+    return ("主体定义:\n" + subj_block
+            + "\n摘要:\n" + summary
+            + "\n延续分析:\n" + retain_block
+            + "\n详细描述:\n" + trig + nar["style"] + "\n" + detail
+            + "\n整体音效:\n" + nar["soundscape"]
+            + "\n非叙事音乐:\n无")
 
 
 def build_multiref_lines(char_rels, scene_rels, char_descs=None, scene_descs=None,
@@ -589,10 +633,14 @@ def audit_subject_binding(prompt, require_lines=False):
     """
     if not prompt:
         return False, ["提示词为空"]
-    try:
-        block = prompt.split("subject_definitions:", 1)[1].split("summary:", 1)[0]
-    except IndexError:
-        return False, ["不是六段式提示词（缺 subject_definitions）"]
+    # 六段小标题 2026-11-24 起统一中文；旧英文段名仍兼容，中英都试，取切到的那个。
+    block = ""
+    for head, tail in (("主体定义:", "摘要:"), ("subject_definitions:", "summary:")):
+        if head in prompt and tail in prompt:
+            block = prompt.split(head, 1)[1].split(tail, 1)[0]
+            break
+    if not block:
+        return False, ["不是六段式提示词（缺「主体定义」/「摘要」段，中英段名都不匹配）"]
     scene_lines, char_lines, audio_lines = [], [], []
     for ln in block.splitlines():
         ln = ln.strip()

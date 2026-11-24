@@ -12,19 +12,51 @@
     python check_lines_against_storyboard.py --run <run脚本.py> --story <分镜脚本.md>
 退出码 0=全绿可提交；1=有台词被砍/多写/装不下，先改 run 脚本（拆分镜）再提交。
 """
-import re, sys, os, argparse
+import re, sys, os, argparse, ast
 
 def parse_run_lines(run_path):
-    """提取 run 脚本中所有 <d>[Chinese]... </d> 台词文本（有序）。"""
-    txt = open(run_path, encoding="utf-8").read()
-    return re.findall(r"<d>\[Chinese\](.*?)</d>", txt, re.S)
+    """提取 run 脚本里的台词文本（有序）。
+
+    两种写法都要吃：
+      ① 镜头表写法（本项目主流）：`dict(lines=[("w", "表演提示", "台词"), …])` —— 提示词在运行期
+         由 build() 组装，源码里只有 `<d>[Chinese]{text}</d>` 模板，扫字面量会只抓到 "{text}"。
+         这种情况走 AST 直接读镜头表里每条 (key, perform, text) 的第三个元素。
+      ② 静态写法：提示词整段写死在脚本里，直接扫 `<d>[Chinese]…</d>`。
+    """
+    src = open(run_path, encoding="utf-8").read()
+    try:
+        tree = ast.parse(src)
+        out = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign) and any(
+                    isinstance(t, ast.Name) and t.id.startswith("SHOT") for t in node.targets):
+                for elt in getattr(node.value, "elts", []):
+                    if not isinstance(elt, ast.Call):
+                        continue
+                    for kw in elt.keywords:
+                        if kw.arg == "lines" and isinstance(kw.value, ast.List):
+                            for tup in kw.value.elts:
+                                if isinstance(tup, ast.Tuple) and len(tup.elts) == 3:
+                                    v = tup.elts[2]
+                                    if isinstance(v, ast.Constant) and isinstance(v.value, str):
+                                        out.append(v.value)
+        if out:
+            return out
+    except Exception:
+        pass
+    # 回退：源码里静态写死的 <d>（跳过 {text} 之类模板占位）
+    txt = re.findall(r"<d>\[Chinese\](.*?)</d>", src, re.S)
+    return [t for t in txt if "{" not in t and "}" not in t]
 
 def parse_story_lines(story_path):
     """解析分镜脚本台词：每镜 '- 台词：' 后的 '  N. 角色：台词。' 行。
     返回 [(角色, 台词文本)]，跳过系统/字幕/音效提示行。"""
     txt = open(story_path, encoding="utf-8").read()
     lines = []
-    for m in re.finditer(r"[ \t]*(\d+)[\.、]\s*([^：:]+)[：:]\s*(.+)", txt):
+    # 只认「行首的列表项」：^ + 行内 role 不跨行、不含表格竖线与反引号。
+    # 2026-11-23 修：旧写法无 ^、role 用 [^：:]+ 会跨行吞掉整段，把 `002.png` 这类文件名
+    # 当台词起点，使资产表之后的台词全部对不上（假报「缺失或被改」）。
+    for m in re.finditer(r"^[ \t]*(\d+)[\.、]\s*([^：:\n|`]+)[：:]\s*(.+)$", txt, re.M):
         role, line = m.group(2).strip(), m.group(3).strip()
         # 跳过系统/字幕/音效提示行（如 系统：【叮！…】、字幕：…、音效：…）
         if role.startswith("系统") or role.startswith("字幕") or role.startswith("音效"):

@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
-"""选图：按套系+三级分类树筛选，pick 逐层选择，输出 图片 路径（接口不变）。"""
+"""选图：按类型+多级子目录树筛选，pick 逐层选择，输出图片路径（接口不变）。
+
+纯壳口径：本技能只索引用户自建的子目录，不判定素材内容。
+"""
 import os
 import csv
 import argparse
 
-FIELDS = ["id", "类型", "套系", "一级分类", "二级分类", "三级分类",
+FIELDS = ["id", "类型", "一级分类", "二级分类", "三级分类",
           "名称", "标签", "角度", "图片", "来源", "备注"]
 
 
 def data_dir():
-    return os.environ.get("FXAI_POSE_COSTUME_DATA") or os.path.join(
+    return os.environ.get("FXAI_CHARACTER_STYLING_DATA") or os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "..", "data")
 
 
@@ -19,11 +22,6 @@ def _load():
         return []
     with open(p, encoding="utf-8-sig", newline="") as f:
         return list(csv.DictReader(f))
-
-
-def _gate(rows, suite):
-    """套系门禁：默认只出 SFW；NSFW 需显式。"""
-    return [r for r in rows if r.get("套系") == suite]
 
 
 def _ask(title, options):
@@ -44,7 +42,7 @@ def _ask(title, options):
 
 
 def cmd_list(a):
-    rows = _gate(_load(), a.套系)
+    rows = _load()
     if a.类型:
         rows = [r for r in rows if r.get("类型") == a.类型]
     levels = ["一级分类", "二级分类", "三级分类"]
@@ -55,7 +53,7 @@ def cmd_list(a):
 
 
 def cmd_find(a):
-    rows = _gate(_load(), a.套系)
+    rows = _load()
     if a.类型:
         rows = [r for r in rows if r.get("类型") == a.类型]
     kw = a.关键词 or ""
@@ -70,10 +68,10 @@ def cmd_find(a):
 
 
 def cmd_pick(a):
-    rows = _gate(_load(), a.套系)
+    rows = _load()
     if a.类型:
         rows = [r for r in rows if r.get("类型") == a.类型]
-    # 逐层过滤：类型 → 套系（已 gate）→ 一级 → 二级 → 三级 → 条目
+    # 逐层过滤：类型 → 一级 → 二级 → 三级 → 条目（层级即用户自建子目录）
     for lv in ("一级分类", "二级分类", "三级分类"):
         vals = sorted({r.get(lv) for r in rows if r.get(lv)})
         if not vals:
@@ -102,24 +100,21 @@ def cmd_path(a):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="选图（SFW 默认，NSFW 需显式）")
+    ap = argparse.ArgumentParser(description="选图（按类型+用户自建子目录筛选）")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("list")
     p.add_argument("--类型", dest="类型", default="")
-    p.add_argument("--套系", dest="套系", default="SFW")
     p.set_defaults(fn=cmd_list)
 
     p = sub.add_parser("find")
     p.add_argument("--关键词", dest="关键词", default="")
     p.add_argument("--类型", dest="类型", default="")
-    p.add_argument("--套系", dest="套系", default="SFW")
     p.add_argument("--limit", type=int, default=30)
     p.set_defaults(fn=cmd_find)
 
     p = sub.add_parser("pick")
     p.add_argument("--类型", dest="类型", default="")
-    p.add_argument("--套系", dest="套系", default="SFW")
     p.set_defaults(fn=cmd_pick)
 
     p = sub.add_parser("path")

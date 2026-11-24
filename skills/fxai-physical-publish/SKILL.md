@@ -54,7 +54,7 @@ $PY -B $S/publish_cli.py run --site <站点> --flow video --audit      # 跑完�
 $PY -B $S/publish_cli.py run --site <站点> --flow video --from-step 23  # 异常修好后续跑
 $PY -B $S/publish_cli.py reveal                  # 缩窗让位（不置顶）
 $PY -B $S/publish_cli.py minimize                # 最小化，让屏给对话
-$PY -B $S/publish_cli.py close --site <站点>     # 该站发布走完才关窗（没跑完会拒绝）
+$PY -B $S/publish_cli.py close --site <站点>     # 仅用户明确要求关窗时才用（不是流程步骤）
 ```
 
 其余命令见 `08-步骤类型与回执.md`，目录归属见 `00` 第三节。

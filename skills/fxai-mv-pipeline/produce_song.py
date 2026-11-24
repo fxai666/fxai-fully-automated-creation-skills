@@ -60,6 +60,8 @@ SKILL = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SKILL)
 # H3 精确分段公式的单一真相源在公共件 fxai-audio-video（mv_pipeline 已把它加进 sys.path）
 sys.path.insert(0, os.path.join(os.path.dirname(SKILL), "fxai-audio-video"))
+# 六段式提交门禁的唯一事实源（与短剧共用同一条，见 h3_format_gate.audit_ref2va_six_segment）
+sys.path.insert(0, os.path.join(os.path.dirname(SKILL), "fxai-h3-video-prompt"))
 import audio_video as _av
 from mv_pipeline import (gen_music, gen_char_view, gen_scene_image, gen_mv,
                          url_to_rel, cleanup_song_tmp)
@@ -239,7 +241,7 @@ LAND_W, LAND_H = 1920, 1080
 # 项目 制作.json 可用 camera_library / compose_variants 覆盖。
 # ---------------------------------------------------------------------------
 CAMERA_LIBRARY = [
-    ("镜头从人物侧后方缓慢推近", "保持中近景，画面带轻微呼吸感"),
+    ("镜头从人物侧后方缓慢推近", "构图稳定，画面带轻微呼吸感"),
     ("镜头自左向右匀速平移", "横移中保持人物处于三分线"),
     ("镜头由低处缓缓抬升", "从地面植被升到人物半身"),
     ("镜头跟随人物缓慢前行跟拍", "步伐与镜头同步，轻微手持感"),
@@ -336,12 +338,12 @@ def has_singing_word(text):
     return any(w in t for w in _SING_WORDS)
 
 
-# ★ 首尾安全区：视频片段实际生成时长会漂移，故每段**开头 1 秒**与**结尾 1 秒**
-# 一律设为「过渡安全区」（中间才是演唱/表演区）：
-# 段首 1s：承接上一段尾帧 → 闭唇、安静、不做口型（防止继承上一段的张嘴画面）
-# 段尾 1s：提前收束 → 闭唇、动作渐停（防止本段尾帧的张嘴状态被下一段继承）
-HEAD_GUARD = 1.0
-TAIL_GUARD = 1.0
+# 🔴 首尾安全区常量固定为 0：开口与收音一律按该段真实 vocal_windows（见 references/10-提示词写作规范.md §3.3），
+# 有歌声的第一帧即开口、唱到人声窗口终点自然收，唇形全程贴音频；第一个事件不写时间戳
+# （官方 full-reference-en.txt §5.1：Shot 1 has no timestamp）。
+# 两个变量仅为兼容旧调用保留（0 = 不插入任何人为闭唇区）。
+HEAD_GUARD = 0.0
+TAIL_GUARD = 0.0
 
 
 # —— 道具参考图生成规范（硬规则，所有歌曲统一，勿在 per-song 提示词里另写背景/承托物）——
@@ -525,7 +527,8 @@ char_descs: list[str]，每元素 = 一个人物的**身份词**（`人物` / `�
             <Picture 1>~<Picture K> = 人物1~K，<Picture K+1> = 场景。
 seg: 来自 lyrics_align.classify_segments 的分段信息
      {index, start, end, len, type, vocal, vocal_windows, lyrics}
-- vocal=True  ：写明切点时刻起开口演唱（`At 00:03.500, …`）、唇形与音频同步，段首 1 秒过渡时闭唇。
+- vocal=True  ：第一事件从第一帧开口（不写时间戳），后续事件用 `At MM:SS.mmm, …`；
+                唇形与音频同步，起止按该段真实 vocal_windows（不设首尾闭唇安全区）。
 - vocal=False ：全段无人声 → 明确「不演唱、不开口、双唇闭合」，改靠肢体表演做画面动感。
 """
     if not isinstance(char_descs, list):
@@ -536,11 +539,14 @@ seg: 来自 lyrics_align.classify_segments 的分段信息
     wins = seg.get("vocal_windows") or []
     stype = seg.get("type") or ("演唱" if seg.get("vocal") else "间奏")
     act = (act or "").strip()
-    # 段首过渡（承接上一段尾帧）：所有段的前 1 秒都闭唇安静，继承上一段的张嘴画面会穿帮
-    # ★ prompt_rules 可按项目覆盖（骑乘段不该写「安静站定」）；缺省完全保持原文。
+    # 🔴 段首无「闭唇过渡」句（见 references/10 §3.2）：音频整段已存在，第一帧声音就在响。
+    # ★ 逐段首帧句（2026-11-24）：项目可用 prompt_rules.head_by_seg = {段号: 首帧句} 为每段
+    #   写「承接上一段动作/姿态/神情」的延续句，保证镜头连贯；缺该段则回退 head_text。
     _rules = prompt_rules or {}
-    head = ((_rules.get("head_text") or "").strip()
-            or "段首过渡（承接上一段尾帧）：人物双唇自然闭合、安静站定，只有轻微呼吸与肩线起伏，不做口型；")
+    _idx = int(seg.get("index", 1) or 1)
+    _hbs = _rules.get("head_by_seg") or {}
+    head = (str(_hbs.get(str(_idx)) or _hbs.get(_idx)
+                or _rules.get("head_text") or "")).strip()
 
     # —— subject_definitions（人物1~K + 场景K+1）——
     # 🔴 铁律 17：主体定义只写「<Picture N> 中的<身份词>。」，类目清单归下面的延续分析
@@ -557,14 +563,19 @@ seg: 来自 lyrics_align.classify_segments 的分段信息
         _p = scene_idx + _j
         subj_defs.append("<Subject %d> 是 <Picture %d> 中的%s。"
                          % (_p, _p, _av.subject_identity(_pd, default="道具")))
-    # —— retention_analysis（保留类目清单写在这里）——
+    # —— retention_analysis（通用型白名单模板写在这里）——
+    # 🔴 用 audio_video 的 KEEP_*_TPL 整行模板（与短剧同一套），门禁逐字校验：
+    #    人物 / 场景 / 道具各一句「完全沿用 <Picture N> + 不新增不替换」。
     retain = []
     for i, cd in enumerate(char_descs, 1):
-        retain.append("<Subject %d> (appears in [Shot 1]): fully_preserved - %s" % (i, _av.KEEP_PERSON))
-    retain.append("<Subject %d> (appears in [Shot 1]): fully_preserved - %s" % (scene_idx, _av.KEEP_SCENE))
+        retain.append("<Subject %d> (appears in [Shot 1]): fully_preserved - %s"
+                      % (i, _av.KEEP_PERSON_TPL % i))
+    retain.append("<Subject %d> (appears in [Shot 1]): fully_preserved - %s"
+                  % (scene_idx, _av.KEEP_SCENE_TPL % scene_idx))
     for _j, _pd in enumerate(_prop_descs, 1):
         _p = scene_idx + _j
-        retain.append("<Subject %d> (appears in [Shot 1]): fully_preserved - %s" % (_p, _av.KEEP_PROP))
+        retain.append("<Subject %d> (appears in [Shot 1]): fully_preserved - %s"
+                      % (_p, _av.KEEP_PROP_TPL % _p))
 
     people = "、".join("<Subject %d>" % i for i in range(1, k + 1))
     pics = "、".join("<Picture %d>" % i for i in range(1, k + 1))
@@ -582,13 +593,11 @@ seg: 来自 lyrics_align.classify_segments 的分段信息
         audio_desc = ("<Audio 1> 是本段对应的原声音轨（含清晰人声演唱与伴奏），"
                       "作为 %s 的音色参考和目标视频的完整最终音轨。" % _sing_ref)
         _duet = "（本段为对唱，%s 分别开口）" % _sing_ref if len(_singers) > 1 else ""
-        summary = ("[reference generation + audio reuse] 目标视频展示 %s 在 <Subject %d> 中演唱。"
-                   "%s 作为人物外观参考，<Picture %d> 作为场景背景参考，<Audio 1> 作为原声音频。"
-                   "本段为「%s」，音频中有人声演唱%s。%s" % (
-                       people, scene_idx, pics, scene_idx, stype, _duet, _prop_note))
-        # 按演唱者计划写成明确时间轴（段首/尾 1s 仍是过渡安全区）
-        _parts = []
-        _cur = HEAD_GUARD
+        summary = ("[reference generation + audio reuse] 本段画面中是 %s 站在 <Subject %d> 的实景里。"
+                   "目标视频展示 %s 在 <Subject %d> 中演唱，收在最后一个音符落下、双唇轻轻闭合的安静神情。"
+                   "本段为「%s」，音频中有人声演唱%s。"
+                   "<Audio 1> 作为原声音频。%s" % (
+                       people, scene_idx, people, scene_idx, stype, _duet, _prop_note))
         # ★ 内置模板是「站唱」表演（轻步移动 / 原地轻踏 / 中景做手势），会把骑乘、飞行等
         #   特殊 act 覆盖成步行。项目可用 prompt_rules 覆盖；缺省完全保持原文，其它项目不受影响。
         _pre_tail = ((_rules.get("pre_sing_text") or "").strip()
@@ -596,28 +605,88 @@ seg: 来自 lyrics_align.classify_segments 的分段信息
         _perf_tail = ((_rules.get("sing_tail") or "").strip()
                       or ("身形随乐句在画面中轻步移动（向镜头 / 向侧方 / 原地轻踏），"
                           "双手随乐句在身前做出柔和而富有表现力的手势，肩线与重心随乐句轻轻换向；"))
-        for _sj, _a, _b in plan:
-            if _a > _cur + 0.05:
-                _parts.append("%s （起唱前）：%s" % (_av.fmt_at(_cur), _pre_tail))
-            _parts.append(
-                "%s （演唱）：<Subject %d> (S%d) 开口演唱，唇形与 <Audio 1> 中的人声精准同步开合，%s，%s"
-                % (_av.fmt_at(_a), _sj, _sj, act or "表情安静专注", _perf_tail))
-            _cur = _b
-        if _cur < round(L, 2):
-            _parts.append("%s （收束）：最后一个音符落下后双唇轻轻闭合，动作放缓，定格为柔和宁静的神情。"
-                          % _av.fmt_at(_cur))
-        timeline = head + "\n" + "\n".join(_parts)
-        soundscape = "来自 <Audio 1> 的复制人声演唱与伴奏贯穿全程。"
+        # ★ 表情编排：每段一句专属表情 + 双人眼神互动，各段不重复。
+        _face = sing_expression(seg.get("index", 1), k)
+        _act_txt = (act.strip().rstrip("。；，,;") + "，") if (act or "").strip() else ""
+
+        # ============ full_sing：Ref2VA 音频复用演唱写法（2026-11-24）============
+        # ★ 音频驱动 = fully_copy 原音频全曲复用，人物跟着音频对口型——**没有台词/对白，不写 <d> 块**。
+        #   唇形由「(Sx) 演唱 + <Audio 1> 原声波形」驱动，H3 直接把音频唇形贴到这个人脸上。
+        # 音频驱动对口型三要点：
+        #   ① 只留女主一人 → 唇形驱动目标唯一（双人同框时 H3 分不清谁唱）；
+        #   ② [Shot 1] 第一事件不写时刻 → 从第一帧 0.000 起开口；
+        #   ③ 唱到音频人声结束；段内静音按 vocal_windows 自然闭唇。
+        if _rules.get("full_sing"):
+            _wins = [(float(a), float(b)) for a, b in (wins or []) if float(b) - float(a) > 0.1]
+            _parts = []
+            if not _wins:
+                # 无窗口数据兜底：整段开口唱
+                _parts.append(
+                    "<Subject 1> (S1) 从第一帧起面向镜头持续开口演唱，唇形全程严格跟随 <Audio 1> 的歌声波形开合，"
+                    "只有她一人开口、唇形与歌声完整同步，唱到音频最后一个音符自然收音，%s%s，%s"
+                    % (_act_txt, _face, _perf_tail))
+            else:
+                for _wi, (_a, _b) in enumerate(_wins):
+                    if _wi == 0:
+                        # 第一个事件=第一帧开口，不加时间戳（官方 §5.1）
+                        _parts.append(
+                            "<Subject 1> (S1) 从第一帧起面向镜头开口演唱，唇形全程严格跟随 <Audio 1> 的歌声波形逐字开合，"
+                            "只有她一人开口、唇形与歌声完整同步，%s%s，%s"
+                            % (_act_txt, _face, _perf_tail))
+                    else:
+                        _parts.append(
+                            "%s 继续开口演唱，唇形继续严格跟随 <Audio 1> 的歌声波形开合，%s"
+                            % (_av.fmt_at(_a), _perf_tail))
+                    # 人声窗口之间 = 静音/间奏，自然闭唇换气（唇形仍跟音频，静音即闭唇）
+                    if _wi + 1 < len(_wins):
+                        _nxt_a = _wins[_wi + 1][0]
+                        if _nxt_a - _b > 0.15:
+                            _parts.append(
+                                "%s 乐句间音频静音，双唇自然闭合换气、随伴奏轻轻呼吸；"
+                                % _av.fmt_at(_b))
+            timeline = (head + "\n" if head else "") + "\n".join(_parts)
+            soundscape = "来自 <Audio 1> 的复制人声演唱与伴奏贯穿全程。"
+        else:
+            # 双人版默认路径（2026-11-24 同步修正，与 full_sing 同一口径）：
+            # 第一事件不写时间戳（官方 §5.1），从第一帧开口；只有后续切点才用 At MM:SS。
+            _parts = []
+            _cur = HEAD_GUARD
+            _first = True
+            _lip = ("嘴唇正对镜头、口型随 <Audio 1> 的每一句歌词逐字精准开合，全程只有她一人开口、唇形与歌声严格同步；"
+                    if k < 2 else "唇形与 <Audio 1> 中的人声精准同步开合，")
+            for _sj, _a, _b in plan:
+                if _a > _cur + 0.05:
+                    _parts.append(("%s （起唱前）：%s" % (_av.fmt_at(_cur), _pre_tail))
+                                  if not _first else
+                                  ("（起唱前）：%s" % _pre_tail))
+                _lead = "" if _first else (_av.fmt_at(_a) + " ")
+                _parts.append(
+                    "%s（演唱）：<Subject %d> (S%d) 开口演唱，%s%s%s，%s"
+                    % (_lead, _sj, _sj, _lip, _act_txt, _face, _perf_tail))
+                _first = False
+                _cur = _b
+            # 人声窗口终点 = 该段真实收音点；到点才收，不提前 1 秒闭唇
+            if _cur < round(L, 2) - 0.05:
+                _parts.append("%s （人声结束）：最后一个音符落下后双唇自然闭合，动作放缓，定格为柔和宁静的神情。"
+                              % _av.fmt_at(_cur))
+            timeline = (head + "\n" if head else "") + "\n".join(_parts)
+            soundscape = "来自 <Audio 1> 的复制人声演唱与伴奏贯穿全程。"
     else:
         audio_desc = ("<Audio 1> 是本段对应的原声伴奏音轨（纯器乐，**没有人声演唱**），"
                       "作为目标视频的完整最终音轨直接复用。")
-        summary = ("[reference generation + audio reuse] 目标视频展示 %s 在 <Subject %d> 中。"
-                   "%s 作为人物外观参考，<Picture %d> 作为场景背景参考，<Audio 1> 作为原声音频。"
-                   "本段为「%s」，音频是纯器乐、没有人声，人物全程不演唱。%s" % (people, scene_idx, pics, scene_idx, stype, _prop_note))
+        summary = ("[reference generation + audio reuse] 本段画面中是 %s 站在 <Subject %d> 的实景里。"
+                   "目标视频展示 %s 在 <Subject %d> 中的肢体表演，收在动作渐停、安静定格的画面。"
+                   "本段为「%s」，音频是纯器乐、没有人声，人物全程不演唱。"
+                   "<Audio 1> 作为原声音频。%s" % (
+                       people, scene_idx, people, scene_idx, stype, _prop_note))
         # 器乐段：只出现肢体表演与口型闭合状态。整段拆成【起/承/合】三段表演，每段都写动作+表情+神态。
         _idx = int(seg.get("index", 1)) - 1
         _beats_lib = inst_beats or INSTRUMENTAL_BEATS  # ★ 优先用本歌自带器乐段动作（制作.json instrumental_beats）
         beats = _beats_lib[_idx % len(_beats_lib)]
+        # ★ 不开口也要有脸上的戏：分镜 beats 里没写表情时，自动补该段专属表情 + 眼神互动，
+        #   否则前奏 / 间奏 / 尾奏只剩动作、人物一脸空白（2026-11-24 用户定）。
+        _iface = inst_expression(seg.get("index", 1), k)
+        beats = [b if _has_expr(b) else (b.rstrip("。；，,;") + "，" + _iface) for b in beats]
         _a = HEAD_GUARD
         _b = round(max(HEAD_GUARD + 0.5, L - TAIL_GUARD), 2)
         _span = max(0.6, _b - _a)
@@ -625,39 +694,229 @@ seg: 来自 lyrics_align.classify_segments 的分段信息
         _t2 = round(_a + _span * 0.70, 2)
         tail = ("%s （段尾过渡）：动作渐停、双唇保持闭合，安静定格，把画面交给下一段。"
                 % _av.fmt_at(_b))
+        # 第一事件不带时间戳（官方 §5.1 `[Shot 1]` 首事件无时间戳，门禁硬拦 At 00:00.000）：
+        # 器乐段第一帧即从【起】动作开始，后续【承/合】才用 At MM:SS.mmm。
         timeline = (
-            head + "\n"
-            + ("%s （全段无人声，不演唱、不开口、不做口型，双唇始终自然闭合）——【起】%s；\n"
-               % (_av.fmt_at(_a), beats[0]))
+            (head + "\n" if head else "")
+            + ("（全段无人声，不演唱、不开口、不做口型，双唇始终自然闭合）——【起】%s；\n"
+               % beats[0])
             + ("%s ——【承】%s；\n" % (_av.fmt_at(_t1), beats[1]))
             + ("%s ——【合】%s，动作随乐句渐缓；\n" % (_av.fmt_at(_t2), beats[2]))
             + tail
         )
         soundscape = "来自 <Audio 1> 的复制纯器乐伴奏与环境声音贯穿全程，没有人声。"
 
+    # ★ 双人段眼神互动兜底：门禁硬拦「同框却零互动 / 全程严肃」
+    timeline = _ensure_gaze(timeline, k)
+
+    # ★ 同框锁（2026-11-24，规范 §3.5.1）：光在场景描述里说「双人同框」压不住模型——唇形句反复出现时
+    #   它仍会把镜头推成单人特写（林间信段 6/7/10 实测）。这里在**首帧句之后紧跟**一条可执行的构图锁定，
+    #   与文末构图句里的同框约束前后呼应。项目可 pair_lock=false 关掉（该段刻意要单人特写时）。
+    _pair_lock = _rules.get("pair_lock")
+    if _pair_lock is None:
+        _pair_lock = (k >= 2)
+    if _pair_lock and k >= 2:
+        _pl = ("（构图锁定）镜头始终保持在能同时容纳 %s 的距离，两人全程同时出现在同一画面内，"
+               "不得推进到只框住其中一人、不得切到单人特写；" % people)
+        if head and timeline.startswith(head):
+            timeline = head + "\n" + _pl + "\n" + timeline[len(head):].lstrip("\n")
+        else:
+            timeline = _pl + "\n" + timeline
+
     # ★ 项目级覆盖：主体/坐骑数量锁定 + 取景规则。缺省 = 原「中景构图」文案。
     _scene_line = (((_rules.get("scene_rules") or "").strip() + "\n")
                    if (_rules.get("scene_rules") or "").strip() else "")
+    # frame_rule 是项目级可选项（景别按镜头需要）；缺省给中性兜底，不写死具体景别。
     _frame_tail = ((_rules.get("frame_rule") or "").strip()
-                   or "画面始终保持人物略偏中心的中景构图。")
+                   or "人物处于画面构图合理位置，构图随运镜自然变化。")
+    # ★ 同框锁（2026-11-24，规范 §3.5.1）：画面 ≥2 人时默认把「两人始终同框」写进构图句。
+    #   模型在「面向镜头演唱 + 唇形逐字跟随」重复出现时会把镜头推成单人特写（林间信段 6/7/10 实测），
+    #   构图句给出同框硬约束可压住这个漂移。项目可 pair_lock=false 关掉（该段刻意要单人特写时）。
+    _pair_lock = _rules.get("pair_lock")
+    if _pair_lock is None:
+        _pair_lock = (k >= 2)
+    if _pair_lock and k >= 2:
+        _frame_tail = ("构图全程保持人物同框：%s 始终同时出现在同一画面内，"
+                       "镜头不得只框住其中一人、不得推成单人特写；" % people) + _frame_tail
+    # 🔴 六段小标题一律中文（2026-11-24 用户定，规范见 references/10 §1）：
+    # 门禁已支持中英段名归一化（实测中文段名 PASS），MV 与短剧都用中文小标题。
     return (
-        "subject_definitions:\n"
+        "主体定义:\n"
         + "\n".join(subj_defs) + "\n" + audio_desc + "\n"
-        "\nsummary:\n" + summary + "\n"
-        "\nretention_analysis:\n"
+        "\n摘要:\n" + summary + "\n"
+        "\n延续分析:\n"
         + "\n".join(retain)
         + "\n<Audio 1>: fully_copy - <Audio 1> 作为目标视频的完整最终音轨直接复用。\n"
-        "\ndetailed_description:\n"
+        "\n详细描述:\n"
+        "camera motion\n"
         "目标视频采用电影感、自然主义的音乐视频风格。\n"
         + _scene_line
         + ("[Shot 1] 本段共 %.2f 秒，严格按以下时间轴表演：\n%s\n" % (L, timeline))
         + cam + "，" + camf + "，" + _frame_tail + "\n"
         + (("视频中出现的道具须严格参照 %s 等道具参考图，形制与质感保持一致，不可凭空改动。\n"
             % _prop_pics) if _prop_descs else "")
-        + "\noverall_soundscape:\n" + soundscape + "\n"
-        "\nnon_diegetic_music:\n"
+        + "\n整体音效:\n" + soundscape + "\n"
+        "\n非叙事音乐:\n"
         "无"
     )
+
+
+def audit_ref2va_prompts(prompts, prompt_rules=None, seg_meta=None):
+    """★ 六段式提示词提交前门禁 —— **调用公共唯一事实源**，本文件不另立格式规则。
+
+    公共唯一事实源 = `fxai-h3-video-prompt/h3_format_gate.py`，短剧 / MV / 数字人口播
+    共用同一校验器：逐段校验主体定义白名单、摘要（`<Picture N>` 首帧污染源）、
+    延续分析白名单、详细描述（触发词 / `[Shot 1]` / 首帧钉死）、整体音效、非叙事音乐，
+    外加跨段主体一致性。任一条不过直接抛错，不进入渲染。
+
+    本函数在公共门禁之上补一层 MV 音频驱动的语义格式断言（规范见 references/10）：
+    ① 原音频无台词 ② 第一帧开口 ③ 首事件无时间戳 ④ 无提前收唇
+    ⑤ 首帧钉死实景句存在（只防白底首帧，不查景别——景别按镜头需要选，规范 §3.4.1）
+    ⑥ 多段跨镜头延续覆盖 ⑦ full_sing 配置与段内人声窗口一致。
+    prompt_rules / seg_meta 由调用点传入，用于校验配置类规则 ⑥⑦。
+    """
+    from h3_format_gate import audit_ref2va_six_segment
+    bad = audit_ref2va_six_segment(prompts)
+    rules = prompt_rules or {}
+    metas = seg_meta or []
+    for i, p in enumerate(prompts or [], 1):
+        txt = p if isinstance(p, str) else str(p.get("prompt") or "")
+        if "<d>" in txt or "<d[" in txt:
+            bad.append("第%d段 原音频 fully_copy 驱动 = 没有台词，不得有 `<d>` 台词块（规范 §3.1）" % i)
+        if re.search(r"段首过渡[（(]承接上一段尾帧|双唇自然闭合[、，]安静站定", txt):
+            bad.append("第%d段 出现「段首 1 秒闭唇过渡」——第一帧声音已在响，须第一帧开口（规范 §3.2）" % i)
+        if re.search(r"^At 00:00\.000", txt, re.M) or re.search(r"0\.00s[–\-]1\.00s", txt):
+            bad.append("第%d段 第一事件写了 0 秒时间戳/闭唇区——官方 §5.1 `[Shot 1]` 首事件无时间戳（规范 §3.2）" % i)
+        if re.search(r"（收束）[：:]最后一个音符落下后双唇轻轻闭合", txt):
+            bad.append("第%d段 出现提前「收束闭唇」——按真实 vocal_windows 收音，不写提前收唇（规范 §3.3）" % i)
+        # ⑤ 首帧钉死实景句存在（规范 §2.4）：只防「白底参考图顶成第一帧」，不查景别。
+        #   景别（全身/半身/中景/近景/特写/远景）是创作判断，按本镜需要选，门禁一律放行（规范 §3.4.1）。
+        if not any("画面第一帧就是" in _ln for _ln in txt.splitlines()):
+            bad.append("第%d段 缺「画面第一帧就是…实景」首帧钉死句——会从白底参考图起手（规范 §2.4）" % i)
+    # ⑥ 跨镜头延续（规范 §3.6）：多段项目须配齐 head_by_seg，覆盖全部段号
+    _n = len(prompts or [])
+    if _n >= 2:
+        _hbs = rules.get("head_by_seg") or {}
+        _covered = {int(x) for x in _hbs.keys() if str(x).isdigit() or isinstance(x, int)}
+        _missing = [i for i in range(1, _n + 1) if i not in _covered]
+        if _missing:
+            bad.append("跨镜头延续：head_by_seg 未覆盖全部段号，缺 %s——每段须承接上一段收尾（规范 §3.6）"
+                       % _missing[:8])
+    # ⑦ full_sing 一致性（规范 §3.7）：演唱段有段内人声断档时须开 full_sing
+    _has_gap = any((m.get("vocal") and len(m.get("vocal_windows") or []) > 1)
+                   for m in metas)
+    if _has_gap and not rules.get("full_sing"):
+        bad.append("演唱段存在段内人声断档（多 vocal_windows）却未开 full_sing——段内静音不被处理（规范 §3.7）")
+    # ⑧ 同框锁（规范 §3.5.1）：主体定义里 ≥3 个主体（≥2 人 + 1 场景）时，构图句须写同框约束，
+    #   否则模型在唇形句重复出现时会把镜头推成单人特写（林间信段 6/7/10 实测漂移）。
+    if any(len(re.findall(r"^<Subject \d+> 是 ", txt, re.M)) >= 3 for txt in
+           [(p if isinstance(p, str) else str(p.get("prompt") or "")) for p in (prompts or [])]):
+        for i, p in enumerate(prompts or [], 1):
+            txt = p if isinstance(p, str) else str(p.get("prompt") or "")
+            _n_sub = len(re.findall(r"^<Subject \d+> 是 ", txt, re.M))
+            if _n_sub >= 3 and "始终同时出现在同一画面内" not in txt:
+                bad.append("第%d段 画面 ≥2 人却未写同框锁——模型会把镜头推成单人特写（规范 §3.5.1）" % i)
+    for msg in bad:
+        print("[格式门禁] ✗ %s" % msg)
+    if bad:
+        raise RuntimeError(
+            "Ref2VA 六段式门禁未通过（%d 处违规，不得提交）。门禁唯一事实源："
+            "fxai-h3-video-prompt/h3_format_gate.py，模板见 fxai-short-drama/references/01-提示词规范.md：\n- %s"
+            % (len(bad), "\n- ".join(bad[:12])))
+    print("[gate] ✅ Ref2VA 六段式门禁通过：%d 条 × 六段逐段校验（公共门禁 h3_format_gate）"
+          % len(prompts))
+    return True
+
+
+# ★ 演唱表情编排队列（2026-11-24 用户定）：
+#   「不同的歌词、不同的歌曲段，人物之间的表情互动都要做到位，别弄得太严肃」。
+#   此前演唱行固定一句「表情安静专注」——20 段 188 秒里"笑"只出现 3 次、
+#   "眼神 / 对视 / 眉眼 / 嘴角"是 0，人物看着木讷、像在念稿。
+#   每条 = 演唱者面部表情 + 双人眼神互动，按段序号轮换，保证相邻段不重复。
+SING_EXPRESSIONS = [
+    "眉眼放松、嘴角带着一点没完全醒的笑意，唱到长音时眼睫轻轻垂下再抬起，句尾会侧头看他一眼，他也在看她",
+    "眼睛里带着暖意、眉梢随乐句轻轻抬起，像在说一件只有两个人知道的事，唱完一句她抬眼正撞上他的视线，两个人一起笑了",
+    "神情温柔而专注，唱到高处时微微仰头、嘴角上扬，他会抬眼看她、跟着她的节奏轻轻点头",
+    "唇边一直挂着浅浅的笑，唱到动情处眉眼低下来、声音放轻，再抬眼看他，他的手就停在她手边没挪开",
+    "眼睛亮亮的、笑意一直没从脸上退下去，唱到欢快的句子她会转向他，他挑起眉配合她，两人对视着笑",
+    "神情认真，眼睛却含着笑，唱到某一句时忽然抬眼看他，他愣了一下，随即也笑了",
+    "眉眼弯起来、嘴角控制不住地上扬，她看他一眼，他也不躲，就这么看着她笑",
+    "安静地笑，眼神柔下来落在远处，唱完一句才慢慢转向他，他也不说话，只把肩膀往她那边靠了靠",
+    "唱得投入时眉心微微蹙起、眼睛半闭，音落之后缓缓睁开，正好看见他在笑她，她也绷不住笑了",
+    "神情里带一点舍不得，眼里有水光却没落下来，唱到最后一句她看向他，他把视线迎上去，两个人都没开口",
+]
+
+# ★ 器乐段（不开口）的表情兜底：分镜 beats 里没写表情时自动补一句，
+#   使前奏 / 间奏 / 尾奏有表情、脸上不空。
+INST_EXPRESSIONS = [
+    "神情安静，眼神落在雾里某个地方，偶尔侧头看他一下",
+    "嘴角带着一点笑意，眼神跟着他的手走，看完再抬起来看他的脸",
+    "眉眼舒展，像是在听林子里的声音，听到什么就抬眼跟他交换一下眼神",
+    "眼睛微微眯起来享受光，笑的时候先看光再看他，两个人一起眯眼笑",
+    "神情松弛而温柔，两个人视线碰一下就分开，各自又忍不住笑了一下",
+]
+
+# ★ 单人（纯女主）表情库：不得出现「他 / 两个人 / 对视」等词——单人画面里没有第二个人，
+#   写进去会让模型凭空生成一个不存在的对象（2026-11-24「纯女主版」定）。
+SING_EXPRESSIONS_SOLO = [
+    "眉眼放松、嘴角带着一点没完全醒的笑意，唱到长音时眼睫轻轻垂下再抬起，神情专注而柔软",
+    "眼睛里带着暖意、眉梢随乐句轻轻抬起，像在把心事慢慢说给林子听，唱到动情处轻轻笑了一下",
+    "神情温柔而专注，唱到高处时微微仰头、嘴角上扬，眼神亮起来",
+    "唇边一直挂着浅浅的笑，唱到动情处眉眼低下来、声音放轻，尾音时又抬眼望向林间深处",
+    "眼睛亮亮的、笑意一直没从脸上退下去，唱到欢快的句子时眉眼弯起来",
+    "神情认真，眼睛却含着笑，唱到某一句时忽然轻轻眯起眼，随即弯了弯嘴角",
+    "眉眼弯起来、嘴角控制不住地上扬，唱得投入时微微晃了晃头",
+    "安静地笑，眼神柔下来落在远处，唱完一句才慢慢收回目光，神情宁静",
+    "唱得投入时眉心微微蹙起、眼睛半闭，音落之后缓缓睁开，嘴角浮起一点笑",
+    "神情里带一点舍不得，眼里有水光却没落下来，唱到最后一句时轻轻抿嘴笑了",
+]
+
+INST_EXPRESSIONS_SOLO = [
+    "神情安静，眼神落在雾里某个地方，偶尔轻轻眨一下眼",
+    "嘴角带着一点笑意，眼神随着林间光斑缓缓移动，神情舒展",
+    "眉眼舒展，像是在听林子里的声音，听到什么就微微扬了扬眉",
+    "眼睛微微眯起来享受穿过树梢的光，嘴角挂着一点满足的笑",
+    "神情松弛而温柔，轻轻呼出一口气，独自笑了一下",
+]
+
+# 表情类词（用于判断分镜 beats 里有没有写「脸」上的戏）
+_EXPR_WORDS = ("笑", "笑意", "眼神", "目光", "神情", "眉眼", "嘴角", "眼眶",
+               "抿唇", "挑眉", "抬眼", "垂眼", "对视", "相视", "眯眼", " eyes")
+
+
+def _has_expr(text):
+    return any(w in (text or "") for w in _EXPR_WORDS)
+
+
+def sing_expression(seg_index, k_people=2):
+    """取该段的演唱表情。双人=含眼神互动；单人=纯自我表情（不出现「他」，否则单人画面写出不存在的人）。"""
+    if int(k_people or 1) < 2:
+        return SING_EXPRESSIONS_SOLO[(int(seg_index or 1) - 1) % len(SING_EXPRESSIONS_SOLO)]
+    return SING_EXPRESSIONS[(int(seg_index or 1) - 1) % len(SING_EXPRESSIONS)]
+
+
+def inst_expression(seg_index, k_people=2):
+    """取该段的器乐段表情兜底（不开口也要有脸上的戏）。单人版同上，不写「他」。"""
+    if int(k_people or 1) < 2:
+        return INST_EXPRESSIONS_SOLO[(int(seg_index or 1) - 1) % len(INST_EXPRESSIONS_SOLO)]
+    return INST_EXPRESSIONS[(int(seg_index or 1) - 1) % len(INST_EXPRESSIONS)]
+
+
+# 眼神互动词（门禁 `_GAZE_RE` 同口径）：双人段必须至少命中一个
+_GAZE_WORDS = ("对视", "相视", "视线", "看他", "看她", "目光", "迎上")
+
+
+def _ensure_gaze(timeline, k_people):
+    """★ 兜底：双人同框但整段没有一处眼神互动时，补一句。
+
+    门禁会硬拦「两个人各看各的像陌生人 / 全程严肃」，这里保证任何写法都不会漏。
+    """
+    if int(k_people or 1) < 2:
+        return timeline
+    if any(w in (timeline or "") for w in _GAZE_WORDS):
+        return timeline
+    return (timeline or "") + (
+        "\n（眼神互动）：她的目光在句末转向他，他抬眼迎上，两个人都没说话，只一起笑了一下。")
 
 
 def build_scene_prompt(char_descs, sdesc, cam, camf, act, seg=None):
@@ -1449,6 +1708,7 @@ def main():
         return _s
 
     ref2va = []
+    _seg_meta = []  # ★ 门禁用：段的 vocal / vocal_windows（校验 full_sing 一致性，规范 §3.7）
     for _i, sc in enumerate(SCENES):
         _nxt = SCENES[_i + 1] if (_i + 1) < len(SCENES) else None
         _seg = {
@@ -1459,15 +1719,20 @@ def main():
             "vocal_windows": sc.get("vocal_windows") or [],
             "sing": _norm_sing(sc.get("sing")),  # ★ 演唱者（角色名→Subject 序号）
             "lyrics": [],
+            "sing_lyrics": sc.get("lyric") or "",  # ★ 该段真实唱词（full_sing 官方 <d> 写法用）
         }
         _nseg = None
         if _nxt is not None:
             _nseg = {"vocal": _nxt.get("vocal", True)}
         _hit = int(sc.get("index", _i + 1)) in RULE_SEGMENTS
+        _seg_meta.append({"index": _seg["index"], "vocal": _seg["vocal"],
+                          "vocal_windows": _seg["vocal_windows"]})
         ref2va.append(build_segment_prompt(char_descs_all, sc["sdesc"], sc["cam"], sc["camf"],
                                            sc["act"], _seg, next_seg=_nseg, prop_descs=prop_descs,
                                            inst_beats=INST_BEATS,
                                            prompt_rules=_PR if _hit else None))
+    # ★ 提交前门禁：不过直接抛错，不进入 5/6。传配置与段元数据以校验规范 §3.4.1/§3.6/§3.7
+    audit_ref2va_prompts(ref2va, prompt_rules=_PR, seg_meta=_seg_meta)
     with open(os.path.join(SONG_DIR, "运镜提示词.md"), "w", encoding="utf-8") as f:
         f.write("# 运镜提示词 · %s\n\n" % ACTIVE_SONG)
         f.write("> 每个音频分段一套 H3 Ref2VA 六段式提示词（行数 = 分段数，一一对应）。\n")

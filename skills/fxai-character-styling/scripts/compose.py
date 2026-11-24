@@ -22,7 +22,7 @@ def _lookup_asset(asset_id, field="图片"):
     if os.sep in asset_id or "/" in asset_id:
         return asset_id
     import csv
-    p = os.environ.get("FXAI_POSE_COSTUME_DATA") or os.path.join(_HERE, "..", "data", "assets.csv")
+    p = os.environ.get("FXAI_CHARACTER_STYLING_DATA") or os.path.join(_HERE, "..", "data", "assets.csv")
     if os.path.isdir(p):
         p = os.path.join(p, "assets.csv")
     with open(p, encoding="utf-8-sig", newline="") as f:

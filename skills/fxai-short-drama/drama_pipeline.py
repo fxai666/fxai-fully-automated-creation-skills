@@ -452,9 +452,44 @@ def init_project(series_root, title, slug, total_episodes=None, overwrite=False)
     return path, sd
 
 
+def shared_rel_of(info, sd=None):
+    """【共享资产直引】返回该条目应直引的公用 rel（如 views/000.png）；不是共享条目返回 ""。
+
+    规则（2026-11-23 用户定稿，**默认就是引用**）：
+      - **凡是全局共享的素材资源**（全局 role_pairs 的现成四视图、公用目录 views/ avatar/
+        mv_scene/ 等已在别的链路做好的图），**一律直接引用原路径，不拷进项目目录、不上传、
+        不登记指纹、不重画**。不要拷来拷去浪费磁盘和同步时间。
+      - 判据按顺序：
+        ① 显式 `shared: true` + 给了 `ref` → 共享（老写法仍兼容，且不受 sd 影响）；
+        ② **默认判据**：`ref` 带目录前缀、前缀 ≠ 本项目 `server_subdir`，且本项目**没有它的副本**
+           （`local` 为空）→ 共享直引。等价说法：条目只写「引用哪儿」不写「自己存哪儿」，
+           它就不进项目目录。
+        ③ 排除自有资产：自有角色的 `ref` 也可能指向公用头像库（`avatar/000.png`），那只是
+           **生成成品时的参考图**，条目自带 `local` + `server_index`，成品落本项目目录 ——
+           有 local 的一律不算共享（这条不排除，会把每个自有角色都误判成共享，整集不生图）。
+      - 共享条目只写 name / shared(可省) / ref / source / desc，不写 server_index / server_file /
+        local / md5 / bytes —— 真值在公用目录，再录一遍只会随对方更新而 stale。
+    """
+    if not isinstance(info, dict):
+        return ""
+    ref = (info.get("ref") or "").replace("\\", "/").strip("/")
+    if not ref:
+        return ""
+    if info.get("shared"):
+        return ref
+    if not sd or "/" not in ref:
+        return ""            # 不知道本项目目录（或 ref 没有前缀）就不猜，只认显式 shared
+    if ref.split("/")[0] == sd:
+        return ""            # 指向本项目目录 → 自有
+    if info.get("local"):
+        return ""            # 项目里有副本 → 自有资产，ref 只是生成参考图
+    return ref
+
+
 def upload_project_assets(project_root, overwrite=True, subdir=None):
     """
     按 project_def 把本系列本地资产覆盖上传到 ComfyUI 服务端对应 server_subdir（每项目独立目录）。
+    带 shared=true 的共享资产一律跳过：它们本来就在公用目录里，不进本项目目录。
     用途：① 首次把本地备份灌入服务器（建立本系列的 shortdrama_<slug> 目录）；
           ② 重做旧项目 / 服务端资源被清，从本地备份恢复。
     上传顺序按 server_index 升序，空目录时递增命名即得到 000..N；
@@ -469,6 +504,10 @@ def upload_project_assets(project_root, overwrite=True, subdir=None):
     done = []
     for grp in ("characters", "scenes"):
         for key, info in pd.get(grp, {}).items():
+            _sr = shared_rel_of(info, sd)
+            if _sr:
+                print(f"跳过共享资产 {key}：直接引用 {_sr}（不拷进项目目录、不上传）")
+                continue
             local = os.path.join(series_root, info.get("local", ""))
             sidx = int(info.get("server_index", 0))
             fname = info.get("server_file") or f"{sidx:03d}.png"
@@ -510,7 +549,7 @@ def register_assets(project_root, only=None, check_server=False, quiet=False):
     sd = pd.get("server_subdir") or "shortdrama"
     _only = set(only or [])
     now = time.strftime("%Y-%m-%d %H:%M:%S")
-    res = {"ok": [], "stale": [], "missing": []}
+    res = {"ok": [], "stale": [], "missing": [], "shared": []}
     import tempfile
     tmpdir = tempfile.gettempdir()
 
@@ -519,6 +558,15 @@ def register_assets(project_root, only=None, check_server=False, quiet=False):
             if _only and key not in _only:
                 continue
             if not isinstance(info, dict):
+                continue
+            # 共享资产：真值在公用目录里，本项目只留引用，不登记指纹、不回读比对
+            _sr = shared_rel_of(info, sd)
+            if _sr:
+                info["server_path"] = _sr
+                info["synced_at"] = now
+                res["shared"].append(key)
+                if not quiet:
+                    print("[登记] %s 为共享资产，直引 %s（不落本项目目录）" % (key, _sr))
                 continue
             try:
                 sidx = int(info.get("server_index", -1))
@@ -565,9 +613,10 @@ def register_assets(project_root, only=None, check_server=False, quiet=False):
     path = os.path.join(series_root, "project_def.json")
     json.dump(pd, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     if not quiet:
-        print("[登记] 已写入 project_def.json：%d 条（缺本地 %d，服务端不一致 %d）"
-              % (len(res["ok"]) + len(res["stale"]) + len(res["missing"]),
-                 len(res["missing"]), len(res["stale"])))
+        print("[登记] 已写入 project_def.json：%d 条（自有 %d / 共享直引 %d｜缺本地 %d，服务端不一致 %d）"
+              % (len(res["ok"]) + len(res["stale"]) + len(res["missing"]) + len(res["shared"]),
+                 len(res["ok"]) + len(res["stale"]) + len(res["missing"]),
+                 len(res["shared"]), len(res["missing"]), len(res["stale"])))
     return res
 
 
@@ -581,7 +630,8 @@ def asset_registry(project_root):
     series_root, pd = load_project_def(project_root)
     if not pd:
         raise RuntimeError("未找到 project_def.json（向上查找失败）。")
-    keep = ("name", "server_index", "server_file", "server_path", "local", "md5", "bytes", "synced_at")
+    keep = ("name", "server_index", "server_file", "server_path", "local", "md5", "bytes", "synced_at",
+            "shared", "ref", "source")
     out = {"series": pd.get("title"), "server_subdir": pd.get("server_subdir"),
            "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"), "characters": {}, "scenes": {}}
     for grp in ("characters", "scenes"):
@@ -613,10 +663,14 @@ def verify_project_assets(project_root, rels, check_content=True, quiet=False):
     """【提交渲染前的参考图门禁】核对每张参考图确实属于本项目、且服务端内容没被人换过。
 
     查四件事：
-      ① rel 必须带目录前缀，前缀 == 本项目 project_def.server_subdir（不许指向别家目录或公用目录）；
+      ① rel 必须带目录前缀：自有资产前缀 == 本项目 project_def.server_subdir；
+        **共享资产例外**——凡 project_def 条目 `ref` 指向公用目录（前缀 ≠ 本项目目录）且本项目不留副本的，
+        都算共享直引（2026-11-23 用户定稿：全局共享素材一律直接引用，不拷进项目目录），
+        只要该 rel 在共享条目上登记过即可，不要求落本项目目录；
       ② 该文件在服务端确实存在；
-      ③ 服务端该文件与本地 assets 对应的角色/场景图 md5 一致 —— 防「别的项目按同名覆盖」
+      ③ 自有资产：服务端该文件与本地 assets 对应的角色/场景图 md5 一致 —— 防「别的项目按同名覆盖」
          （2026-11-14 本系列 000-008 被另一项目素材整体覆盖，整集人物错乱，就是这个没拦住）；
+         共享资产：只验服务端取得到（本地无副本，不做内容比对）；
       ④ 本地没有可对照底图时跳过内容比对，只做 ①②（并在日志里点名）。
 
     返回 bad 列表；空列表 = 通过。非空必须停，不许带着错参考图提交渲染。
@@ -631,10 +685,16 @@ def verify_project_assets(project_root, rels, check_content=True, quiet=False):
     series_root, pd = load_project_def(project_root)
     idx2local = {}
     path2info = {}
+    shared_rels = set()
     if pd:
         for grp in ("characters", "scenes"):
             for _k, info in (pd.get(grp) or {}).items():
                 if not isinstance(info, dict):
+                    continue
+                _sr = shared_rel_of(info, sd)
+                if _sr:
+                    shared_rels.add(_sr)
+                    path2info[_sr] = info
                     continue
                 if info.get("local"):
                     try:
@@ -646,16 +706,29 @@ def verify_project_assets(project_root, rels, check_content=True, quiet=False):
                     path2info[info["server_path"].replace("\\", "/")] = info
     import tempfile
     seen, checked = set(), 0
+    n_shared = 0
     for rel in rels:
         r = (rel or "").replace("\\", "/").strip("/")
         if not r or r in seen:
             continue
         seen.add(r)
         if "/" not in r:
-            bad.append("%s 没有项目目录前缀（应为 %s/…）" % (rel, sd))
+            bad.append("%s 没有目录前缀（自有资产应为 %s/…，共享资产应为 views/… 这类公用路径）" % (rel, sd))
             continue
         if r.split("/")[0] != sd:
-            bad.append("%s 落在 %s/，不是本项目目录 %s/" % (rel, r.split("/")[0], sd))
+            if r not in shared_rels:
+                bad.append("%s 落在 %s/，既不是本项目目录 %s/，也没在 project_def 登记为共享资产"
+                           % (rel, r.split("/")[0], sd))
+                continue
+            # 共享资产：真值在公用目录，只验服务端取得到
+            n_shared += 1
+            if not check_content:
+                continue
+            tmp = os.path.join(tempfile.gettempdir(), "fxai_verify_" + r.replace("/", "_"))
+            try:
+                C._download("image/" + r.replace("/", "|", 1), tmp)
+            except Exception as e:
+                bad.append("%s 是共享资产但在服务端取不到：%s" % (rel, str(e)[:60]))
             continue
         if server and r not in server:
             bad.append("%s 服务端不存在" % rel)
@@ -694,8 +767,8 @@ def verify_project_assets(project_root, rels, check_content=True, quiet=False):
         for b in bad:
             print("   -", b)
     elif not quiet:
-        print("✅ 参考图门禁通过：%d 张全部落在 %s/，内容与本地底图一致（%d 张比过 md5）"
-              % (len(seen), sd, checked))
+        print("✅ 参考图门禁通过：共 %d 张（自有 %d 张落 %s/ 并比过 %d 张 md5｜共享直引 %d 张，只验服务端取得到）"
+              % (len(seen), len(seen) - n_shared, sd, checked, n_shared))
     return bad
 
 
@@ -747,6 +820,10 @@ def gen_project_assets(project_root, force=False, prompts=None, timeout=600, onl
     for key, info in pd.get("characters", {}).items():
         if not _want(key):
             continue
+        _sr = shared_rel_of(info, sd)
+        if _sr:
+            print(f"跳过共享资产 {key}：直引 {_sr}（已有四视图，不重画）")
+            continue
         local = os.path.join(series_root, info.get("local", ""))
         if os.path.exists(local) and not force and not _only:
             continue
@@ -763,6 +840,10 @@ def gen_project_assets(project_root, force=False, prompts=None, timeout=600, onl
     # 场景图
     for key, info in pd.get("scenes", {}).items():
         if not _want(key):
+            continue
+        _sr = shared_rel_of(info, sd)
+        if _sr:
+            print(f"跳过共享资产 {key}：直引 {_sr}（已有场景图，不重画）")
             continue
         local = os.path.join(series_root, info.get("local", ""))
         if os.path.exists(local) and not force and not _only:
@@ -1068,22 +1149,35 @@ def build_workflow(shots,
             % (len(_speech_bad), SPEECH_CHARS_PER_SECOND, SPEECH_BREATH_SECONDS,
                "\n  ".join(_speech_bad)))
 
-    # H3 六段式提示词格式门禁（2026-11-14 固化，硬）：主体定义只指认、四段正文须全英文。
+    # H3 六段式提示词格式门禁（2026-11-14 固化，2026-11-23 改为**白名单式** + 六段逐段校验，硬）：
+    #   判定方式：每段一份模板结构（白名单），只有整段/整行匹配模板才放行，不靠穷举禁止项。
+    #   六段齐全有序 / 主体定义白名单身份句（含 <Audio N> 绑定行借号且不重编号）/ 摘要三个必需构件齐全 /
+    #   延续分析整行照抄类目模板 /
+    #   详细描述两行+主体全称不缩写+仅会开口的主体带 (Sx)+号固定且从 S1 连续+台词带语种 /
+    #   整体音效落到具体声音 / 非叙事音乐写出音乐特征或「无」/ 跨段主体一致性。
+    #   六段各一个独立校验函数，任一段不合规都单独报错（一段都不空转）。
+    #   说话人编号口径（官方 §2.4 / §5.1 / §5.4）：按目标视频里实际开口先后从 S1 连续发号；
+    #   号一旦定下整条视频内不变，音频绑定只复用该号、不另发号，没绑音频的说话人照样顺排。
+    # 模板唯一事实源：references/01-提示词规范.md「六段白名单模板」。
     # 文章只写「该怎么做」；以下「不允许的写法」在此拦截，命中即拒绝提交渲染。
+    # fail-closed：门禁模块加载不了也算不通过（不许静默放行）。
     if h3_format_gate:
         try:
             from h3_format_gate import audit_short_drama_six_segment
-        except Exception:
-            audit_short_drama_six_segment = None
-        if audit_short_drama_six_segment:
-            _fmt_bad = audit_short_drama_six_segment(shots)
-            for msg in _fmt_bad:
-                print("[格式门禁] ✗ %s" % msg)
-            if _fmt_bad:
-                raise ValueError(
-                    "有 %d 处提示词格式违规（主体定义只指认、四段正文须全英文、中文只进 <d>）：\n  %s\n"
-                    "改完再提交渲染。"
-                    % (len(_fmt_bad), "\n  ".join(_fmt_bad)))
+        except Exception as e:
+            raise RuntimeError(
+                "H3 六段式格式门禁加载失败（%s）——门禁是硬性提交前置，加载不了不许提交渲染。"
+                "检查 %s/h3_format_gate.py"
+                % (str(e)[:120], os.path.join(SKILL_DIR, "..", "fxai-h3-video-prompt")))
+        _fmt_bad = audit_short_drama_six_segment(shots)
+        for msg in _fmt_bad:
+            print("[格式门禁] ✗ %s" % msg)
+        if _fmt_bad:
+            raise ValueError(
+                "有 %d 处提示词格式违规（六段逐段校验：主体定义、摘要、延续分析、详细描述、"
+                "整体音效、非叙事音乐，任一段不合规都不许提交）：\n  %s\n"
+                "改完再提交渲染。"
+                % (len(_fmt_bad), "\n  ".join(_fmt_bad)))
 
     require_comfyui()
     wf = json.load(open(workflow_path or DEFAULT_WORKFLOW, encoding="utf-8"))

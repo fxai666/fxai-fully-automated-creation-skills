@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
-"""素材登记表：init / add / scan / catalog / check。只记路径，不搬图。"""
+"""素材登记表：init / add / scan / catalog / check。只记路径，不搬图。
+
+纯壳口径：本技能不判定素材内容；用户自建任意子目录，scan 按目录层级索引。
+"""
 import os
 import csv
 import argparse
 
-FIELDS = ["id", "类型", "套系", "一级分类", "二级分类", "三级分类",
+FIELDS = ["id", "类型", "一级分类", "二级分类", "三级分类",
           "名称", "标签", "角度", "图片", "来源", "备注"]
 IMG_EXT = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
+MAX_LEVELS = 3
 
 
 def data_dir():
-    return os.environ.get("FXAI_POSE_COSTUME_DATA") or os.path.join(
+    return os.environ.get("FXAI_CHARACTER_STYLING_DATA") or os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "..", "data")
 
 
@@ -39,7 +43,7 @@ def _write(rows):
 def cmd_init(a):
     p = table_path()
     if os.path.exists(p):
-        print("[init] 已存在，不覆盖:", p)
+        print("[init] 已存在，保留原表:", p)
         return
     _write([])
     print("[init] 已建空表:", p)
@@ -49,7 +53,7 @@ def cmd_add(a):
     rows = _read()
     if any(r.get("id") == a.id for r in rows):
         raise SystemExit("[add] id 已存在，未覆盖: " + a.id)
-    row = dict(id=a.id, 类型=a.类型, 套系=a.套系, 一级分类=a.一级分类 or "",
+    row = dict(id=a.id, 类型=a.类型, 一级分类=a.一级分类 or "",
                二级分类=a.二级分类 or "", 三级分类=a.三级分类 or "", 名称=a.名称,
                标签=a.标签 or "", 角度=a.角度 or "", 图片=a.图片,
                来源=a.来源 or "", 备注=a.备注 or "")
@@ -66,21 +70,24 @@ def cmd_scan(a):
     for dirpath, _dirs, files in os.walk(root):
         rel_dir = os.path.relpath(dirpath, root)
         parts = [] if rel_dir == "." else rel_dir.split(os.sep)
-        lv = (parts + ["", "", ""])[:3]
+        # 超出三级的子目录折叠进第三级，保持列结构不变
+        lv = (parts + ["", "", ""])[:MAX_LEVELS]
+        if len(parts) > MAX_LEVELS:
+            lv[MAX_LEVELS - 1] = "/".join(parts[MAX_LEVELS - 1:])
         for fn in sorted(files):
             ext = os.path.splitext(fn)[1].lower()
             if ext not in IMG_EXT:
                 continue
             stem = os.path.splitext(fn)[0]
             img_rel = os.path.relpath(os.path.join(dirpath, fn), rel_base)
-            draft.append(dict(id="", 类型=a.类型, 套系=a.套系, 一级分类=lv[0],
+            draft.append(dict(id="", 类型=a.类型, 一级分类=lv[0],
                               二级分类=lv[1], 三级分类=lv[2], 名称=stem,
                               标签="", 角度="", 图片=img_rel.replace("\\", "/"),
                               来源=a.来源 or "", 备注="scan 草稿·待确认 id"))
     print("[scan] 草稿 %d 条:" % len(draft))
     for d in draft[:a.limit]:
-        print("  %s | %s | %s/%s/%s | %s" % (
-            d["套系"], d["类型"], d["一级分类"], d["二级分类"], d["三级分类"], d["图片"]))
+        print("  %s | %s/%s/%s | %s" % (
+            d["类型"], d["一级分类"], d["二级分类"], d["三级分类"], d["图片"]))
     if a.write:
         rows = _read()
         exist = {r.get("图片") for r in rows}
@@ -88,7 +95,7 @@ def cmd_scan(a):
         for d in draft:
             if d["图片"] in exist:
                 continue
-            d["id"] = "%s_%s_%04d" % (a.类型, a.套系, added + 1)
+            d["id"] = "%s_%04d" % (a.类型, added + 1)
             rows.append(d)
             added += 1
         _write(rows)
@@ -99,8 +106,6 @@ def cmd_scan(a):
 
 def cmd_catalog(a):
     rows = _read()
-    if a.套系:
-        rows = [r for r in rows if r.get("套系") == a.套系]
     if a.类型:
         rows = [r for r in rows if r.get("类型") == a.类型]
     for r in rows:
@@ -113,7 +118,7 @@ def cmd_check(a):
     bad = 0
     base = data_dir()
     for r in rows:
-        missing = [k for k in ("id", "类型", "套系", "名称", "图片") if not r.get(k)]
+        missing = [k for k in ("id", "类型", "名称", "图片") if not r.get(k)]
         rel = r.get("图片", "")
         fp = rel if os.path.isabs(rel) else os.path.normpath(os.path.join(base, rel))
         no_file = bool(rel) and not os.path.exists(fp)
@@ -133,7 +138,7 @@ def main():
     p = sub.add_parser("add")
     p.add_argument("--id", dest="id", required=True)
     p.add_argument("--图片", dest="图片", required=True)
-    for name in ("类型", "套系", "一级分类", "二级分类", "三级分类", "名称",
+    for name in ("类型", "一级分类", "二级分类", "三级分类", "名称",
                  "标签", "角度", "来源", "备注"):
         p.add_argument("--" + name, dest=name, default="")
     p.set_defaults(fn=cmd_add)
@@ -141,7 +146,6 @@ def main():
     p = sub.add_parser("scan")
     p.add_argument("root")
     p.add_argument("--类型", dest="类型", default="姿势")
-    p.add_argument("--套系", dest="套系", default="SFW")
     p.add_argument("--来源", dest="来源", default="")
     p.add_argument("--write", action="store_true")
     p.add_argument("--limit", type=int, default=20)
@@ -149,7 +153,6 @@ def main():
 
     p = sub.add_parser("catalog")
     p.add_argument("--类型", dest="类型", default="")
-    p.add_argument("--套系", dest="套系", default="")
     p.set_defaults(fn=cmd_catalog)
 
     sub.add_parser("check").set_defaults(fn=cmd_check)

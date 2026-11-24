@@ -22,10 +22,15 @@ description: MiniMax Hailuo H3 视频提示词写作规范（用户级，通用�
 | `references/05-物理动作提示词示例.md` | 物体级物理行为（碰撞/弹跳/散射/轨迹）。关键词库 |
 | `references/06-运镜LoRA与运镜写法.md` | 写运镜、挂 Camera Motion LoRA。触发词、结构、词表 |
 | `references/07-触发词挂载规范.md` | **写提示词前先读**：镜型→触发词对照表、位置 |
+| `references/08-单发声者唇形同步规范.md` | 🔴 **音频复用（audio reuse）写/审提示词前必读**：MiniMax H3 模型级唯一事实源——指定唯一发声者、人数不限、无台词不写 `<d>`、第一帧开口、按人声窗口写时间轴；MV（`sing`）与口播（`speak`）共用，业务特化各看自家册 |
 | `references/base-modes-en.txt` | 官方字段：T2VA / I2VA / FL2VA / L2VA |
 | `references/full-reference-en.txt` | 官方字段：Ref2VA 六段式字段、标签 |
+| `h3_format_gate.py` + `references/09-门禁模块维护.md` | **门禁实现（源码）**：`audit_ref2va_six_segment` / `audit_short_drama_six_segment`。改动、冒烟、损坏恢复的流程见 09 册 |
 
 **确定模式后只读对应那一册，其余一律不读。** 官方 txt 只在逐字段核对时翻。
+
+门禁以**可读源码**形态随目录同行：`h3_format_gate.py` 是唯一事实源，`import h3_format_gate` 直接加载它。
+**不得改名、不得移出技能根目录**；须用 CPython 3.12 加载。兜底编译件在 `__pycache__/`，恢复副本在 `_backup/*.good-*`，流程见 09 册。
 
 ## 0. 我们管线的模式映射（决定写哪套）
 
@@ -42,6 +47,8 @@ description: MiniMax Hailuo H3 视频提示词写作规范（用户级，通用�
 ## 1. 音频处理铁律：原音频，不描述
 
 `<Audio 1>` 标 `fully_copy`；`overall_soundscape` 只写「沿用原音频」；`non_diegetic_music` 写「无」。**音色完全复刻原音频，音色形容词一律留空**，后面只补**表演方式**（如「克制的演绎」）。逐字段写法见 02。
+
+> 🔴 **谁开口、唇形怎么跟音频 → 见 08 册**（模型级唯一事实源）：画面可多人，唇形只绑 `<Subject 1>` `(S1)`；无台词不写 `<d>`、第一帧开口、整段人声写一句全程同步、有静音才用时间锚点。`sing`（MV）与 `speak`（口播）同套。
 
 ### 1.5 铁律：提示词必须契合这一段文案在讲什么
 
