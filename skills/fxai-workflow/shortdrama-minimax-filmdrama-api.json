@@ -66,7 +66,8 @@
       "场景分段时长": [
         "1130",
         2
-      ]
+      ],
+      "场景续接": false
     },
     "class_type": "FxAIGeneratorController",
     "_meta": {
@@ -306,6 +307,14 @@
       "参考音频列表": [
         "1126",
         3
+      ],
+      "场景续接": [
+        "993",
+        11
+      ],
+      "续接段序号": [
+        "743",
+        2
       ]
     },
     "class_type": "FxAiMiniMaxImageToVideoV2",
@@ -332,7 +341,7 @@
         0
       ],
       "conditioning": [
-        "1155",
+        "1178",
         0
       ]
     },
@@ -383,6 +392,14 @@
       "音频": [
         "1162",
         0
+      ],
+      "场景续接": [
+        "993",
+        11
+      ],
+      "续接帧数": [
+        "993",
+        7
       ]
     },
     "class_type": "FxAiMiniMaxVideoSaveV2",
@@ -543,6 +560,26 @@
     "class_type": "FxAiLoraLoader",
     "_meta": {
       "title": "凤希AI - LoRa加载器"
+    }
+  },
+  "1178": {
+    "class_type": "FxAiMiniMaxResampleCond",
+    "_meta": {
+      "title": "二采条件重编码（放大后尺寸）"
+    },
+    "inputs": {
+      "正向条件": [
+        "1155",
+        0
+      ],
+      "视频VAE": [
+        "1091",
+        0
+      ],
+      "AV潜变量": [
+        "1161",
+        0
+      ]
     }
   }
 }

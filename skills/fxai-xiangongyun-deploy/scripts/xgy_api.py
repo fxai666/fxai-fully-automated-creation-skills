@@ -28,6 +28,7 @@
 实际结果要轮询 get_instance 看 status 字段。
 
 用法：
+  python xgy_api.py check                            # 首次接入体检：令牌 → 有没有用咱们镜像建的机器 → 给出下一步
   python xgy_api.py list
   python xgy_api.py info <instance_id>
   python xgy_api.py boot <instance_id> --gpu "NVIDIA GeForce RTX 4090" --gpu-count 1
@@ -61,11 +62,27 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from xgy_cfg import api_token, cfg_path  # noqa: E402
+from xgy_cfg import api_token, cfg_path, current_instance_id  # noqa: E402
 import urllib.error
 import urllib.request
 
 BASE = "https://api.xiangongyun.com/open"  # 官方固定基址，不给环境变量开关
+
+# 对外引导链接（都带推广码 9LWQ36；对外文案涉及云部署必带，见用户长期规则）
+XGY_INVITE = "9LWQ36"
+XGY_REG_URL = "https://www.xiangongyun.com/register/" + XGY_INVITE
+XGY_IMAGE_URL = ("https://www.xiangongyun.com/image/detail/"
+                 "9463d4ca-2f86-45cf-b0a3-a81ba6f3b27c?r=" + XGY_INVITE)
+
+
+def onboard_links():
+    """给用户看的注册/登录+镜像+赠金引导（无令牌、无账号时打印）。"""
+    return (
+        "  还没仙宫云账号？点这里注册，已注册点开即登录：\n"
+        f"    注册/登录：{XGY_REG_URL}\n"
+        f"    凤希全自动镜像：{XGY_IMAGE_URL}\n"
+        f"  还没填邀请码的，登录后到「邀请有礼/填写邀请码」填 {XGY_INVITE}，可得 3 元赠送金。\n"
+    )
 
 # 实例 status 全部取值（文档「实例 status 状态」表）
 STATUS = {
@@ -665,6 +682,201 @@ def get_user_info(t):
     }
 
 
+# ---------- 首次接入体检（check） ----------
+# 用户选了仙宫云时先跑这一条：验令牌 + 看令牌下有没有用「咱们全自动镜像」建的机器。
+# 判据只有一条：实例的 image_id 是否等于 OWN_IMAGE_ID。其他镜像建的实例一律不算、
+# 不提示、不碰——那类机器没装我们的节点/模型/工作流，跑不了配套技能，列出来只会误导。
+
+def _inst_image_id(inst):
+    """实例的镜像 ID：列表接口自带 image_id / imageId 两种写法（见管理台 index.js）。"""
+    for k in ("image_id", "imageId", "image"):
+        v = inst.get(k)
+        if v:
+            return str(v)
+    return ""
+
+
+def own_image_instances(t):
+    """令牌下用咱们全自动镜像建的机器（只按 image_id 判定；其他镜像不返回）。"""
+    r = list_instances(t)
+    src = r.get("data") or {}
+    lst = src.get("list") or (src.get("data") or {}).get("list") or r.get("list") or []
+    return [i for i in lst if isinstance(i, dict)
+            and _inst_image_id(i).lower() == OWN_IMAGE_ID.lower()]
+
+
+def check_onboarding(t):
+    """一次性体检，输出人能照做的下一步。只读，不建实例、不扣费。
+
+    三态：① 令牌无效 → 提示怎么拿令牌；② 令牌下无咱们镜像的实例 → 给建机演练请求体，
+    确认后才 --yes；③ 有 → 列出可用实例 + 绑定命令 + 验服务命令。
+    """
+    print("=" * 64)
+    print("  仙宫云接入体检")
+    print("=" * 64)
+
+    # ① 令牌
+    try:
+        who = get_whoami(t)
+        me = who.get("data") or {}
+    except ApiError as e:
+        print(f"\n[1/3] 令牌无效：{e}")
+        print(onboard_links())
+        print("  登录后到控制台「访问令牌」页生成令牌（形如 eyJ...，不是 SSH 密码、不是 api_key）。")
+        print(f"  拿到后交给助手写进本机全局配置 {cfg_path()} 的 xgy_api_token，")
+        print("  或设环境变量 XGY_API_TOKEN，再重跑：python xgy_api.py check")
+        return
+    name = me.get("nickname") or me.get("uuid") or "?"
+    print(f"\n[1/3] 令牌有效：{name}")
+
+    # ② 咱们镜像的实例（其他镜像一概不参与判断）
+    try:
+        own = own_image_instances(t)
+    except ApiError as e:
+        print(f"\n[2/3] 查实例列表失败：{e}")
+        return
+    print(f"[2/3] 用咱们全自动镜像建的机器：{len(own)} 台"
+          f"（镜像 {OWN_IMAGE_ID}；其他镜像建的不计入）")
+
+    if not own:
+        print("\n[结论] 还没有用咱们镜像建的机器，暂时没法继续后面的出片工作。")
+        print(onboard_links())
+        print("  先用咱们的全自动镜像建一台（建实例会实时扣费；缺卡不扣费）：")
+        body = {
+            "name": DEFAULT_DEPLOY_NAME, "image": OWN_IMAGE_ID, "image_type": "community",
+            "gpu_model": DEFAULT_DEPLOY_GPU, "gpu_count": 1, "data_center_id": 1,
+        }
+        print("  " + json.dumps(body, ensure_ascii=False))
+        print("\n  演练（只打印请求体、不建）：python xgy_api.py deploy-image " + OWN_IMAGE_ID)
+        print("  确认后真建：              python xgy_api.py deploy-image " + OWN_IMAGE_ID + " --yes")
+        print("\n  建完再跑一次 check，就能看到新机器。")
+        return
+
+    # ③ 有 → 列出来 + 下一步
+    print("\n[3/3] 可用的机器：")
+    for i in own:
+        st = i.get("status", "?")
+        print("  %s  %-12s  %s" % (i.get("id", "?"), STATUS.get(st, st), i.get("name") or ""))
+    bound = current_instance_id()
+    bound_ids = {str(i.get("id") or "") for i in own}
+    if bound:
+        tag = "✓ 就是上面这台" if bound in bound_ids else "✗ 不是咱们镜像建的，建议重绑"
+        print(f"\n  当前配置绑定：{bound}（{tag}）")
+    else:
+        print("\n  当前还没绑定实例 ID。")
+    one = str(own[0].get("id") or "")
+    print("\n[结论] 可以继续了。下一步：")
+    if len(own) == 1:
+        print(f"  绑定这台：python xgy_guard.py use {one}")
+        print(f"  验四服务：python xgy_api.py verify-services {one}")
+    else:
+        print("  选一台绑定：python xgy_guard.py use <上面任意一个实例ID>")
+        print("  再验服务：  python xgy_api.py verify-services <实例ID>")
+    print("  然后把 comfy_url 指向这台，就能开始出片。")
+
+
+def upgrade_cloud(t, iid="", check_only=False, no_restart=False, no_comfy=False):
+    """对一台用咱们全自动镜像建的实例，走令牌免密 SSH 上传并执行在线升级脚本。
+
+    🔴 只认全自动镜像（image_id==9463d4ca）建的实例；其他镜像的一律不碰。
+    脚本本身幂等：已是最新会报告「无需升级」；升级后默认自动重启+四服务验收。
+    """
+    # 1) 只认咱们镜像的实例
+    try:
+        own = own_image_instances(t)
+    except ApiError as e:
+        print(f"[upgrade] 查实例列表失败：{e}")
+        return 2
+    own_ids = [str(i.get("id") or "") for i in own]
+    if not own_ids:
+        print("[upgrade] 令牌下没有用咱们全自动镜像建的机器，没法升级。先跑 python xgy_api.py check。")
+        return 2
+
+    if not iid:
+        bound = current_instance_id()
+        if bound in own_ids:
+            iid = bound
+            print(f"[upgrade] 未指定实例，用当前绑定的 {iid}")
+        elif len(own_ids) == 1:
+            iid = own_ids[0]
+            print(f"[upgrade] 未指定实例，自动用唯一那台咱们镜像的机器 {iid}")
+        else:
+            print("[upgrade] 令牌下有多台咱们镜像的机器，请显式指定实例 ID：")
+            for i in own:
+                print("  %s  %s" % (i.get("id"), i.get("name") or ""))
+            return 2
+
+    # 2) 校验指定实例必须也是咱们镜像建的
+    if iid not in own_ids:
+        print(f"[upgrade] 实例 {iid} 不是用咱们全自动镜像建的（或不在令牌名下）。")
+        print("  令牌下咱们镜像的机器：" + "、".join(own_ids))
+        print("  按约定，其他镜像建的实例一律不碰。")
+        return 2
+
+    # 3) paramiko（SSH 密码登录需要；缺则自动装到当前解释器）
+    try:
+        import paramiko  # noqa: F401
+    except Exception:
+        print("[upgrade] 当前解释器缺 paramiko，自动安装…", file=sys.stderr)
+        import subprocess
+        try:
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", "-q",
+                 "-i", "https://pypi.tuna.tsinghua.edu.cn/simple",
+                 "--extra-index-url", "https://pypi.org/simple", "paramiko"], timeout=300)
+        except Exception as e:
+            print(f"[upgrade] paramiko 安装失败：{e}\n"
+                  f"  手动装：\"{sys.executable}\" -m pip install paramiko", file=sys.stderr)
+            return 2
+
+    from xgy_cfg import ssh_cred_from_api
+    from xgy_ssh import SSH, SSHFail
+    try:
+        cred = ssh_cred_from_api(iid, token=t)
+    except RuntimeError as e:
+        print(f"[upgrade] 取 SSH 凭证失败：{e}")
+        return 2
+
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "xgy_upgrade.sh")
+    if not os.path.isfile(script_path):
+        print(f"[upgrade] 找不到升级脚本 {script_path}（技能包不完整？）")
+        return 2
+    with open(script_path, encoding="utf-8") as f:
+        script = f.read()
+
+    env_prefix = ""
+    if check_only:
+        env_prefix += "XGY_UPGRADE_CHECK=1 "
+    if no_restart:
+        env_prefix += "XGY_UPGRADE_NO_RESTART=1 "
+    if no_comfy:
+        env_prefix += "XGY_UPGRADE_NO_COMFY=1 "
+    cmd = (env_prefix + "bash /tmp/xgy_upgrade.sh").strip()
+
+    print(f"[upgrade] 连 {cred['user']}@{cred['host']}:{cred['port']}"
+          f"（{cred.get('label') or iid}）")
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    try:
+        ssh = SSH(host=cred["host"], port=cred["port"], user=cred["user"],
+                  password=cred["password"], timeout=30)
+        with ssh:
+            print("[upgrade] 上传升级脚本 …")
+            ssh.put_text(script, "/tmp/xgy_upgrade.sh")
+            ssh.run("chmod +x /tmp/xgy_upgrade.sh")
+            print(f"[upgrade] 执行：{cmd}\n" + "=" * 64)
+            r = ssh.run(cmd, timeout=900)
+            sys.stdout.write(r.out or "")
+            if r.err:
+                sys.stderr.write("[stderr]\n" + r.err)
+            print("=" * 64)
+            print(f"[upgrade] 远端退出码 {r.rc}；完整报告在实例 /tmp/xgy_upgrade.report")
+            return r.rc
+    except SSHFail as e:
+        print(f"[upgrade] SSH 失败：{e}")
+        return 2
+
+
 # ---------- 辅助 ----------
 
 def pick_instance(j, iid=None):
@@ -741,7 +953,7 @@ def show(inst):
 
 def main():
     p = argparse.ArgumentParser(description="仙宫云 API 客户端")
-    p.add_argument("action", help="list/info/boot/shutdown/release-gpu/wait/save-image/"
+    p.add_argument("action", help="check/upgrade/list/info/boot/shutdown/release-gpu/wait/save-image/"
                                   "instance-images/images/image-info/balance/whoami/user/recharge/"
                                   "public-images/resolve-instance/resolve-image/"
                                   "deploy/deploy-image/ssh/comfy-url/verify-ui/verify-services")
@@ -781,9 +993,51 @@ def main():
                    help="deploy-image/boot: 关闭缺卡自动抢卡（等价 --grab 0），缺卡即直接报告失败")
     p.add_argument("--keyword", default=OWN_KEYWORD,
                    help="resolve-instance/resolve-image: 搜不到时的关键字（默认凤希AI）")
+    p.add_argument("--check", action="store_true",
+                   help="upgrade: 只检测落后情况与依赖变化，不改代码、不重启")
+    p.add_argument("--no-restart", action="store_true",
+                   help="upgrade: 升级代码但不重启（默认升级后自动重启+验收）")
+    p.add_argument("--no-comfy", action="store_true",
+                   help="upgrade: 跳过 ComfyUI 本体，只升自定义节点")
     a = p.parse_args()
-    t = get_token(a)
     act = a.action
+
+    # check 是「首次接入体检」：没令牌时它要自己给引导，先过 get_token() 会硬抛错。
+    # 所以放在 get_token 之前，令牌在 check_onboarding 内部按需读取。
+    if act == "check":
+        tok = a.token or api_token()
+        if not tok:
+            print("=" * 64)
+            print("  仙宫云接入体检")
+            print("=" * 64)
+            print("\n[1/3] 还没有访问令牌。")
+            print(onboard_links())
+            print("  登录后到控制台「访问令牌」页生成令牌（形如 eyJ...，不是 SSH 密码、不是 api_key）。")
+            print(f"  拿到后交给助手写进本机全局配置 {cfg_path()} 的 xgy_api_token，")
+            print("  或设环境变量 XGY_API_TOKEN，再重跑：python xgy_api.py check")
+            return
+        check_onboarding(tok)
+        return
+
+    if act == "upgrade":
+        # 和 check 一样放在 get_token 之前：无令牌要给引导而非硬抛错。
+        tok = a.token or api_token()
+        if not tok:
+            print("=" * 64)
+            print("  仙宫云在线升级")
+            print("=" * 64)
+            print("\n缺少访问令牌。")
+            print(onboard_links())
+            print("  登录后到控制台「访问令牌」页生成令牌（形如 eyJ...，不是 SSH 密码）。")
+            print(f"  交给助手写进 {cfg_path()} 的 xgy_api_token，或设 XGY_API_TOKEN，再重跑 upgrade。")
+            return
+        rc = upgrade_cloud(tok, a.instance_id,
+                           check_only=a.check, no_restart=a.no_restart, no_comfy=a.no_comfy)
+        if rc:
+            raise SystemExit(rc)
+        return
+
+    t = get_token(a)
 
     if act == "list":
         r = list_instances(t)

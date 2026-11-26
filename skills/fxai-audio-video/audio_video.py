@@ -219,7 +219,14 @@ _NARR = {
                    "<Audio 1> 的歌声波形自然开合，只有 <Subject 1> 一人开口；"
                    "身形随乐句轻步移动，双手随乐句做柔和而富有表现力的手势；"),
         "pre": "",   # 第一帧即开口，不写「吸气/闭唇/回忆旋律」这类段首过渡
-        "end": "唱到音频人声结束自然收音，定格为柔和宁静的微笑。",
+        # 🔴 2026-11-25 用户定（规范 08 册 §4 禁「段尾提前收束闭唇」）：
+        #   MV 唱歌全程随音频开合，第一帧到最后一帧都不闭嘴。旧句「自然收音，定格为
+        #   柔和宁静的微笑」会让 single/FL2VA 在末帧闭嘴（实测末帧 56.4s 嘴合上），
+        #   且参考图是闭嘴静态图、首尾帧把末帧往参考图回拉，三因叠加。
+        #   分段生成时每段尾帧 = 下一段首帧锚点（FL2VA 段间传递），尾帧必须以「仍在唱」
+        #   的自然神情结束，为下一段留下连贯衔接；写成静态微笑定格会让下一段从闭嘴重开。
+        "end": ("全程保持自然放松的演唱神情，唇形持续跟随 <Audio 1> 开合直到最后一帧，"
+                "末帧仍在演唱状态，与声音同步自然收尾。"),
         "soundscape": "来自 <Audio 1> 的复制人声演唱与伴奏贯穿全程。",
     },
     "speak": {
@@ -579,14 +586,21 @@ def build_multiline_prompt(seg_prompts=None, ref2va_prompts=None):
 # 三、FL2VA 提示词（单场景 / 多场景）
 # =====================================================================
 def _fl2va_seconds(duration):
-    """有效时长格式化成官方要求的两位小数；拿不到时长按 0.00。"""
+    """有效时长格式化成两位小数。拿不到时回落到 H3 单段实际秒数（226 帧 / 24 ≈ 9.42）。
+
+    Picture 2 是对齐到**段末**的尾帧锚点——写成 0.00 秒会和 Picture 1 重合，尾帧等于没给。
+    single 传真实音频时长用真值；multi / 逐段口播传 0 时按一段的标准长度兜底。
+    """
     try:
-        return "%.2f" % float(duration or 0)
+        d = float(duration or 0)
     except (TypeError, ValueError):
-        return "0.00"
+        d = 0
+    if d <= 0:
+        d = h3_align_down(round(10 * H3_FPS)) / float(H3_FPS)
+    return "%.2f" % d
 
 
-def build_fl2va_prompt(pics=1, duration=0, body="", kind="sing"):
+def build_fl2va_prompt(duration=0, body="", kind="sing"):
     """FL2VA（首尾帧）+ 音频参考的三段式提示词，供单场景 / 多场景模式用。
 
     官方格式硬约束（不可改）：
@@ -594,20 +608,20 @@ def build_fl2va_prompt(pics=1, duration=0, body="", kind="sing"):
     - 核心字段固定三个：integrated_multimodal_description / overall_soundscape / non_diegetic_music；
     - 时长 `S.SS` 保留两位小数。
 
-    - pics: 参考图张数（首帧 1 张；首尾帧 2 张时 pics=2 并按官方写法给出两处对齐）。
-    - duration: 有效时长（秒），写进对齐指令。
+    🔴 FL2VA 首尾帧恒为两张图：单场景是同一张图喂首帧+尾帧两遍，多场景是两张不同图，
+    工作流都会同时给 `FxAiMiniMaxImageToVideoV2` 的「首帧图片」「尾帧图片」两路输入。
+    所以对齐指令**永远写 Picture 1 + Picture 2 两处**，没有单图分支（曾有 pics=1 只写
+    Picture 1 是错的，实际提交的提示词丢了尾帧锚点）。
+
+    - duration: 有效时长（秒），写进 Picture 2 的对齐秒数。
     - body: `[Shot 1] …` 正文。**要契合这一段文案在讲什么**（场景/道具/表演都写在这里）。
     - kind: "sing" 演唱 | "speak" 口播讲话，决定口型与声音措辞。
     """
     nar = _narr(kind)
     d = _fl2va_seconds(duration)
-    if int(pics) >= 2:
-        align = ("How the reference pictures align with the target video — Picture 1 (from Shot 1) "
-                 "aligns with the 0.00-second mark of the target video; Picture 2 (from Shot 1) "
-                 "aligns with the %s-second mark of the target video." % d)
-    else:
-        align = ("How the reference pictures align with the target video — Picture 1 (from Shot 1) "
-                 "aligns with the 0.00-second mark of the target video.")
+    align = ("How the reference pictures align with the target video — Picture 1 (from Shot 1) "
+             "aligns with the 0.00-second mark of the target video; Picture 2 (from Shot 1) "
+             "aligns with the %s-second mark of the target video." % d)
     return (align + "\n\n"
             + "integrated_multimodal_description: " + (body or "[Shot 1] ")
             + "\n\noverall_soundscape: " + nar["soundscape"]
@@ -767,7 +781,7 @@ def gen_video(mode, aud_rel, char_rel=None, scene_ref=None,
         prompt = (seg_prompts[0] if seg_prompts else "") or (ref2va_prompts[0] if ref2va_prompts else "")
         if not prompt:
             # 没给提示词就按 FL2VA 首尾帧格式现编一条（single 走 FL2VA，见 fxai-h3-video-prompt 第 2 节）
-            prompt = build_fl2va_prompt(pics=1, duration=probe_duration(_local_of(aud_rel)),
+            prompt = build_fl2va_prompt(duration=probe_duration(_local_of(aud_rel)),
                                         body=fl2va_body(char_desc, scene_desc, kind=kind), kind=kind)
         params = dict(base, fxai_prompt=prompt, fxai_imageinput=scene_ref or char_rel)
         params["fxai_width"] = max_edge(scene_ref or char_rel, want=max(w, h))
@@ -780,7 +794,7 @@ def gen_video(mode, aud_rel, char_rel=None, scene_ref=None,
         lines = build_multiline_prompt(seg_prompts, ref2va_prompts)
         if lines in ("[]", ""):
             # multi 也是 FL2VA：每行一条 [序号, FL2VA 三段式提示词]
-            rows = [[10, build_fl2va_prompt(pics=1, duration=0,
+            rows = [[10, build_fl2va_prompt(duration=0,
                                             body=fl2va_body(char_desc, scene_desc, kind=kind),
                                             kind=kind)]]
             lines = json.dumps(rows, ensure_ascii=False, separators=(",", ":"))

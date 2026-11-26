@@ -129,7 +129,8 @@
       "音频分段时长": [
         "1105",
         1
-      ]
+      ],
+      "场景续接": false
     },
     "class_type": "FxAIGeneratorController",
     "_meta": {
@@ -434,6 +435,14 @@
       "外置音频": [
         "1071",
         0
+      ],
+      "场景续接": [
+        "925",
+        11
+      ],
+      "续接段序号": [
+        "743",
+        2
       ]
     },
     "class_type": "FxAiMiniMaxImageToVideoV2",
@@ -455,6 +464,14 @@
       "音频": [
         "1071",
         0
+      ],
+      "场景续接": [
+        "925",
+        11
+      ],
+      "续接帧数": [
+        "925",
+        7
       ]
     },
     "class_type": "FxAiMiniMaxVideoSaveV2",

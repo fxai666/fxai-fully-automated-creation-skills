@@ -1626,6 +1626,12 @@ def acceptance_burn(project_root, ep, shots, title_hint=None, style=SUBTITLE_STY
     SA.align_standard(shots, srt, audio_path=audio)   # 短剧用镜头锚定，不用 MV 三段式补齐
     print("[对齐] 字幕 ->", srt)
 
+    # 🔴 字幕上屏去标点门禁（2026-11-26 用户定）：任何一条都不许带标点，带就拦，不许烧。
+    _srt_bad = SA.audit_subtitle_file(srt)
+    if _srt_bad:
+        raise RuntimeError("[字幕门禁] SRT 含标点，拒绝烧录：\n  " + "\n  ".join(_srt_bad))
+    print("[字幕门禁] ✅ 无标点")
+
     if title_hint:
         final = os.path.join(project_root, f"成片_ep{ep}_{title_hint}_sub.mp4")
     else:

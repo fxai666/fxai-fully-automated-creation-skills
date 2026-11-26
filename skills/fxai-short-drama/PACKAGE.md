@@ -58,6 +58,7 @@
 - 项目相关：统一走 `project_root` 参数 + 相对路径（如 `角色三视图/juzi.png`）。
 - 工作流模板共享自 `fxai-workflow/shortdrama-minimax-filmdrama-api.json`（与各技能同级的公共目录，fxai_ 前缀统一维护），不引用外部绝对路径文件。
 - 工作流 JSON 内部节点若引用了本机路径（如保存目录），由 `build_workflow` 在运行时按参数覆盖（保存目录 `sucai`、尺寸、结束索引 `-1` 等），不依赖写死路径。
+- 短剧视频分段固定写服务端 `sucai`（覆盖不累加）、合并走 `merged/`；图片 / 参考图按项目固定目录 `project_def.server_subdir`（`shortdrama_<slug>`），测试图也写本项目目录、不另建。
 
 ## 五、最小可运行流程
 

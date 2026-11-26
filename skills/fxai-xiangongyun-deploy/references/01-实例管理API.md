@@ -41,6 +41,8 @@ python xgy_ssh_api.py shell <id>                             # 交互（打印 A
 - 🔴 密码来自 API 实时返回，**换实例/改密码都不用动本地文件**；`ssh_cred()`（本地静态）只作兜底。
 
 ```bash
+python xgy_api.py check                      # 首次接入体检（只读、不建、不扣费）：验令牌 → 只看令牌下用咱们全自动镜像建的机器 → 有就列出来给绑定/验服务命令，没有就给建机演练请求体
+python xgy_api.py upgrade [<id>]             # 部署后在线升级（走令牌免密SSH）：只认咱们镜像实例 → 检测落后 → 升ComfyUI/节点 → 自动重启+四服务验收。--check 只检测/--no-restart 不重启/--no-comfy 只升节点
 python xgy_api.py list                       # 所有实例（id/状态/GPU/磁盘/单价/SSH/web_url）
 python xgy_api.py info <id>                  # 单个实例详情
 python xgy_api.py ssh <id>                   # 打印 SSH 连接串
@@ -100,6 +102,37 @@ python xgy_api.py save-image <id> --name my-img    # 存成私有镜像
 
 「关机并销毁 / 销毁实例 / 储存镜像并销毁 / 销毁镜像」四个接口**一律不封装** ——
 不可恢复的操作不进技能，要用那种停法就人去控制台点。
+
+## 首次接入体检（用户选仙宫云时先跑 `check`）
+
+用户说「用仙宫云 / 我给你令牌你帮我部署」时，先跑 `python xgy_api.py check`。它只读、不建实例、不扣费，一次给出三态结论：
+
+1. **无令牌 / 无账号**：check 直接打印注册 / 登录 `https://www.xiangongyun.com/register/9LWQ36`（已注册点开即登录）与凤希全自动镜像 `https://www.xiangongyun.com/image/detail/9463d4ca-2f86-45cf-b0a3-a81ba6f3b27c?r=9LWQ36` 两条链接，并提示：还没填邀请码的，登录后到「邀请有礼 / 填写邀请码」填 `9LWQ36` 可得 3 元赠送金。邀请码随链接默认带上，文案里不点破。链接常量在 `xgy_api.py` 的 `XGY_REG_URL` / `XGY_IMAGE_URL` / `onboard_links()`，别在别处另写一份。拿到令牌后交给助手写进全局配置 `xgy_api_token`，再重跑 check；令牌在控制台「访问令牌」页生成（`eyJ...`，不是 SSH 密码 / api_key）。
+2. **令牌下没有用咱们镜像建的机器**：判定只认 `image_id == 9463d4ca...`，给出建机演练请求体 + `deploy-image <ID>`（演练）/`--yes`（真建）命令；**`--yes` 必须用户确认后才加**（建实例实时扣费）。
+3. **有**：列出这些机器（ID/状态/名），检查配置绑定的实例是不是咱们镜像建的（不是就提示重绑），再给 `xgy_guard.py use <ID>` + `verify-services <ID>` 命令。
+
+🔴 **判定铁律：只看 image_id 是不是咱们全自动镜像**。令牌下其他镜像建的实例（公共镜像、RVC、人物替换等别人的机器）**一律不算、不列出、不提示** —— 那类机器没装我们的节点/模型/工作流，跑不了配套技能，列出来只会误导用户以为能用。判据来自列表接口的 `image_id` / `imageId` 字段（与管理台 `index.js` 归类口径一致）。
+
+令牌到位后走 `check` 是唯一入口；「令牌下有实例」≠「能开工」——必须先经过这一层镜像判定。
+
+---
+
+## 部署后在线升级（`upgrade`，保持实例不用重建）
+
+技能包发出去后，客户本机装了新版，但**云端镜像是建机那刻的快照**——里面的 ComfyUI / fxai-toolkit 还是旧版，新节点跑不起来。这种「代码落后、模型没换」的情况不用重建实例，跑一次 `python xgy_api.py upgrade <id>` 在线同步即可。
+
+- **前置**：和 check 一样走令牌免密 SSH（凭证由 `GET /instance/{id}` 实时取，只靠 `xgy_api_token`）。🔴 **只认全自动镜像（`9463d4ca`）建的实例**——带其他镜像的 ID 会被直接拒绝；不带 ID 时优先用当前绑定的、其次令牌下唯一那台咱们镜像的机器。缺令牌给引导，不硬抛错。
+- **做什么**（远端脚本 `scripts/xgy_upgrade.sh`，通过 `SSH.put_text` 上传执行，幂等）：
+  1. **检测**：`git fetch` 后 `rev-list --left-right --count HEAD...@{u}` 报落后多少；比对上游 requirements/pyproject 变化——**只报告、不自动全量 `pip install -r`**（会换掉 cu132 的 torch、钉死的前端版本）。
+  2. **升 ComfyUI**：`git pull --ff-only origin master`，内置两个坑处理——shallow clone 先 `fetch --unshallow`、脏工作区先 `checkout -- .` 恢复已跟踪文件。
+  3. **升节点**：fxai-toolkit 是 git 装的就 `git pull --ff-only`；**zip 装的（无 `.git`）**先把旧目录 `mv` 成 `.bak.<时间戳>` 再 `git clone --depth 1`（可回滚，验收通过才删）。清 `custom_nodes/**/__pycache__`（残留 pyc 会让节点看着加载了其实没换代码）。确保唯一已知依赖 `soundfile` 就位。
+  4. **重启**：复用现成 `bash /root/xgyscripts/xgy_restart_comfy.sh`（内部 sleep 45），脚本再补 sleep 25 等启动任务跑完。
+  5. **验收**：本地 `/fxai/health` + `/system_stats` 必须 200；`object_info` 节点总数与 `FxAi*` 数**不低于升级前**（升级前先记基线，当前基线总 1549 / FxAi 102）；有 FAIL 项时保留 `.bak` 供回滚。
+- **开关**：`--check` 只检测不改代码不重启；`--no-restart` 升完代码不自动重启；`--no-comfy` 跳过本体只升节点。
+- **报告**：远端全程 tee 到 `/tmp/xgy_upgrade.report`，本地实时回显；退出码非 0 即验收有 FAIL。
+- **升级补不齐的情形**：报「模型不存在 / 缺底座」是**模型**问题，升级代码补不齐——那须按下一节用同镜像 ID 新建实例。两者判据要分清。
+
+---
 
 ## 🔴 V1.9 及更早必须重新创建实例（升级用户先读这一节）
 

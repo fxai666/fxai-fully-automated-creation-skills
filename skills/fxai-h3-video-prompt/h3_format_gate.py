@@ -133,6 +133,29 @@ _PRESERVED_AUDIO = re.compile("^<Audio (\\d+)>: fully_copy - .+$")
 
 _AT_RE = re.compile("At \\d{2}:\\d{2}\\.\\d{3}")
 _D_TAG_RE = re.compile("<d>")
+
+# ---------------------------------------------------------------- 动作拍：程度 / 情态修饰的语法形态
+# 2026-11-26 定：判据是**句式**，不是「踩过的词表」。这样没见过的「渐渐地」「恶狠狠地」一样拦得住。
+#
+# 三种句式：
+#   ① 形容词叠词作修饰（死死、紧紧、轻轻、渐渐、结结实实、干干净净、空落落）
+#      —— 但**数量反复**（一截一截 / 一圈圈 / 一棵棵）和**动词重叠**（说说笑笑 / 看了看）放行，
+#         它们是可见的动作反复，不是程度修饰。
+#   ② 「得」字补语接程度词（捧得死紧、哭得厉害）
+#   ③ 程度副词 / 情态副词直接修饰（封闭类，语言学上可枚举，不是经验清单）
+_REDUP_AA = re.compile("([\u4e00-\u9fa5])\\1(?=[\u4e00-\u9fa5])")
+_REDUP_AABB = re.compile("([\u4e00-\u9fa5])([\u4e00-\u9fa5])\\1\\2")
+# 动词字（VV 式动作反复，可见，放行）
+_VERB_CHARS = set("说笑看想走跑摸攥抓握抬放递接碰砸磕站坐跪躺扶推拉拽拖摇晃抖摆跳打敲拍揉擦抹"
+                  "数念唱喊叫哭啼喘喝吃咬嚼吞吐滚爬窜迈踢踩开合翻捧按扣插抽拧"
+                  "讲问答盯望瞧听闻抱背扛拎提端拿取收送扔丢捡搓捻卷垂眨咽")
+# 可见属性字（大小 / 高矮 / 长短…，叠词描述的是看得见的东西，放行）
+_SIZE_CHARS = set("大小高低长短厚薄粗细深浅多少")
+_DEG_COMP = re.compile("得(?:死|很|极|紧|厉害|凶|惨|要命)")             # ② 「得」字补语接程度词
+_DEG_ADV = re.compile("(?:很|非常|极其|十分|格外|无比|相当|特别|尤其)(?![多少])")  # ③ 程度副词
+# ③ 情态副词（封闭类：突发 / 速度 / 力度，语言学上可枚举）
+_MODAL_ADV = ("猛地", "猛然", "霍地", "倏地", "陡然", "骤然", "蓦地", "突然", "忽然", "顿时",
+              "立刻", "马上", "缓缓", "徐徐", "狠狠", "拼命", "死命", "使劲", "用力")
 _D_LANG_RE = re.compile("<d>\\s*\\[(?:Chinese|English|中文|英文)\\]")
 _ALIAS_REF = re.compile("\\(S(\\d+)\\)")
 _DETAIL_SUBJ = re.compile("<Subject (\\d+)>")
@@ -142,9 +165,51 @@ _PICTURE_REF = re.compile("<Picture\\s*(\\d+)>")
 _TRIGGER_CAM_RE = re.compile("^camera motion\\b")
 _FIRST_FRAME_RE = re.compile("(第一帧|首帧|画面开头)")
 _EXPR_RE = re.compile(
-    "(笑|笑意|眼神|目光|神情|眉眼|嘴角|眼眶|抿唇|挑眉|抬眼|垂眼|眯眼|对视|相视|视线|眉眼弯|撇嘴|皱眉|扬眉)"
+    "(笑|笑意|眼神|目光|神情|眉眼|嘴角|眼眶|抿唇|挑眉|抬眼|垂眼|眯眼|对视|相视|视线|眉眼弯|撇嘴|皱眉|扬眉"
+    "|瞳孔|牙关|咬[着]?牙|眼睛(?:亮|发|睁|红)|脸色|面无表情|嘴唇(?:抿|抖|发白)|愣|发狠|屏住呼吸|睫毛(?:湿|颤)|下颌|喉结)"
 )
 _GAZE_RE = re.compile("(对视|相视|视线|看向他|看向她|看他|看她|目光|迎上)")
+
+# 肢体语言（动作 / 手势 / 身体姿态）——短剧与多参考共用：人物不会动＝纸片人
+_BODY_RE = re.compile(
+    "(伸手|摊手|摆手|挥手|招手|握手|抬手|扶手|摸|捧|攥|捏|递|接|推|拉|扶|拍|指|抱|背|扛|拎|提"
+    "|跪下|走|跑|跳|蹲下|转身|俯身|侧身|前倾|后仰|弯腰|挺身|挪|移步|倾身|起身|坐下|躺下|趴下|靠过去"
+    "|肩膀(?:绷|一|抽|耸)|胸膛|手腕|手指|膝盖|重心|脚步|把头|扶正|摔|爬起|摩挲|回头|点头|摇头)"
+)
+
+# 台词闭合边界：`</d>` 后必须紧跟句号（中文句号优先），再接空格 / 换行 / 段末。
+# 目的：H3 会把 `</d>` 后没隔断的文字继续当台词念出来（镜11「磕了三个头」、镜15「讲着讲着睡着了」被配音）。
+# 官方画外音格式允许 `</d> while his lips remain completely closed.`（闭唇句紧跟台词块）。
+_D_CLOSE_OK_RE = re.compile("</d>\\s*[。.]|</d>\\s*while\\b|</d>\\s*$")
+_SPEECH_INTENT_RE = re.compile("(默念|念叨|念出|念那句|说|画外说|开口|低声|画外|内心|画面外传来|心声)")
+# 说话引导词统一用「说」字（2026-11-25 用户定）：所有发声说话处一律「说」，不用「道」。
+_BAD_DAO_RE = re.compile("道[：:]\\s*<d>|笑道[：:]|低声道[：:]|冷声道[：:]|大声道[：:]|说道[：:]|道[：:]")
+# 画外声音引导词（2026-11-25 两版并存，按实测效果选用）：
+#   他人在画外 → `<Subject N> (Sx) 画外说`（挂主体，说话人不在画内、无口型可贴）；
+#   自己的心声 → 两套合法写法：
+#     ① `画面外传来…声音 (Sx)`（不挂主体）；
+#     ② 早点铺实测版 `At MM:SS.mmm, 画外 <Subject N> (Sx) 的心声，他嘴唇始终不动：<d>…`
+#        ——挂主体但必须在同一引导句里写「画外 + 嘴唇始终不动」，且画面描述写「嘴唇始终闭着」。
+#        只写「紧闭着嘴默默的说」不够，H3 仍会驱动口型（第5集镜7/17实测）。
+_VO_RE = re.compile("(画面外传来|画面外.*声音|画外传来|画外.*声音|画外说|画外\\s*<Subject\\s*\\d+>\\s*\\(S\\d+\\)\\s*的心声)")
+_VOICE_HEART_RE = re.compile("(画面外传来|画面外.*声音|画外传来|画外.*声音)[^。<d>]{0,24}声音\\s*\\(S\\d+\\)")
+# 早点铺实测心声版：挂主体 + 画外 + 硬写嘴唇不动；时间码与台词同一行。
+_VOICE_HEART_LZ_RE = re.compile(
+    "画外\\s*<Subject\\s*(\\d+)>\\s*\\(S(\\d+)\\)\\s*的心声"
+    "[^。<d>]{0,30}?(嘴唇始终不动|嘴唇始终闭着|双唇(?:始终)?不动|双唇(?:始终)?闭合)"
+)
+# 官方 voiceover 标准写法（base-modes-en.txt §4.4）：固定英文短语 + </d> 后紧跟闭唇句。
+_VOICEOVER_OFFICIAL_RE = re.compile(
+    "says in an off-screen voiceover\\s*[:：]\\s*<d>\\[Chinese\\][\\s\\S]*?"
+    "</d>\\s*while\\s+(?:his|her|their)\\s+lips\\s+remain\\s+(?:completely\\s+)?closed"
+)
+# 视线用词（2026-11-25 用户定）：「两眼落在 <Subject N> 脸上」是规范落点写法，
+# 但落点是物件 / 手心 / 地面等非主体时用「落在」H3 会理解偏（第5集镜17「两眼落在自己空空的手心上」
+# 却把目光绑到了旁边的娘）。落点非 <Subject> 时应写「两眼看着 / 盯着 X」。
+_GAZE_FALL_RE = re.compile("(?:两眼|目光|视线|眼神)\\s*落在\\s*([^，。；、,;]{1,24})")
+_ONOMATOPOEIA_RE = re.compile(
+    "(吱呀|磨牙|咯吱|咔嚓|哗啦|噼啪|窸窣|呜咽|嗡嗡|滴答|突突|沙沙|咕噜|哐当|砰|啪嗒|簌簌|飒飒)"
+)
 
 # ---------------------------------------------------------------- 段⑤ 整体音效
 
@@ -247,6 +312,23 @@ def _audit_subject_defs(i, body, ctx):
     if nums and nums != list(range(1, len(nums) + 1)):
         bad.append("镜%d 「主体定义」主体编号不连续（当前 %s）——须从 <Subject 1> 起顺序编号"
                    % (i, "、".join("Subject %d" % x for x in nums)))
+
+    # 一张图只能被一个主体引用（2026-11-26 用户定，实测结论）：
+    # 画外声音必须**单独占一个参考图槽位**——把同一张图再传一份成为新的 <Picture M>，
+    # 主体定义写 `<Subject N> 是 <Picture M> 中的…`。
+    # 复用同一张图（如 `<Subject 4> 是 <Picture 1> 中的男孩`）等于告诉 H3「说话的就是画内那个人」，
+    # 口型照样被驱动。第5集镜17：复用 Picture 1 时嘴张开，改成独立 Picture 4 后锁住。
+    _pic2sub = {}
+    for _n, _pic in seen.items():
+        _pic2sub.setdefault(int(_pic), []).append(int(_n))
+    for _pic, _ns in sorted(_pic2sub.items()):
+        if len(_ns) > 1:
+            bad.append("镜%d 「主体定义」<Picture %d> 被 %s 共用——一张图只能给一个主体。"
+                       "画外声音要单独占一个图槽：把同一张图再传一份作为新的 <Picture M>，"
+                       "写成 `<Subject N> 是 <Picture M> 中的…`；复用同一张图会让 H3 把声音"
+                       "贴回画内那张脸上（第5集镜17 实测）"
+                       % (i, _pic, "、".join("<Subject %d>" % x for x in sorted(_ns))))
+
     ctx["subjects"] = {int(k): int(v) for k, v in seen.items()}
     ctx["subject_kind"] = {int(k): v for k, v in kinds.items()}
     ctx["audio_spk"] = audio_spk
@@ -364,9 +446,10 @@ def _audit_detail(i, body, ctx):
         if style_line and _AT_RE.search(style_line):
             bad.append("镜%d 「详细描述」触发词行夹了时间轴——时间轴只写在 `[Shot 1]` 正文里" % i)
     else:
-        if len(lines) != 2:
-            bad.append("镜%d 「详细描述」是 %d 行——白名单只允许两行：首行风格 / 影调句，"
-                       "次行 `[Shot 1]` 起头的正文一整段（正文内部不折行）" % (i, len(lines)))
+        if len(lines) < 2:
+            bad.append("镜%d 「详细描述」只有 %d 行——至少两行：首行风格 / 影调句，"
+                       "次行 `[Shot 1]` 起头；事件可按「一句一行」另起行（早点铺/云上清楼实测口径）"
+                       % (i, len(lines)))
         body_text = "\n".join(lines) if lines else body
 
     if not ref2va and lines:
@@ -386,13 +469,37 @@ def _audit_detail(i, body, ctx):
                 bad.append("镜%d 「详细描述」第二行没以 `[Shot 1]` 起头——白名单要求正文段紧跟风格句" % i)
 
     kinds = (ctx or {}).get("subject_kind") or {}
+
+    # 主体引用格式（2026-11-25 用户定）：详细描述里每次指代人物都必须写 `<Subject N>` 全称，
+    # 不许用「他 / 她」这类裸代词。裸代词会让 H3 分不清动作落到哪个人身上——
+    # 镜17 曾写「他跪下去、额头碰地磕了三个头」，前面没有主体引用，属于漏写。
+    # 判定：按句切开（。；换行），句内有他/她、却没有任何 `<Subject N>` → 违规。
+    # 台词 <d> 里的「他」是人物说的话，不算描述，先剥掉。
+    _PRONOUN_EXEMPT = ("其他", "他人", "他乡", "他日", "他年", "他处")
+    _no_dialogue = re.sub("<d>[\\s\\S]*?</d>", "", body_text)
+    for _w in _PRONOUN_EXEMPT:
+        _no_dialogue = _no_dialogue.replace(_w, "〇〇")
+    for _sent in re.split("[。；\\n]", _no_dialogue):
+        if re.search("[他她]", _sent) and not re.search("<Subject \\d+>", _sent):
+            bad.append("镜%d 「详细描述」用裸代词指代人物（%s…）——正文里每次指代都必须写 "
+                       "`<Subject N>` 全称，不许用「他 / 她」。同一句里先写主体名，"
+                       "后面才可以用「他」（如 `<Subject 1> 跪下去、<Subject 1> 额头碰地磕了三个头`）"
+                       % (i, _sent.strip()[:26]))
+
     # 裸 (Sx) / 给不会发声的主体标说话人编号
+    # 例外（2026-11-25 用户最终定稿）：自己的心声写「画面外传来…声音 (Sx)」，
+    # 不引用画内主体——挂主体会把声音贴回画内人嘴上、被 H3 念出来。官方 §5.4 允许
+    # “stable voice description followed by (Sx)”：音色描述 + (Sx) 是合法说话人写法。
     for m in re.finditer("(<Subject (\\d+)>\\s*)?\\(S(\\d+)\\)", body_text):
         if not m.group(1):
+            prefix = body_text[max(0, m.start() - 30):m.start()]
+            if _VO_RE.search(prefix):
+                continue  # 合法的画外声音音色描述 + (Sx)
             bad.append("镜%d 「详细描述」出现裸别名 (S%s)——官方写法每次都写 `<Subject N>` 全称，"
                        "只有会开口说话的主体才带说话人编号，写成 `<Subject N> (S%s)`"
-                       "（可在出场句里提前声明）；`(Sx)` 是说话人编号，不是主体简写"
-                       % (i, m.group(3), m.group(3)))
+                       "（可在出场句里提前声明）；他人在画外写「<Subject N> (S%s) 画外说」，"
+                       "自己的心声写「画面外传来…声音 (S%s)」；`(Sx)` 是说话人编号，不是主体简写"
+                       % (i, m.group(3), m.group(3), m.group(3), m.group(3)))
             continue
         kind = kinds.get(int(m.group(2)))
         if kind not in _NON_VOCAL_KINDS:
@@ -400,6 +507,27 @@ def _audit_detail(i, body, ctx):
         bad.append("镜%d 「详细描述」给%s主体 `<Subject %s>` 标了 (S%s)——%s不会发声，"
                    "不带说话人编号，只写 `<Subject %s>`"
                    % (i, kind, m.group(2), m.group(3), kind, m.group(2)))
+
+    # 画外声音分两类：
+    #   ① 别人不在场景里（画外的娘 / 捎信人 / 爹说话）：`<Subject N> (Sx) 画外说`（挂主体无妨）。
+    #   ② 画面里的人自己的心声：两套合法写法——
+    #      a) `画面外传来…声音 (Sx)`，不挂画内主体；
+    #      b) 早点铺实测版：挂主体但同句必须写「画外 <Subject N> (Sx) 的心声，他嘴唇始终不动」，
+    #         且画面描述写「嘴唇始终闭着」。只写「紧闭着嘴默默的说」不够，H3 仍驱动口型。
+    # 拦：挂了主体、却既不是 a) 也不是 b) 的心声写法。
+    for m in re.finditer("<Subject \\d+>\\s*\\(S\\d+\\)\\s*[^，。；]{0,20}?(心声|内心|默念|紧闭着嘴默默的说)", body_text):
+        window = body_text[max(0, m.start() - 20):m.start() + 90]
+        if "says in an off-screen voiceover" in window:
+            continue  # 官方 voiceover 标准写法：闭唇句写在 </d> 之后
+        if "画外" in window and re.search("嘴唇始终不动|嘴唇始终闭着|双唇(?:始终)?不动|双唇(?:始终)?闭合", window):
+            continue  # 早点铺实测版：挂主体但嘴唇锁死，合法
+        bad.append("镜%d 「详细描述」把自己的心声挂到了画内主体 `<Subject N> (Sx)` 上，且没有"
+                   "在同一引导句写「画外 + 嘴唇始终不动」——实测这样 H3 会把声音贴回嘴上念出来。"
+                   "改成「画面外传来…声音 (Sx)」不挂主体，或早点铺实测版"
+                   "「At MM:SS.mmm, 画外 <Subject N> (Sx) 的心声，他嘴唇始终不动：<d>…」" % i)
+    for m in re.finditer("画外道|画面外道", body_text):
+        bad.append("镜%d 「详细描述」用了旧画外术语「%s」——他人在画外说话统一写"
+                   "「<Subject N> (Sx) 画外说」" % (i, m.group(0)))
 
     a_spk = (ctx or {}).get("audio_spk") or {}
     for m in re.finditer("<Subject (\\d+)>\\s*\\(S(\\d+)\\)", body_text):
@@ -436,11 +564,19 @@ def _audit_detail(i, body, ctx):
                    "中间不许空号（官方 §5.1 “stable (S1), (S2), and subsequent IDs”）"
                    % (i, "、".join("S%d" % x for x in used), "、".join("S%d" % x for x in miss)))
 
-    a = _AT_RE.search(body_text)
-    d = _D_TAG_RE.search(body_text)
-    if a and d and a.start() < d.start():
-        bad.append("镜%d 「详细描述」第一句台词前就写了时刻（%s）——[Shot 1] 的第一个事件不写时刻，"
-                   "从第二个事件起才用 `At MM:SS.mmm,`" % (i, a.group(0)))
+    # 首个事件不写时刻（2026-11-26 修正）：判据只落在「`[Shot 1]` 那一行本身」和「显式打 00:00.000」两处。
+    # 切点制下动作行本来就该带 At，第一个动作也允许直接并进 [Shot 1] 行里写，
+    # 所以不能拿「[Shot 1] 之后的第一条 At」当判据（会误杀镜11 这种写法）。
+    for _l in body_text.split("\n"):
+        _l = _l.strip()
+        if _l.startswith("[Shot"):
+            if _AT_RE.search(_l):
+                bad.append("镜%d 「详细描述」`[Shot 1]` 那一行带了时刻（%s）——首个事件不写时刻，"
+                           "动作直接写在 [Shot 1] 行里，从第二个事件起才用 `At MM:SS.mmm,` 起头"
+                           % (i, _AT_RE.search(_l).group(0)))
+            break
+    if "At 00:00.000" in body_text:
+        bad.append("镜%d 「详细描述」给开场打了 `At 00:00.000`——首个事件不写时刻" % i)
 
     n_d = len(_D_TAG_RE.findall(body_text))
     n_lang = len(_D_LANG_RE.findall(body_text))
@@ -452,6 +588,161 @@ def _audit_detail(i, body, ctx):
     if pm:
         bad.append("镜%d 「详细描述」直接引用了 <Picture %s>——正文白名单只认 `<Subject N>`，"
                    "参考图只在主体定义与摘要里挂接" % (i, pm.group(1)))
+
+    # 🔴 说话引导词两种范式、一律用「说」不用「道」（2026-11-25 用户定）：
+    #   范式A 直接说：`…说：<d>`；范式B 表情/动词+说：`…笑着说：<d>` / `…低声说：<d>`。
+    #   共同硬约束：引导词必须以「说：」收尾，修饰词只在「说」前。
+    for m in _BAD_DAO_RE.finditer(body_text):
+        bad.append("镜%d 「详细描述」说话引导词用了「%s」——所有发声说话一律用「说」字"
+                   "（道：→ 说：、笑道：→ 笑着说：、低声道：→ 低声说：），不用「道」" % (i, m.group(0)))
+    # 每个台词前的引导片段必须以「说：」或合法画外声音格式收尾，否则不是合法范式。
+    for m in re.finditer(r"([^。；]{0,160})<d>\[Chinese\]", body_text):
+        lead = m.group(1)
+        vo_ok = bool(re.search("(画面外传来|画外传来|画面外.*声音|画外.*声音)[^。]{0,24}声音\\s*\\(S\\d+\\)[：:]$", lead))
+        vo_ok = vo_ok or bool(re.search(
+            "画外\\s*<Subject\\s*\\d+>\\s*\\(S\\d+\\)\\s*的心声"
+            "[^。]{0,30}?(嘴唇始终不动|嘴唇始终闭着|双唇(?:始终)?不动|双唇(?:始终)?闭合)[：:]$", lead))
+        vo_ok = vo_ok or bool(re.search("says in an off-screen voiceover\\s*[:：]\\s*$", lead))
+        if not re.search("说[：:]$", lead) and not vo_ok:
+            bad.append("镜%d 「详细描述」台词前的引导词「…%s<d>」不合范式——"
+                       "必须以「说：」收尾（直接说 / 笑着说 / 低声说 / 画外说），"
+                       "或合法心声格式「画面外传来…声音 (Sx)：」，"
+                       "或官方画外音「says in an off-screen voiceover:」；不得用「道」或其他动词"
+                       % (i, lead[-16:]))
+
+    # 🔴 台词闭合边界（短剧 / 多参考共用）：</d> 后必须紧跟句号才能接后续动作。
+    # H3 会把 </d> 后没有隔断的文字继续当台词配音（2026-11-25 第5集镜11「结结实实磕了三个头」、
+    # 镜15「讲着讲着睡着了」被念出来的根因）。句号是台词结束的唯一硬边界。
+    for m in re.finditer("</d>", body_text):
+        tail = body_text[m.end():m.end() + 6]
+        if not _D_CLOSE_OK_RE.search(body_text[m.start():]):
+            bad.append("镜%d 「详细描述」台词 `</d>` 后没紧跟句号（后面是「%s…」）——"
+                       "H3 会把没有句号隔断的后续文字继续当台词念出来。"
+                       "必须写成 `</d>。`，句号之后再写动作 / 下一句台词"
+                       % (i, " ".join(tail.split())[:8]))
+
+    # 🔴 通用范式槽位⑤「收尾拍」（2026-11-26 定，所有镜头通用）：
+    # 台词行后面不许紧跟以 `<Subject N>` 起头的裸动作行——即使独立成行、`</d>。` 收得干净，
+    # H3 仍会把它接着当台词念出来（whisper 词级时间轴实证）。
+    # 合法写法：并进台词行的引导句，或让这一行以「紧接着 / 这时 / 香灰」这类场景副词起头。
+    _lines = [l.strip() for l in body_text.split("\n") if l.strip()]
+    for _j, _l in enumerate(_lines):
+        if "<d>" not in _l:
+            continue
+        _nx = _lines[_j + 1] if _j + 1 < len(_lines) else ""
+        if re.match("At \\d{2}:\\d{2}\\.\\d{3},\\s*<Subject \\d+>", _nx) and "<d>" not in _nx:
+            bad.append("镜%d 「详细描述」台词行后面紧跟了一条以 `<Subject N>` 起头的裸动作行"
+                       "（%s…）——违反通用范式槽位⑤「收尾拍」：H3 会把它当台词接着念出来。"
+                       "把这个动作并进台词行的引导句，或让这一行以"
+                       "「紧接着 / 这时 / 香灰」这类场景副词起头" % (i, _nx[:26]))
+
+    # 🔴 通用范式槽位④「台词拍」（2026-11-26 定，所有镜头通用）：
+    # 一句台词一行、行首 `At MM:SS.mmm,`、一行只放一句。
+    # 两句挤一行 / 台词不写时刻，H3 读不出谁在什么时候开口，切点制也就失效了。
+    for _l in _lines:
+        if "<d>" not in _l:
+            continue
+        if not re.match("^At \\d{2}:\\d{2}\\.\\d{3},", _l):
+            bad.append("镜%d 「详细描述」台词行没有以 `At MM:SS.mmm,` 起头（%s…）——"
+                       "违反通用范式槽位④「台词拍」：一句台词一行、行首写时刻，动作另起一行"
+                       % (i, _l[:22]))
+        _n_d = len(_D_TAG_RE.findall(_l))
+        if _n_d > 1:
+            bad.append("镜%d 「详细描述」一行里塞了 %d 句台词——违反通用范式原则①「一拍一行」："
+                       "一个时间点只做一件事，一句台词一行，各自带自己的 `At`" % (i, _n_d))
+
+    # 🔴 通用范式槽位①「取景」+ 原则③「能拍出来才算」（2026-11-26 定，所有镜头通用）：
+    # 动作落在手 / 膝 / 脚上（递、接过、放进、攥、捧、手心、跪、磕头），
+    # 景别却是近景 / 特写，而 [Shot 1] 里没交代取景范围——这个部位就在框外，
+    # 动作写多少遍都不会出现，跪着和站着也分不出来。
+    _shot_line = ""
+    for _l in _lines:
+        if _l.startswith("[Shot"):
+            _shot_line = _l
+            break
+    _HAND_ACT = ("递", "接过", "放进", "攥", "捧", "手心", "掌心", "跪", "磕头")
+    _hit_act = [w for w in _HAND_ACT if w in body_text]
+    if _shot_line and _hit_act:
+        _sz = re.search("(?<!中)近景|特写", _shot_line)
+        if _sz:
+            # 特写本来就以手为主体（手心特写、手伸枕头底下）——只要写了「手」就算框住了。
+            # 近景切在胸口，必须明写取景范围（带到 / 框在）才算把手脚收进画面，
+            # 光在站位句里提一句「两只手撑在膝盖前面」不算，那只是站位、不是取景。
+            _framed = bool(re.search("带到|框在", _shot_line)) or (
+                _sz.group(0) == "特写" and "手" in _shot_line)
+            if not _framed:
+                bad.append("镜%d 「详细描述」景别是「%s」，正文里却有手 / 膝 / 脚上的动作（%s）——"
+                           "违反通用范式槽位①「取景」：动作落在哪个部位，框就得带到那个部位。"
+                           "改成中景，并在 [Shot 1] 里明写「画面从…带到膝盖、把两只手都框在画面里」"
+                           % (i, _sz.group(0), "、".join(_hit_act)[:26]))
+
+    # 🔴 通用范式槽位③「动作拍」+ 原则③「能拍出来才算」（2026-11-26 定，所有镜头通用）：
+    #
+    # 正面范式：动作拍 = 「<Subject N> + 动词 + 对象」，一拍一行、一拍一个动作；
+    #           动词前的修饰只许写**方式 / 部位 / 方向**，**程度 / 情态一律不写**。
+    #
+    # 判据用**语法形态**，不用「踩过的词表」——所以没见过的「渐渐地」「恶狠狠地」「清清楚楚地」
+    # 一样会被抓到，不会漏：
+    #   ① 叠词作修饰：AA / ABB / AABB（死死、紧紧、空落落、结结实实、干干净净）
+    #   ② 「得」字补语接程度词（捧得死紧、哭得厉害）
+    #   ③ 程度副词 / 情态副词直接修饰（封闭类，语言学上可枚举，不是经验清单）
+    _nd = re.sub("<d>[\\s\\S]*?</d>", "", body_text)   # 台词里的「很」不算，只查动作段
+    _forms = []
+    # ① 形容词叠词作修饰；数量反复（一截一截 / 一圈圈）与动词重叠（说说笑笑）放行
+    for _m in _REDUP_AA.finditer(_nd):
+        _c = _m.group(1)
+        _prev = _nd[_m.start() - 1] if _m.start() > 0 else ""
+        if _c in _VERB_CHARS or _c in _SIZE_CHARS or _prev == "一":
+            continue
+        _forms.append("叠词「%s」" % _nd[max(0, _m.start() - 2):_m.start() + 4].replace("\n", "/"))
+    for _m in _REDUP_AABB.finditer(_nd):
+        # 一X一X（一截一截 / 一颗一颗）是数量反复，V着V着（讲着讲着）是动作持续——都可见，放行
+        if _m.group(1) == "一" or _m.group(1) in _VERB_CHARS:
+            continue
+        _forms.append("叠词「%s」" % _nd[_m.start():_m.end() + 2])
+    for _m in _DEG_COMP.finditer(_nd):
+        _forms.append("得字补语「%s」" % _nd[_m.start():_m.end() + 2])
+    for _m in _DEG_ADV.finditer(_nd):
+        _forms.append("程度副词「%s」" % _nd[max(0, _m.start() - 2):_m.end() + 2])
+    for _w in _MODAL_ADV:
+        _k = _nd.find(_w)
+        if _k >= 0:
+            _forms.append("情态副词「%s」" % _nd[max(0, _k - 2):_k + len(_w) + 2].replace("\n", "/"))
+    if _forms:
+        bad.append("镜%d 「详细描述」动作段出现程度 / 情态修饰 %s——违反通用范式槽位③「动作拍」："
+                   "动作拍只写「主体 + 动词 + 对象」，修饰只许写方式 / 部位 / 方向。"
+                   "判据是语法形态（叠词 / 得字补语 / 程度·情态副词），不是词表，"
+                   "所以「结结实实」「渐渐地」「狠狠地」都拦。改法："
+                   "「结结实实磕了三个头」→「俯下身、额头碰地、抬起来、再碰地」；"
+                   "「捧得死紧」→「两只手合起来包住、手指收拢」；"
+                   "「猛地掀开」→「眼皮掀开、眼白先露出来」"
+                   % (i, "、".join(_forms[:4])))
+
+    # 🔴 拟声词只进「整体音效」段：正文里的拟声词会被 H3 当台词念（第5集镜2「磨牙 / 吱呀」事故）。
+    ono = _ONOMATOPOEIA_RE.findall(body_text)
+    if ono:
+        bad.append("镜%d 「详细描述」正文出现拟声词 %s——拟声 / 环境声只写进「整体音效」段，"
+                   "正文里的声音词会被 H3 当成对白念出来"
+                   % (i, "、".join(sorted(set(ono)))))
+
+    # 🔴 表情 + 肢体语言：人物没有情绪表情 / 肢体动作 = 纸片人，短剧与多参考一律强制。
+    # 此前只对 ref2va 生效，短剧分支完全不查（2026-11-25 用户指出）。
+    if not _EXPR_RE.search(body_text):
+        bad.append("镜%d 「详细描述」整段没有情绪表情描写（笑 / 眼神 / 神情 / 眉眼 / 嘴角 / 眼眶…）——"
+                   "人物会一脸空白地站着，必须按本镜情绪写清脸上在发生什么" % i)
+    if not _BODY_RE.search(body_text):
+        bad.append("镜%d 「详细描述」整段没有肢体语言描写（伸手 / 攥 / 跪 / 转身 / 扶…）——"
+                   "人物会像纸片人定在原地，必须写出至少一个身体动作 / 姿态" % i)
+
+    # 🔴 视线用词：落点是物件 / 手心 / 地面等非人物目标时，「两眼落在 X」会被 H3 理解偏，
+    # 目光可能绑到画面里另一个人（第5集镜17 少年「两眼落在自己空空的手心上」却看向了娘）。
+    # 落点为 <Subject N> 是规范写法、放行；落点非主体时改「两眼看着 / 盯着 X」。
+    for m in _GAZE_FALL_RE.finditer(body_text):
+        target = m.group(1)
+        if "<Subject" not in target:
+            bad.append("镜%d 「详细描述」视线写成「落在%s」——落点是物件 / 手心等非人物时"
+                       "「落在」容易被 H3 理解偏、目光绑到画内别人；改「两眼看着 %s」或「盯着 %s」"
+                       % (i, target, target, target))
 
     bad.extend(_check_anthropomorphic(i, body_text, "详细描述", ctx))
 
@@ -539,6 +830,43 @@ def _audit_cross_section(i, secs, ctx):
         if und:
             bad.append("镜%d 「%s」引用了未定义的主体 %s——先在「主体定义」里定义"
                        % (i, name, "、".join("<Subject %d>" % x for x in und)))
+
+    # 🔴 言语意图 ↔ 台词落地一致性（跨段，短剧 / 多参考共用）：
+    # 摘要写了「默念那句话 / 开口道 / 画外」等言语意图，详细描述就必须有对应台词，
+    # 或明确标注「无声口型 / 不出声」。否则 H3 拿到意图却没文本，会自己编出胡言乱语
+    # （2026-11-25 第5集镜7：摘要「默念那句话」、正文只有「嘴唇无声开合」，成片乱念）。
+    summary = secs.get("摘要") or ""
+    detail = secs.get("详细描述") or ""
+    if _SPEECH_INTENT_RE.search(summary):
+        n_dialog = len(_D_TAG_RE.findall(detail))
+        silent_marked = bool(re.search("(无声|不出声|不发出|没出声|双唇(?:始终)?(?:自然)?闭合|静音)", detail))
+        if n_dialog == 0 and not silent_marked:
+            bad.append("镜%d 摘要写了言语意图（默念 / 开口 / 画外…），详细描述却既没有 `<d>` 台词、"
+                       "也没有「无声口型 / 不出声」标注——H3 会自己编出台词造成胡言乱语。"
+                       "必须二选一：写出对应台词，或明确写「嘴唇无声开合、不出声」"
+                       % i)
+    # 🔴 心声必须走画外口径：摘要写了心声/默念/内心意图且有台词时，正文必须用下面三种之一：
+    #   a) 「画面外传来…声音 (Sx)」——不挂主体；
+    #   b) 早点铺实测版「At MM:SS.mmm, 画外 <Subject N> (Sx) 的心声，他嘴唇始终不动：<d>…」；
+    #   c) 2026-11-26 定稿首选：画外主体 + 独立参考图槽
+    #      「At MM:SS.mmm, <Subject N> (Sx) 画外说：<d>…</d>。」，且该 <Subject N> 在详细描述里
+    #      只出现在这一行（画面里没有他，他只是声源；图片另开一个 <Picture M> 槽）。
+    def _offscreen_subject_voice(txt):
+        for _m in re.finditer("At \\d{2}:\\d{2}\\.\\d{3},\\s*<Subject (\\d+)>\\s*\\(S\\d+\\)\\s*画外说[：:]", txt):
+            if len(re.findall("<Subject %s>" % _m.group(1), txt)) == 1:
+                return True
+        return False
+
+    if re.search("心声|默念|内心", summary) and _D_TAG_RE.findall(detail):
+        if not (_VOICE_HEART_RE.search(detail) or _VOICE_HEART_LZ_RE.search(detail)
+                or _VOICEOVER_OFFICIAL_RE.search(detail) or _offscreen_subject_voice(detail)):
+            bad.append("镜%d 摘要写了心声意图、正文也有台词，但没有用合法画外心声格式——"
+                       "首选「At MM:SS.mmm, <Subject N> (Sx) 画外说：<d>…</d>。」"
+                       "（画外主体独立占一个图槽、画面里不出现它，2026-11-26 定稿）；"
+                       "也可用「画面外传来…声音 (Sx)」不挂主体，或早点铺实测版"
+                       "「At MM:SS.mmm, 画外 <Subject N> (Sx) 的心声，他嘴唇始终不动：<d>…」；"
+                       "只写「紧闭着嘴默默的说」会被 H3 贴回嘴上念出来"
+                       % i)
     return bad
 
 

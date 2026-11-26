@@ -1066,7 +1066,7 @@ def build_seg_prompts(a, scene_descs, texts, n_total):
                                  act=("她边说边用手比划讲解，身体自然移动、重心随讲解转移，"
                                       "面部始终朝向镜头；" if t else ""),
                                  kind="speak")
-            out.append(av.build_fl2va_prompt(pics=1, duration=0, body=body, kind="speak"))
+            out.append(av.build_fl2va_prompt(duration=0, body=body, kind="speak"))
     _audit_prompts(out)
     return out
 

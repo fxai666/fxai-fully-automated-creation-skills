@@ -706,6 +706,18 @@ def submit_workflow(wf_path, params, optional_keys=None, validate=True, tag="run
                          % (os.path.basename(wf_path), ", ".join(sorted(_missing))))
     if validate:
         _validate_placeholder_params(pdict, tag=tag)
+    # 🔴 服务端目录唯一门禁（万法归宗，2026-11-25）：所有图片/视频/音频生成任务的输出目录
+    # 都从 fxai_outputdir 进来，这里一次性校验——不在固定集合白名单、又不是项目 token
+    # （shortdrama_<slug> / <歌名>_vocalsep）的名字直接拒，测试与版本派生目录进不了服务端。
+    # 判据正文见 fxai-standard references/01「服务端目录白名单」。
+    if "fxai_outputdir" in pdict:
+        _od = str(pdict["fxai_outputdir"]).strip()
+        if not is_valid_server_subdir(_od):
+            raise ValueError(
+                "服务端保存目录不合法：%r。只允许固定集合（如 sucai/merged/charview/upscale/"
+                "face_restore/h3_swap/mv_multiref 等一用途一名）或项目 token"
+                "（shortdrama_<slug>、<歌名>_vocalsep）。测试与多版本一律写回同名固定目录，"
+                "版本对比记本地 _fxai_memory.md，不得按版本/测试/序号新建服务端目录。" % _od)
     # 三类替换（镜像 C#）。⚠️ 字符串值必须用 json.dumps 转义（换行/引号等控制字符）。
     for _key in list(pdict.keys()):
         _rep = _to_replacement(_key, pdict[_key])
@@ -715,6 +727,7 @@ def submit_workflow(wf_path, params, optional_keys=None, validate=True, tag="run
     # 但导出的工作流 JSON 常漏填（节点版本不匹配），提交会被拒 required_input_missing。
     # 这里按 class_type 自动注入 fxai_outputdir 值，不改工作流文件本身，对换工作流也自动适配。
     if kind == "multiref":
+        # fxai_outputdir 已在上方统一门禁校验（非法值已 raise），这里只取合法值注入节点。
         _save_dir = str(pdict.get("fxai_outputdir", "mv_multiref"))
         for _nid, _node in _wf.items():
             if isinstance(_node, dict) and _node.get("class_type") == "FxAiMiniMaxVideoSaveV2":
@@ -758,6 +771,42 @@ REF_MAN = "avatar/001.png"
 #      一次：本系列 000-008 被另一项目素材整体覆盖，整集人物错乱）。
 # =========================================================================
 PUBLIC_ASSET_SUBDIRS = ("charview", "charview3", "charview4", "mv_scene", "scene", "views")
+
+
+# 🔴 服务端目录白名单——万法归宗，一条规则（用户 2026-11-25 定，取代此前逐条黑名单）。
+# 服务端 image/ video/ 下的合法目录只有两类：① 下面这份「一用途一名」固定集合；
+# ② 项目 token shortdrama_<slug> 与逐歌人声分离目录 <歌名>_vocalsep。集合之外一律视为
+# 测试 / 版本派生的垃圾目录：程序提交时一律拒绝并改写为固定目录，存量走回收站清理。
+# 判据正文见 fxai-standard references/01「服务端目录白名单」。新增用途先往集合里加名。
+SERVER_SUBDIR_WHITELIST = frozenset({
+    # 图片：角色参考与公用试验田（工作流写死的五官底图目录含 avatar）
+    "avatar", "charview", "charview3", "charview4", "mv_scene", "scene", "views",
+    "single_ref", "skill_gen",
+    # 图片：MV / 数字人 / 海报封面按用途固定
+    "song_charview", "song_ref_prop", "song_ref_scene",
+    "dh_cover", "dh_broll", "dh_scene", "dh_charview",
+    "cover_gen", "cover_base", "poster_img",
+    # 视频：分段生成 / 合并 / 换脸 / 精修 / 超分按用途固定
+    "sucai", "merged", "face_restore", "h3_swap", "h3_swap_src", "upscale",
+    # temp：服务端 fxai-toolkit 节点自写死的固定临时目录（ffmpeg 合并中转，不经提交门禁，列此保持实况一致）
+    "temp",
+    # 视频：音频驱动管线按「前缀(=管线)×模式」固定（mv=MV、dh=数字人 × 四种模式）
+    "mv_sing", "mv_multi", "mv_single", "mv_multiref",
+    "dh_sing", "dh_multi", "dh_single", "dh_multiref",
+    # 音频 / 音乐
+    "audio_input", "vocal_input", "dh_audio", "音乐生成",
+})
+
+_SERVER_SUBDIR_PATTERN_RE = re.compile(r"^(?:shortdrama_[a-z0-9_]+|[^/\\]+_vocalsep)$")
+
+
+def is_valid_server_subdir(name):
+    """服务端目录名是否合法——判据只有一条：在白名单固定集合内，或是项目 token
+    （shortdrama_<slug>）/ 逐歌人声分离目录（<歌名>_vocalsep）。其余一律不合法。"""
+    n = str(name or "").strip("/").strip("\\")
+    if not n:
+        return False
+    return n in SERVER_SUBDIR_WHITELIST or bool(_SERVER_SUBDIR_PATTERN_RE.match(n))
 
 
 def project_def_path(start=None):
@@ -805,12 +854,18 @@ def project_asset_subdir(start=None, required=False):
 
 
 def resolve_asset_subdir(subdir=None, start=None):
-    """生成素材时 subdir 的唯一出口：
-    · 显式传了项目目录 → 照用；
-    · 没传 / 传的是公用目录 → 在项目目录内工作时自动改成项目目录；
-    · 不在任何项目目录内 → 保持原样（一次性试验允许用公用目录），仍为空则用 charview。"""
+    """生成素材时 subdir 的唯一出口（判据只有一条——服务端目录白名单）：
+    · 传的是白名单固定名 / 项目 token → 照用；
+    · 没传 / 传的是公用目录 / 不在白名单的任意名（测试派生）→ 项目内改成项目目录，
+      项目外改成固定公用目录 charview；测试与多版本一律写回同名固定目录，不另建。"""
     sd = (subdir or "").strip("/") or None
     proj = project_asset_subdir(start)
+    if sd and not is_valid_server_subdir(sd):
+        target = proj or "charview"
+        print("[资产目录] ⚠️ subdir=%s 不在服务端目录白名单（固定集合或项目 token）内，"
+              "已按规范改写为固定目录 %s；测试版本写回同名覆盖，对比记本地 _fxai_memory.md。"
+              % (sd, target))
+        return target
     if proj:
         if not sd or sd in PUBLIC_ASSET_SUBDIRS:
             if sd and sd != proj:

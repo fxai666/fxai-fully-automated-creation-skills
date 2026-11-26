@@ -211,7 +211,7 @@
  },
  "16": {
   "inputs": {
-   "sampler_name": "res_multistep"
+   "sampler_name": "er_sde"
   },
   "class_type": "KSamplerSelect",
   "_meta": {
@@ -220,7 +220,7 @@
  },
  "17": {
   "inputs": {
-   "scheduler": "simple",
+   "scheduler": "normal",
    "steps": 8,
    "denoise": 1,
    "model": [

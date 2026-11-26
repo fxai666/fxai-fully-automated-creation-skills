@@ -153,6 +153,49 @@ def char_weight(text):
     return w
 
 
+# ---------------------------------------------------------------- 字幕上屏去标点
+# 2026-11-26 用户定：**任何一条字幕里都不许出现标点符号**。
+# 标点只参与断句与计时（char_weight），不上屏——上屏只留实义字。
+# 判据是字符类别（Unicode P* / S* 里会出现在中文台词中的那批），不是逐句特判。
+_SUB_STRIP = set(
+    "。，、；：！？…—～·"
+    "「」『』“”‘’（）〔〕【】《》〈〉〈〉"
+    ",.!?;:'\"()[]{}<>/\\|~`@#$%^&*_+=—-–―"
+    " \t\u3000\u00a0"
+)
+
+
+def strip_subtitle_punct(text):
+    """字幕上屏文字去标点（标点只参与断句/计时，不上屏）。"""
+    return "".join(c for c in text if c not in _SUB_STRIP)
+
+
+def find_subtitle_punct(text):
+    """返回字幕文字里出现的标点字符列表（门禁用）。"""
+    return [c for c in text if c in _SUB_STRIP and not c.isspace()]
+
+
+def audit_subtitle_file(srt_path):
+    """门禁：SRT 里任何一条字幕都不许带标点（2026-11-26 用户定）。
+
+    返回违规描述列表，空列表 = 通过。烧录前必须过这一关——
+    之前短剧链路没有这条校验，标点一路烧进了画面。
+    """
+    bad = []
+    if not os.path.exists(srt_path):
+        return ["字幕文件不存在：%s" % srt_path]
+    txt = open(srt_path, encoding="utf-8").read()
+    for blk in re.split(r"\n\s*\n", txt.strip()):
+        rows = [r for r in blk.split("\n") if r.strip()]
+        if len(rows) < 3:
+            continue
+        body = "".join(rows[2:]).strip()
+        hit = find_subtitle_punct(body)
+        if hit:
+            bad.append("第 %s 条含标点「%s」：%s" % (rows[0].strip(), "".join(dict.fromkeys(hit)), body[:30]))
+    return bad
+
+
 def distribute_by_char(lyrics, words):
     '词级段数≠台词数时：按每句字数占比，把词时间轴切成不重叠的区间。\nTTS 按我们的台词匀速朗读，字数占比≈时长占比，每句锚在真实词时间上。'
 
@@ -228,10 +271,10 @@ def align_subtitles(lyrics, transcript_path=None, audio_path=None, out_path=None
         entries = [(t0, t1, lyrics[i]) for i, (t0, t1) in enumerate(segs)]
     with open(out_path, "w", encoding="utf-8") as f:
         for i, (t0, t1, text) in enumerate(entries, 1):
-            f.write(f"{i}\n{sec2srt(t0)} --> {sec2srt(t1)}\n{text}\n\n")
+            f.write(f"{i}\n{sec2srt(t0)} --> {sec2srt(t1)}\n{strip_subtitle_punct(text)}\n\n")
     print(f"[对齐完成] {len(entries)} 条 -> {out_path}" + (" (词级)" if word_level else ""))
     for i, (t0, t1, text) in enumerate(entries, 1):
-        print(f"  [{i:2d}] {sec2srt(t0)} --> {sec2srt(t1)}  {text}")
+        print(f"  [{i:2d}] {sec2srt(t0)} --> {sec2srt(t1)}  {strip_subtitle_punct(text)}")
     return out_path, entries
 
 
@@ -305,10 +348,10 @@ def align_subtitles_shotwise(shots, words_path, out_path, lang="zh"):
             entries[i] = (entries[i - 1][1], max(entries[i][1], entries[i - 1][1]), entries[i][2])
     with open(out_path, "w", encoding="utf-8") as f:
         for i, (t0, t1, text) in enumerate(entries, 1):
-            f.write(f"{i}\n{sec2srt(t0)} --> {sec2srt(t1)}\n{text}\n\n")
+            f.write(f"{i}\n{sec2srt(t0)} --> {sec2srt(t1)}\n{strip_subtitle_punct(text)}\n\n")
     print(f"[镜头锚定对齐] {len(entries)} 条 -> {out_path}")
     for i, (t0, t1, text) in enumerate(entries, 1):
-        print(f"  [{i:2d}] {sec2srt(t0)} --> {sec2srt(t1)}  ({t1 - t0:5.2f}s)  {text}")
+        print(f"  [{i:2d}] {sec2srt(t0)} --> {sec2srt(t1)}  ({t1 - t0:5.2f}s)  {strip_subtitle_punct(text)}")
     return out_path, entries
 
 
