@@ -5,12 +5,12 @@ description: 仙宫云 GPU 实例一键部署凤希技能包（ComfyUI + fxai-to
 
 # 仙宫云 · 凤希技能包一键部署
 
-一条命令把「ComfyUI 本体 → 凤希自研节点 → 模型文件」装到仙宫云 GPU 实例，可中断可续跑。另管实例生命周期：开机/关机/释放GPU/存镜像/查余额/查账户/充值/新建实例。
+一条命令把「ComfyUI → 自研节点 → 模型」装到仙宫云 GPU 实例，可中断续跑。另管实例生命周期：开关机/释放GPU/存镜像/查余额/充值/建实例。
 
 ## 本技能文件清单（先读这里，再决定读哪册）
 | 文件 | 什么时候读 |
 |---|---|
-| `references/01-实例管理API.md` | 开机/关机/释放GPU/建实例/存镜像/查余额/充值。认证、命令表、API 判据、接口规范；**SSH 维护免手输密码（`xgy_ssh_api.py`）** |
+| `references/01-实例管理API.md` | **安装入口与模式切换**（本地/云端判定、两条配置路径、随时切换）、开机/关机/释放GPU/建实例/存镜像/查余额/充值。认证、命令表、API 判据、接口规范；**SSH 维护免手输密码（`xgy_ssh_api.py`）** |
 | `references/02-部署清单与下载管线.md` | 装节点/下模型/探源/对账/本机直传。装什么、怎么下、下坏了怎么办 |
 | `references/03-装完与排障.md` | 装完后的配置、**镜像内置默认工作流（扩展 TARGETS + bundle 兜底）**、重启、节点报IMPORT FAILED、**升级 ComfyUI/节点（命令+脚本口径）**、网络现状 |
 | `references/04-实例现状与云端运维.md` | 实例现状、本机复用工具、推节点、外网连通性 |
@@ -36,10 +36,13 @@ description: 仙宫云 GPU 实例一键部署凤希技能包（ComfyUI + fxai-to
 15. 🔴 **缺卡不是错，默认抢到为止**：`deploy-image` / `boot` 缺卡（部署 `code=1000`、开机 `code=1003`，不扣费）自动每 5 秒重抢一次、**不限次数**，`Ctrl+C` 停；`--grab N` 限次、`--no-grab` 关闭。缺卡必须走软调用 `call(..., soft=True)`，抛异常会把重试变成死代码（v2.x 真实翻车点）。
 16. 🔴 **体检、升级都只认咱们镜像建的机器**：`check` 三态、`upgrade <id>` 在线升级，判定一律只看 image_id == `9463d4ca`，其他镜像实例不算、不提示、不碰。
 
-## 接入体检 + 部署后在线升级（用户选仙宫云先跑）
-`python xgy_api.py check`：验令牌 → 列**咱们全自动镜像（`9463d4ca`）建的机器** → 给绑定（`xgy_guard.py use`）+ 验服务（`verify-services`）命令；没有就给建机请求体，**确认后才 `--yes`**（扣费）。无令牌/无账号时打印注册+镜像链接、提示没填邀请码填 `9LWQ36` 得 3 元赠金，写全局配置 `xgy_api_token` 再重跑。详见 `references/01「首次接入体检」`。
+## 安装入口：判本地 / 仙宫云（开工第一步）
+`python xgy_entry.py`（`--json`）只读探测：按 `comfy_url` 判本机 / 云端 / 未定，分流两条路径（复制令牌 / 自动部署）；切换 `use local` / `use cloud <id>`。详见 `references/01「安装入口与模式切换」`。
 
-`python xgy_api.py upgrade <id>`：技能包更新后同步云端——只对咱们镜像实例、走令牌免密 SSH 上传执行 `xgy_upgrade.sh`：检测落后 → ComfyUI pull（含 shallow/脏工作区坑）→ fxai-toolkit pull/zip 重装 → 不无脑升 torch → **自动重启 + 四服务验收**（升级前后节点数不减少）。`--check` 只检测、`--no-restart` 不重启、`--no-comfy` 只升节点。报告在实例 `/tmp/xgy_upgrade.report`。🔴 判定只看 image_id，其他镜像实例一律不算、不碰。详见 `references/01`、`references/03`「更新 ComfyUI/节点」。
+## 接入体检 + 部署后在线升级（选仙宫云先跑）
+`python xgy_api.py check`：验令牌 → 列咱们镜像（`9463d4ca`）机器 → 给绑定 / 验服务命令；无机器给建机请求体，**确认后才 `--yes`**（扣费）。无令牌时打印注册 / 镜像链接与 `9LWQ36` 赠金口径，写 `xgy_api_token` 再重跑。详见 `references/01`。
+
+`python xgy_api.py upgrade <id>`：技能包更新后同步云端——只对咱们镜像实例、走令牌免密 SSH 执行 `xgy_upgrade.sh`：检测落后 → pull ComfyUI / 节点 → 不无脑升 torch → 自动重启 + 四服务验收。`--check` 只检测、`--no-restart` 不重启、`--no-comfy` 只升节点；报告在 `/tmp/xgy_upgrade.report`。🔴 判定只看 image_id，其它镜像实例不碰。详见 `references/01`、`03`。
 
 ## 三种跑法，按现场条件选
 
@@ -50,7 +53,7 @@ python deploy.py plan  --group all                              # 先看装什�
 python deploy.py probe -H <ip> -p <端口> -u root -P <密码>       # 体检 GPU/磁盘/已有 ComfyUI
 python deploy.py run   -H <ip> -p <端口> -u root -P <密码> --group all
 ```
-`run` 顺序：体检 → 计划 → 上传 → 后台跑 → 实时拉回日志 → 验收/失败清单；`Ctrl+C` 只断开查看，云端继续。密码登录要 `paramiko`，公钥传 `-k` 走系统 ssh 免装；密码可用 `XGY_SSH_PASSWORD` 免留历史。
+`run` 顺序：体检 → 计划 → 上传 → 后台跑 → 拉日志 → 验收；`Ctrl+C` 只断开查看，云端继续。密码登录要 `paramiko`，公钥 `-k` 走系统 ssh；密码可用 `XGY_SSH_PASSWORD` 免留历史。
 
 ### B. 无 SSH / 手动执行
 ```bash

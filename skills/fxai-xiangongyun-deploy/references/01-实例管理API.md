@@ -15,6 +15,27 @@
 SSH 信息由 `xgy_cfg.ssh_cred()` 统一提供（`deploy.py` / `remote.py` / `xgy_launch.py` 等都走它）。
 不读 `secrets/xiangongyun.json` 里的 profile（那是老一套）。`FXAI_GLOBAL_CONFIG` 可另指全局配置路径。
 
+## 安装入口与模式切换（`xgy_entry.py`，开工第一步）
+
+装好技能、还没定用本机还是仙宫云时先跑它。**只读探测，不建机、不扣费**，判据全复用现成实现
+（令牌 / 实例读 `xgy_cfg`，验身与「咱们镜像的机器」读 `xgy_api`，云端判定同 `xgy_guard` 的容器域名规则）。
+
+```bash
+python xgy_entry.py                 # 文本报告：当前模式 + 令牌/实例 + 咱们镜像机器 + 分流路径
+python xgy_entry.py --json          # 机器读
+python xgy_entry.py set-token       # 从标准输入读访问令牌写入全局配置 xgy_api_token（不回显）
+python xgy_entry.py use local       # 切回本机：comfy_url=http://127.0.0.1:8188
+python xgy_entry.py use cloud <id>  # 切云端：comfy_url=https://<id>-8188.container.x-gpu.com + 绑定 id
+```
+
+**当前模式判定**（取全局 `comfy_url`）：含 `.container.x-gpu.com` → `cloud`；含 `127.0.0.1` / `localhost` → `local`；空或其它 → `undecided`（提示用户选）。
+
+**两条配置路径**（按缺口分流，让用户选）：
+- **①复制访问令牌**：控制台「访问令牌」页生成 `eyJ...`（非 SSH 密码、非 api_key）→ `xgy_entry.py set-token` 从标准输入写入（命令行不留痕）→ `xgy_api.py check`。令牌通道就是全局配置的 `xgy_api_token`，与技能里其它命令同一份，不另造。
+- **②自动安装部署**：助手按注册 / 登录链接引导拿令牌 → `xgy_api.py check` 验令牌并检测令牌下有没有咱们镜像的机器 → 没有就给建机请求体、**用户确认后**才 `deploy-image … --yes`（实时扣费）→ `xgy_guard.py use <id>` 绑定 → `verify-services <id>` 验四服务。
+
+**随时切换**：对话里说「改用本机 / 用仙宫云」即由助手调 `use local` / `use cloud <id>`，改的是全局 `comfy_url`（+ 云端时绑定 `xgy_instance_id`）。本地就绪另跑 `python check_client.py`（`fxai-standard/scripts`）。
+
 ## 🔴 SSH 维护免手输密码（2026-11-16 新增：`xgy_ssh_api.py`）
 
 **以后维护任何仙宫云实例，不用再手工给 SSH 账号密码** —— 开放平台 `GET /instance/{id}`
