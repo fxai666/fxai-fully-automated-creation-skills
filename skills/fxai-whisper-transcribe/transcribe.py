@@ -24,6 +24,9 @@ import argparse
 import json
 import tempfile
 
+# faster-whisper 依赖的 libiomp5md.dll 与 torch 自带副本会重复初始化，进程内先放行。
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
 # 读取全局部署配置（安装时由 setup_env.py 写入 ~/.workbuddy/fxai_global.json），
 # 模型缓存目录统一由 software_data_dir 推导，本机绝对路径不进代码。
 def _load_fxai_cfg():

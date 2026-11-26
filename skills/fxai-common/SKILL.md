@@ -14,6 +14,7 @@ description: fxai 全系列技能共用的底层公共件（**公共目录，不
 | `video_tone.py` | **分段视频的影调/接缝对齐**（纯后处理，不依赖 8188）。拼段前段间跳色、画面发灰时用；算法与 `FxAiToneMatch` / `FxAiSeamColorMatch` 同口径 |
 | `video_encode.py` | **最终交付成片编码**：按「上限 2000 kbps」（目标 1900）取参数、两遍编码、只判上界的码率验收。规格见 `fxai-standard/references/12-交付视频编码规格.md` |
 | `aigc_mark.py` | **所有最终交付视频的 AIGC 隐式标识**：`embed()` 写入 + `verify()` 回读验收 + 命令行验收门。字段规范见 `fxai-standard/references/01-产出铁律.md`「成片品牌标识」 |
+| `deliver_check.py` | **交付前自检**：素材 ASCII 名 / 分段目录布局 / 页面图片绝对路径 / ffmpeg 收尾与滤镜顺序 / 成片命名与时长 / AIGC 标识 / 码率，一条命令跑完。函数清单见 01 册 |
 | `env_guard.py` | 换机器/给客户装时的环境守卫：缺「凤希AI伴侣」打下载指引、缺 pip 小包自动补。**只在这两种场景读**：① 技能要在新机器上跑起来 ② 改安装引导文案/下载链接 |
 | references/01-公共函数速查.md | 查它提供哪些函数：地址与代理 / HTTP / 环境守卫 / 口播文案 / 影调接缝 |
 | references/02-依赖与改动影响.md | 查谁在依赖它、改公共函数会波及哪些技能 |
