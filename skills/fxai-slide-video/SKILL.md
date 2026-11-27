@@ -26,7 +26,7 @@ agent_created: true
 | `slides.py` / `themes/*.css` | 配图脚本、版式模板、`--theme` 加载 |
 | `sv_pipeline.py` | 整套入口（文案→配音→配图→拼接→字幕） |
 | `sv_media.py` / `sv_layout.py` | 拼接与字幕（`--bgm` 混 BGM、`--cover` 铺首帧，**顺序：封面先、BGM 后**）；存储格式 + 清单 |
-| `sv_bgm.py` | **配乐自动生成**（`--bgm auto` 执行点）：走 `fxai-workflow` 出片落 `配乐/`；默认纯器乐，可改带唱（`--vocal` + 歌词） |
+| `sv_bgm.py` | **配乐自动生成**（`--bgm auto` 执行点）：走 `fxai-workflow` 出片落 `配乐/`。**默认 `--bgm-model sa3`**（Stable Audio 3 专用配乐模型：纯器乐零人声、时长精确、出片严格等长）；`minimax3` / `yue2` 是通用音乐模型，会漂人声，只在要带唱时用 |
 | `sv_compliance.py` / `sv_title.py` | 合规预检词表；发布标题取词与评分 |
 | `sv_check.py` | **成片质检**：元数据 / 壳文字冻结 / 虚化 / slogan 单行 / 字幕位置 / 素材登记 → 08 册 |
 | 🔴 `../fxai-mixed-layout/` | **素材槽公共件**（轮播 / 视频 / 网页三种填法、转场表、`fit` 四档、版式表）。写 `frame` / `trio` 的 `media`、加新形式时读它 |
@@ -51,15 +51,16 @@ python sv_pipeline.py --project <项目名> --spec segments.json --theme 樱花�
 # 横屏成片（16:9）：--size 预设一步到位
 python sv_pipeline.py --project <项目名> --spec segments.json --size 横屏     # 1366×768
 python sv_pipeline.py --project <项目名> --spec segments.json --size 横屏高清 # 1920×1080
-# 背景配乐：auto = 现场生成一首（落 配乐/）；也可给现成文件
+# 背景配乐：auto = 现场生成一首（落 配乐/）；默认走 sa3（专用配乐：纯器乐、时长精确）；也可给现成文件
 python sv_pipeline.py --project <项目名> --spec segments.json --bgm auto
+python sv_pipeline.py --project <项目名> --spec segments.json --bgm auto --bgm-model minimax3   # 非要通用音乐模型才换
 python sv_pipeline.py --project <项目名> --spec segments.json --bgm 配乐/氛围01.wav --bgm-volume 0.20
 # 带封面 + 带配乐：封面先铺，BGM 从第一帧铺满整片
 python sv_pipeline.py --project <项目名> --spec segments.json --bgm auto --cover 封面/封面_主推.png
 python sv_media.py --project <项目名> --bgm auto --cover 封面/封面_主推.png   # 已出片、后补
-# 带唱（默认纯器乐；须给歌词，音量降到 0.15）
+# 带唱（sa3 只出纯器乐，必须显式 --bgm-model minimax3；须给歌词，音量降到 0.15）
 python sv_pipeline.py --project <项目名> --spec segments.json --bgm auto \
-    --bgm-vocal "轻柔女声轻唱，气声，靠后" --bgm-lyrics-file 配乐/歌词.txt
+    --bgm-model minimax3 --bgm-vocal "轻柔女声轻唱，气声，靠后" --bgm-lyrics-file 配乐/歌词.txt
 # 精修配图：先出音频 → 出图 → 合成
 python sv_media.py --project <项目名> --segs <段落画面映射.json> --size 横屏
 ```

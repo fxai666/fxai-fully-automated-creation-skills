@@ -11,7 +11,7 @@
     3
    ],
    "图片序列": [
-    "123",
+    "134",
     0
    ],
    "音频": [
@@ -21,21 +21,9 @@
   },
   "class_type": "FxAiVideoSaveV1",
   "_meta": {
-   "title": "④ 保存成片（通用 · 音频可选）",
+   "title": "③ 保存成片（通用 · 音频可选）",
    "cnr_id": "fxai-toolkit",
-   "ver": "3944422c4d443f30504922a72b986ae812d3ddf5"
-  }
- },
- "104": {
-  "inputs": {
-   "图片列表": "fxai_imageinput",
-   "preview_wrapper": ""
-  },
-  "class_type": "FxAiCharacterImageSelector",
-  "_meta": {
-   "title": "凤希AI - 角色资源图片选择器",
-   "cnr_id": "fxai-toolkit",
-   "ver": "269827a81a78bad385e5484fb96c2e16919baf40"
+   "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
   }
  },
  "108": {
@@ -71,7 +59,7 @@
   "_meta": {
    "title": "凤希AI - 循环开始（计数）",
    "cnr_id": "fxai-toolkit",
-   "ver": "4ff5a44b62884b50445cc76aa4d7a55950b37fd7"
+   "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
   }
  },
  "110": {
@@ -93,7 +81,7 @@
   "_meta": {
    "title": "凤希AI - 循环结束（计数）",
    "cnr_id": "fxai-toolkit",
-   "ver": "4ff5a44b62884b50445cc76aa4d7a55950b37fd7"
+   "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
   }
  },
  "111": {
@@ -167,7 +155,7 @@
   "_meta": {
    "title": "凤希AI - 视频合并",
    "cnr_id": "fxai-toolkit",
-   "ver": "d82d27971005419a2a39bbbe49cd45f3edeedb68"
+   "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
   }
  },
  "117": {
@@ -183,81 +171,103 @@
   "_meta": {
    "title": "下一次索引",
    "cnr_id": "fxai-toolkit",
-   "ver": "4ff5a44b62884b50445cc76aa4d7a55950b37fd7"
+   "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
   }
  },
- "123": {
+ "130": {
   "inputs": {
-   "处理脸宽上限": 120,
-   "裁切框边长": 0,
-   "超分倍数": 4,
-   "超分引擎": "自研超分",
-   "遮罩比例": 0.7,
-   "羽化半径": 0.045,
-   "身份相似度阈值": 0.1,
-   "默认人物": 1,
-   "换脸脸宽上限": 120,
-   "换脸强度": 1,
-   "肤色回拉": 0.6,
-   "纹理保留": 0.9,
-   "随机种子": "fxai_seed",
-   "批大小": 4,
-   "显卡编号": 0,
-   "输入帧": [
-    "124",
-    0
-   ],
-   "参考图": [
-    "104",
-    0
-   ],
-   "放大倍数": [
-    "125",
-    1
-   ]
+   "unet_name": "relayvsr_x2_lightx2v_int8_convrot.safetensors",
+   "weight_dtype": "default"
   },
-  "class_type": "FxAiFaceRestoreLiteV2",
+  "class_type": "UNETLoader",
   "_meta": {
-   "title": "③ 人脸精修 · 轻量链 V2（全脸）",
+   "title": "① 主模型 · RelayVSR x2",
    "cnr_id": "fxai-toolkit",
    "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
   }
  },
- "124": {
+ "131": {
   "inputs": {
-   "放大倍数": [
-    "125",
-    1
+   "vae_name": "relayvsr_flash_vae_x2_fp32.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "① Flash VAE · x2",
+   "cnr_id": "fxai-toolkit",
+   "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
+  }
+ },
+ "132": {
+  "inputs": {
+   "model": [
+    "130",
+    0
    ],
-   "分块边长": 0,
-   "分块重叠": 64,
-   "色彩校正": true,
-   "帧数对齐": true,
-   "随机种子": 0,
-   "精度": "bf16",
-   "稀疏注意力": true,
-   "卸载模型": false,
-   "图片序列": [
+   "images": [
     "113",
     0
    ]
   },
-  "class_type": "FxAiVideoUpscale",
+  "class_type": "RelayVSRConditioning",
   "_meta": {
-   "title": "② 视频超分（凤希AI 自研 · 1.2 倍）",
+   "title": "② RelayVSR 条件（每 15 帧取关键帧）",
    "cnr_id": "fxai-toolkit",
-   "ver": "4ff5a44b62884b50445cc76aa4d7a55950b37fd7"
+   "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
   }
  },
- "125": {
+ "133": {
   "inputs": {
-   "value": "fxai_scale"
+   "model": [
+    "130",
+    0
+   ],
+   "positive": [
+    "132",
+    0
+   ],
+   "negative": [
+    "132",
+    0
+   ],
+   "latent_image": [
+    "132",
+    1
+   ],
+   "seed": "fxai_seed",
+   "steps": 1,
+   "cfg": 1,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "denoise": 1
   },
-  "class_type": "FxAiSimpleMath",
+  "class_type": "KSampler",
   "_meta": {
-   "title": "放大倍数（跟上面超分节点填同一个数）",
+   "title": "② 一步采样 · 固定 1 step / cfg 1",
    "cnr_id": "fxai-toolkit",
-   "ver": "4ff5a44b62884b50445cc76aa4d7a55950b37fd7"
+   "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
+  }
+ },
+ "134": {
+  "inputs": {
+   "vae": [
+    "131",
+    0
+   ],
+   "samples": [
+    "133",
+    0
+   ],
+   "images": [
+    "113",
+    0
+   ],
+   "detail": 1
+  },
+  "class_type": "VSRDecode",
+  "_meta": {
+   "title": "② VSR 解码 · 补回所有中间帧",
+   "cnr_id": "fxai-toolkit",
+   "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
   }
  },
  "126": {
@@ -276,8 +286,7 @@
   "_meta": {
    "title": "凤希AI - 自动关机(GameOver)",
    "cnr_id": "fxai-toolkit",
-   "aux_id": "fxai666/fxai-toolkit",
-   "ver": "69ebff1e60b2a71d1bea716c578375e9f9ec86ed"
+   "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
   }
  },
  "127": {
@@ -291,7 +300,7 @@
   "_meta": {
    "title": "凤希AI - 清理显存",
    "cnr_id": "fxai-toolkit",
-   "ver": "4ff5a44b62884b50445cc76aa4d7a55950b37fd7"
+   "ver": "1ec534b8ad6783ba9026aeaeecdd80be21434731"
   }
  }
 }

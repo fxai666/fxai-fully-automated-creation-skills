@@ -296,8 +296,35 @@ def _extract_d_lines(prompt):
     return [m.strip() for m in re.findall(r"<d>\[Chinese\](.*?)</d>", prompt, re.DOTALL)]
 
 
+def _split_words_by_gap(inw, n, min_gap=0.15):
+    '''把一串词按「最大停顿」切成 n 组（每组对应一句台词）。
+
+    H3 系统音常在同一镜内留长停顿（实测 3.5s 级），此时按字数比例切词会把
+    前一句字幕拉过整段静音——2026-11-27《无缝续接》第 2 镜即踩：
+    「我们还有一个小姐姐也进来」实际 8.07–9.81，却被拉到 13.75。
+    词级时间戳本身就带停顿信息，直接按最大 gap 切最准。
+
+    返回 None 表示不可用（词数不足 / 切点不够明显），调用方退回字数比例。
+    '''
+    nw = len(inw)
+    if n < 1 or nw < n:
+        return None
+    if n == 1:
+        return [inw]
+    gaps = [(inw[i + 1][0] - inw[i][1], i) for i in range(nw - 1)]
+    # 取最大的 n-1 个 gap 作为切点；下标升序保证句子顺序不乱
+    picked = sorted(sorted(gaps, reverse=True)[: n - 1], key=lambda x: x[1])
+    if any(g < min_gap for g, _ in picked):
+        return None
+    cuts = [0] + [i + 1 for _, i in picked] + [nw]
+    groups = [inw[cuts[k]:cuts[k + 1]] for k in range(n)]
+    if any(not g for g in groups):
+        return None
+    return groups
+
+
 def align_subtitles_shotwise(shots, words_path, out_path, lang="zh"):
-    '镜头锚定对齐（比全局比例更准，消除尾部漂移）。\n每镜：用 H3 公式算 [起,止) 窗口 → 取落在该窗口内的 whisper 词作为本镜真实语音区间 →\n按字数比例把本镜台词切进该区间。无词则退化为按窗口均分（仍锚在镜位）。\n返回 (out_path, entries)。'
+    '镜头锚定对齐（比全局比例更准，消除尾部漂移）。\n每镜：用 H3 公式算 [起,止) 窗口 → 取落在该窗口内的 whisper 词作为本镜真实语音区间 →\n优先按词间最大停顿切句（有长停顿时最准），切点不明显才退化为按字数比例切分。\n无词则退化为按窗口均分（仍锚在镜位）。返回 (out_path, entries)。'
 
 
 
@@ -311,7 +338,11 @@ def align_subtitles_shotwise(shots, words_path, out_path, lang="zh"):
         s0, s1 = bounds[si], bounds[si + 1]
         # 落在本镜窗口内的词（用中点判定）
         inw = [w for w in words if s0 <= (w[0] + w[1]) / 2.0 < s1]
-        if inw:
+        groups = _split_words_by_gap(inw, len(lines)) if inw else None
+        if groups:
+            for ly, g in zip(lines, groups):
+                entries.append((g[0][0], g[-1][1], ly))
+        elif inw:
             t0, t1 = inw[0][0], inw[-1][1]
             nw = len(inw)
             weights = [char_weight(l) for l in lines]

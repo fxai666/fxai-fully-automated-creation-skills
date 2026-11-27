@@ -179,10 +179,18 @@ TAGSTACK = re.compile(r"8k|4k|masterpiece|best quality|ultra detailed|highly det
 NEGATIVE = re.compile(r"不要出现|不要有|避免出现|禁止出现|不能出现|不要写")  # std:allow
 OUTFIT = re.compile(r"衬衫|外套|西装|裙|纱|卫衣|风衣|毛衣|上衣|T恤|礼服|斗篷|工装|针织|马甲|衣|服")
 EXPOSE_RISK = re.compile(r"裸露|裸肩|赤裸|上身无衣|无上衣|全裸")
+# 多人场景里用剪影 / 隐脸规避第二张参考图，会让那位人物变成自由发挥的路人
+SILHOUETTE_EVADE = re.compile(
+    r"剪影|侧影|只留轮廓|看不清脸|不露脸|面部隐在|隐在.{0,6}(?:阴影|逆光|树影)|避免.{0,6}张脸|第二张脸")
 
 
-def check_prompt(text, has_role=False, need_text=True):
-    """提示词要素检查：缺哪类补哪类。need_text=True 时按文案生在图上查文字区。"""
+def check_prompt(text, has_role=False, need_text=True, role_count=None):
+    """提示词要素检查：缺哪类补哪类。need_text=True 时按文案生在图上查文字区。
+
+    role_count = 本次生成实际传入的参考图张数（>0 时启用数量硬门禁）。
+    画面里有几个人就必须传几张参考图、写几个 <imageN>；少一张那位人物就会被
+    模型自由发挥（2026-11-27《风过长椅》封面男主用剪影规避，与正片完全对不上）。
+    """
     checks = []
     t = text or ""
 
@@ -216,6 +224,22 @@ def check_prompt(text, has_role=False, need_text=True):
         add("发饰配饰", bool(re.search(r"耳饰|耳环|项链|发带|发饰|发簪|帽子|眼镜|戒指|手链|配饰", t)),
             "写耳饰 / 项链 / 发带一类配饰",
             "补一件配饰（如细银耳饰、细项链），人物质感明显更精致", warn=True)
+
+    if role_count is not None and role_count > 0:
+        tags = sorted(set(int(x) for x in re.findall(r"<image(\d+)>", t)))
+        expect = list(range(1, role_count + 1))
+        add("参考图逐一绑定", tags == expect,
+            "、".join("<image%d>" % i for i in expect) + "（编号连续、不多不少）",
+            "传了 %d 张参考图就必须逐一写 <image1>~<image%d> 并指明各对应画面里哪个人物；"
+            "少写一个那位人物会被模型自由发挥，跟正片形象对不上" % (role_count, role_count),
+            value="、".join("<image%d>" % i for i in tags) or "无 <imageN> 标签")
+        if role_count >= 2:
+            evade = sorted(set(SILHOUETTE_EVADE.findall(t)))
+            add("多人正脸锁定", not evade,
+                "多人画面每位角色正脸受光、五官清晰，不许用剪影/隐脸规避",
+                "删掉「%s」这类规避写法：既然传了 %d 张参考图，就把每张脸写实画出来；"
+                "剪影=没参考=自由发挥的路人" % ("、".join(evade), role_count),
+                value="、".join(evade) if evade else "无规避写法")
 
     bad = TAGSTACK.findall(t)
     add("标签堆", not bad, "用自然语言句子，不堆 8k / masterpiece 类标签",
@@ -698,6 +722,8 @@ def main():
     p3 = sub.add_parser("prompt", help="只查生图提示词要素")
     p3.add_argument("--text", required=True)
     p3.add_argument("--role", action="store_true")
+    p3.add_argument("--role-count", type=int, default=0,
+                    help="实际传入的参考图张数；>0 时硬校验 <imageN> 逐一绑定、多人禁剪影")
     p3.add_argument("--no-text", action="store_true", help="纯画面提示词，不查文字区")
     p3.add_argument("--json", action="store_true")
 
@@ -758,7 +784,8 @@ def main():
             spec["hooks"] = [s for s in re.split(r"[,，]", a.hooks) if s.strip()]
         rep = preflight(spec)
     elif a.cmd == "prompt":
-        rep = check_prompt(a.text, a.role, not a.no_text)
+        rep = check_prompt(a.text, a.role, not a.no_text,
+                           role_count=a.role_count or None)
     else:
         target = None
         if a.target:

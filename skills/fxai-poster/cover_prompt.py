@@ -231,10 +231,15 @@ def prompt_tag(prompt, title, kind="cover"):
     return "%s_%s_%s" % (title, kind, fp)
 
 
-def qc_prompt(text, has_role=False, need_text=True):
-    """过 `qc.py` 的提示词门。返回 (verdict, 失败项, 摘要)。"""
+def qc_prompt(text, has_role=False, need_text=True, role=None):
+    """过 `qc.py` 的提示词门。返回 (verdict, 失败项, 摘要)。
+
+    role = 逗号分隔的参考图相对路径；按张数硬校验 <imageN> 绑定与多人禁剪影。
+    """
     import qc
-    r = qc.check_prompt(text, has_role=has_role, need_text=need_text)
+    n_refs = len([x for x in str(role or "").split(",") if x.strip()]) or None
+    r = qc.check_prompt(text, has_role=has_role, need_text=need_text,
+                        role_count=n_refs)
     fails = [c["item"] + "：" + c["expect"] for c in r["checks"]
              if not c["ok"] and c["level"] == "fail"]
     return r["verdict"], fails, r["summary"]
@@ -258,7 +263,7 @@ def main() -> int:
     prompt = build_prompt(cfg, a.size, side=side, no_text=a.no_text, role=a.role or None)
     print(prompt)
     verdict, fails, summary = qc_prompt(prompt, has_role=bool(a.role),
-                                        need_text=not a.no_text)
+                                        need_text=not a.no_text, role=a.role)
     print("\n--- 提示词质检：%s（%s）---" % (verdict, summary), file=sys.stderr)
     for f in fails:
         print("  FAIL " + f, file=sys.stderr)

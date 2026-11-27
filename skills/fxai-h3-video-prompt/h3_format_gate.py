@@ -99,6 +99,13 @@ _LOOK_WORDS = (
 # 音频定义行 / 说话人绑定
 _AUDIO_DEF_LINE = re.compile("^<Audio (\\d+)>")
 _AUDIO_BIND = re.compile("<Subject (\\d+)>\\s*\\(S(\\d+)\\)")
+# 🔴 主体定义里的 <Audio N> 整行白名单（2026-11-27 用户定）：
+# 标准格式只有一句——`<Audio N> 是 <Subject M> (Sx) 的参考音色。`（官方 §2.4
+# `<Audio 1> is the voice-timbre reference for <Subject 1> (S1).`）。
+# 整行必须精确贴合模板：只查行首会放过「是…参考音色，作为…音色参考」这类
+# 同义重复句，多一个「作为…参考」就拦。
+_AUDIO_DEF_STD = re.compile(
+    "^<Audio (\\d+)> 是 <Subject (\\d+)> \\(S(\\d+)\\) 的参考音色。$")
 
 _PIC_LIST = "<Picture \\d+>(?:、<Picture \\d+>)*"
 
@@ -127,9 +134,23 @@ _PRESERVED_KINDS = (
         "道具形制、材质与颜色完全沿用 <Picture \\d+>；"
         "不新增参考图里没有的任何部件。$")),
 )
-_PRESERVED_AUDIO = re.compile("^<Audio (\\d+)>: fully_copy - .+$")
+# 延续分析的音频行白名单：官方 §4.1 两种标记都收
+#   fully_copy —— 整条原音频复用作成片音轨
+#   reference  —— 只借音色 / 节奏 / 风格，不复制信号（短剧音色参考走这条）
+# 按官方原句，延续分析的音频行**不带 (Sx)**（(Sx) 只在主体定义绑定行和详细描述台词行出现）
+_PRESERVED_AUDIO = re.compile("^<Audio (\\d+)>: (fully_copy|reference|partially_copy|weak_reference) - .+$")
 
 # ---------------------------------------------------------------- 段④ 通用正则
+
+# 🔴 `<Subject N>` 后标点白名单（2026-11-28 用户定，短剧 / 多参考台词行通用）：
+#   只允许 ① `(Sx)` 说话人别名；② 空白后直接接正文（汉字 / 字母 / 数字）；③ 行尾。
+#   逗号 / 顿号等任何标点一律拦：`看着 <Subject 2>，说：` → `看着 <Subject 2>说：`。
+_SUBJ_TAIL_WHITELIST = re.compile(r"^(?:\s*\(S\d+\)|\s*[\u4e00-\u9fa5A-Za-z0-9]|\s*$)")
+
+# 🔴 动作拍主体打头（2026-11-28 用户定）：修饰语不许前置到 `<Subject N>` 之前。
+#   正例：`<Subject 1> 手指点了点桌面，眉眼带笑的看着 <Subject 2>`
+#   反例：`眉眼带笑的 <Subject 1> 看着 <Subject 2> 时手指点了点桌面`
+_PRE_SUBJ_MODIFIER_RE = re.compile(r"([\u4e00-\u9fa5]{2,12}的)\s*<Subject\s*\d+\s*>")
 
 _AT_RE = re.compile("At \\d{2}:\\d{2}\\.\\d{3}")
 _D_TAG_RE = re.compile("<d>")
@@ -281,6 +302,14 @@ def _audit_subject_defs(i, body, ctx):
     for line in _nonempty_lines(body):
         am = _AUDIO_DEF_LINE.match(line)
         if am:
+            # 🔴 整行白名单：音色绑定只有一种标准写法，不许同义重复、不许自造修饰
+            sm = _AUDIO_DEF_STD.match(line)
+            if not sm:
+                bad.append("镜%d 「主体定义」<Audio %s> 行不符合白名单句式（%s…）——"
+                           "只能写一句 `<Audio N> 是 <Subject M> (Sx) 的参考音色。`，"
+                           "不要把「是…参考音色」和「作为…音色参考」叠在一句里，也不加其它修饰"
+                           % (i, am.group(1), line[:40]))
+                continue
             bind = _AUDIO_BIND.search(line)
             if _ALIAS_REF.search(line) and not bind:
                 bad.append("镜%d 「主体定义」<Audio %s> 行里的 (Sx) 没挂到主体上——"
@@ -403,19 +432,24 @@ def _audit_retention(i, body, ctx):
                 "背景与画面中已有元素完全沿用 <Picture N>；不新增参考图里没有的任何内容。`" % i]
     bad = []
     kinds_hint = " / ".join(k for k, _ in _PRESERVED_KINDS)
-    for line in _nonempty_lines(body):
+    # 🔴 (Sx) 检查按行做，音频行豁免：音频行若带 (Sx) 单独提示，普通行带 (Sx) 照旧拦。
+    lines = _nonempty_lines(body)
+    for line in lines:
         if _PRESERVED_AUDIO.match(line):
+            if _ALIAS_REF.search(line):
+                bad.append("镜%d 「延续分析」音频行带 (Sx)——官方原句音频行不写说话人编号，"
+                           "写成 `<Audio N>: reference - …` 即可，(Sx) 只在主体定义绑定行出现"
+                           % i)
             continue
         hit = [k for k, rgx in _PRESERVED_KINDS if rgx.match(line)]
         if hit:
+            if _ALIAS_REF.search(line):
+                bad.append("镜%d 「延续分析」出现 (Sx)——官方明确要求延续分析里不写 (Sx)，该段只写 <Subject N>"
+                           % i)
             continue
         bad.append("镜%d 「延续分析」不符合白名单句式（%s…）——只能照抄两类模板之一（%s），"
                    "面部 / 衣着 / 颜色等具体外观一个字都不写，也不带 (Sx) 说话人编号"
                    % (i, line[:34], kinds_hint))
-    al = _ALIAS_REF.search(body)
-    if al:
-        bad.append("镜%d 「延续分析」出现 (S%s)——官方明确要求延续分析里不写 (Sx)，该段只写 <Subject N>"
-                   % (i, al.group(1)))
     return bad
 
 
@@ -651,6 +685,23 @@ def _audit_detail(i, body, ctx):
             bad.append("镜%d 「详细描述」一行里塞了 %d 句台词——违反通用范式原则①「一拍一行」："
                        "一个时间点只做一件事，一句台词一行，各自带自己的 `At`" % (i, _n_d))
 
+    # 🔴 台词行 `<Subject N>` 后标点白名单（2026-11-28 用户定，短剧 / 多参考共用）：
+    # 只落在含 <d> 的台词行引导句上，不碰 MV 里合法的并列顿号等非台词句。
+    # 白名单之外一律拦：逗号 / 顿号 / 冒号 / 句号等都不许直接贴在主体标签后。
+    for _l in _lines:
+        if "<d>" not in _l:
+            continue
+        _lead = _l.split("<d>", 1)[0]
+        for _m in _DETAIL_SUBJ.finditer(_lead):
+            if _SUBJ_TAIL_WHITELIST.match(_lead[_m.end():]):
+                continue
+            _next = _lead[_m.end():].lstrip()[:1]
+            bad.append("镜%d 台词行 `<Subject %s>` 后直接跟了标点「%s」——"
+                       "白名单只允许 ` (Sx)` 别名或直接接正文（汉字 / 字母 / 数字），"
+                       "逗号、顿号等任何标点都不许加；"
+                       "改成「看着 <Subject %s>说：」，不要写「看着 <Subject %s>，说：」"
+                       % (i, _m.group(1), _next, _m.group(1), _m.group(1)))
+
     # 🔴 通用范式槽位①「取景」+ 原则③「能拍出来才算」（2026-11-26 定，所有镜头通用）：
     # 动作落在手 / 膝 / 脚上（递、接过、放进、攥、捧、手心、跪、磕头），
     # 景别却是近景 / 特写，而 [Shot 1] 里没交代取景范围——这个部位就在框外，
@@ -717,6 +768,14 @@ def _audit_detail(i, body, ctx):
                    "「捧得死紧」→「两只手合起来包住、手指收拢」；"
                    "「猛地掀开」→「眼皮掀开、眼白先露出来」"
                    % (i, "、".join(_forms[:4])))
+
+    # 🔴 动作拍主体打头（2026-11-28 用户定，短剧 / 多参考共用）：
+    # 先有主体，再写动作 / 对谁做什么；表情、语气等修饰语放在主体之后，不许前置到标签前。
+    for _m in _PRE_SUBJ_MODIFIER_RE.finditer(_nd):
+        bad.append("镜%d 「详细描述」把修饰语「%s」写在主体标签前——"
+                   "每拍要主体打头：`<Subject N> + 动作 + 对谁`，修饰语放主体之后；"
+                   "改成「<Subject 1> 手指点了点桌面，眉眼带笑的看着 <Subject 2>」"
+                   % (i, _m.group(0).strip()))
 
     # 🔴 拟声词只进「整体音效」段：正文里的拟声词会被 H3 当台词念（第5集镜2「磨牙 / 吱呀」事故）。
     ono = _ONOMATOPOEIA_RE.findall(body_text)

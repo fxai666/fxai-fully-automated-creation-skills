@@ -1,0 +1,154 @@
+{
+  "44": {
+    "inputs": {
+      "ckpt_name": "stable_audio_3_medium.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Checkpoint加载器（Stable Audio 3）"
+    }
+  },
+  "45": {
+    "inputs": {
+      "clip_name": "t5gemma_b_b_ul2.safetensors",
+      "type": "stable_audio",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP（t5gemma）"
+    }
+  },
+  "51": {
+    "inputs": {
+      "seed": "fxai_seed"
+    },
+    "class_type": "SeedNode",
+    "_meta": {
+      "title": "种子"
+    }
+  },
+  "54": {
+    "inputs": {
+      "clip": [
+        "45",
+        0
+      ],
+      "text": "fxai_prompt"
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "配乐描述（英文最准）"
+    }
+  },
+  "59": {
+    "inputs": {
+      "clip": [
+        "45",
+        0
+      ],
+      "text": ""
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "负向提示词（留空）"
+    }
+  },
+  "48": {
+    "inputs": {
+      "seconds": "fxai_music_duration",
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentAudio",
+    "_meta": {
+      "title": "空音频Latent（seconds=精确时长，出片严格等长）"
+    }
+  },
+  "49": {
+    "inputs": {
+      "seed": [
+        "51",
+        0
+      ],
+      "steps": 8,
+      "cfg": 1.0,
+      "sampler_name": "lcm",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "44",
+        0
+      ],
+      "positive": [
+        "54",
+        0
+      ],
+      "negative": [
+        "59",
+        0
+      ],
+      "latent_image": [
+        "48",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器（固定8步+lcm，改大只变慢不提音质）"
+    }
+  },
+  "52": {
+    "inputs": {
+      "samples": [
+        "49",
+        0
+      ],
+      "vae": [
+        "44",
+        2
+      ]
+    },
+    "class_type": "VAEDecodeAudio",
+    "_meta": {
+      "title": "VAE解码音频"
+    }
+  },
+  "56": {
+    "inputs": {
+      "目录": "音乐配乐",
+      "audio_ui": "",
+      "音频": [
+        "52",
+        0
+      ]
+    },
+    "class_type": "FxAiAudioManager",
+    "_meta": {
+      "title": "凤希AI - 音频管理器"
+    }
+  },
+  "57": {
+    "inputs": {
+      "audio": [
+        "56",
+        2
+      ]
+    },
+    "class_type": "PreviewAudio",
+    "_meta": {
+      "title": "试听"
+    }
+  },
+  "58": {
+    "inputs": {
+      "anything": [
+        "56",
+        2
+      ]
+    },
+    "class_type": "FxAiCleanGpu",
+    "_meta": {
+      "title": "清理显存占用"
+    }
+  }
+}

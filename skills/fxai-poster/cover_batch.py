@@ -48,15 +48,56 @@ def _side_for_generation(cfg, cli_side):
     return "right"      # 主体默认偏左，文字贴右；与 cover_side 的兜底一致
 
 
-def _qc_or_die(prompt, has_role, need_text, skip_qc):
+def _qc_or_die(prompt, has_role, need_text, skip_qc, role=None):
     print("\n----- 生图提示词 -----\n" + prompt)
-    verdict, fails, summary = CP.qc_prompt(prompt, has_role=has_role, need_text=need_text)
+    verdict, fails, summary = CP.qc_prompt(prompt, has_role=has_role,
+                                           need_text=need_text, role=role)
     print("----- 提示词质检：%s（%s）-----" % (verdict, summary))
     for f in fails:
         print("  FAIL " + f)
     if verdict == "FAIL" and not skip_qc:
         raise SystemExit("提示词未过质检门，先补要素；确要强出加 --skip-qc")
     print()
+
+
+def _cast_count(proj, cfg):
+    """画面声明的人物数：优先 gen_brief.cast_count，其次 制作.json 的 characters。"""
+    brief = cfg.get("gen_brief") or {}
+    if isinstance(brief.get("cast_count"), int) and brief["cast_count"] > 0:
+        return brief["cast_count"]
+    for name in ("制作.json", "封面.json"):
+        p = pathlib.Path(proj) / name
+        if not p.is_file():
+            continue
+        try:
+            d = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        cast = d.get("characters")
+        if isinstance(cast, list) and cast:
+            return len(cast)
+    return 0
+
+
+def _role_gate(proj, cfg, role, skip_qc):
+    """出图前硬校验：画面几人就必须传几张参考图（2026-11-27《风过长椅》坑）。"""
+    n_refs = len([x for x in str(role or "").split(",") if x.strip()])
+    n_cast = _cast_count(proj, cfg)
+    if n_refs == 0:
+        if n_cast >= 2 and not skip_qc:
+            raise SystemExit(
+                "FAIL 角色参考图门禁：项目声明 %d 位人物（男女主），但 --gen-role 未传任何参考图。\n"
+                "  画面几人就传几张、逗号分隔：--gen-role \"song_charview/000.png,song_charview/001.png\"\n"
+                "  不许用「逆光剪影 / 只留轮廓」规避第二张脸——那样男主会变成与正片不符的路人。"
+                % n_cast)
+        return
+    if n_cast and n_refs < n_cast and not skip_qc:
+        raise SystemExit(
+            "FAIL 角色参考图门禁：项目声明 %d 位人物，--gen-role 只传了 %d 张（%s）。\n"
+            "  少传的那位人物会因没有参考图被模型自由发挥，与正片形象对不上。\n"
+            "  按画面人数补齐参考图（逗号分隔），主体描述用 <image1>/<image2> 逐一锁定。"
+            % (n_cast, n_refs, role))
+    print("[gate] 人物 %d 位 / 参考图 %d 张 —— 数量校验通过" % (n_cast, n_refs))
 
 
 def _fit_to_key(src, dst, w, h):
@@ -81,7 +122,7 @@ def _generate_cover(cfg, size_key, side, role, outdir, custom_prompt, skip_qc, f
     outdir.mkdir(parents=True, exist_ok=True)
 
     prompt = custom_prompt or CP.build_prompt(cfg, size_key, side=side, role=role or None)
-    _qc_or_die(prompt, has_role=bool(role), need_text=True, skip_qc=skip_qc)
+    _qc_or_die(prompt, has_role=bool(role), need_text=True, skip_qc=skip_qc, role=role)
 
     raw = outdir / ("_gen_raw_%dx%d.png" % (gw, gh))
     print("生图直接带字：%dx%d → 成品 %dx%d  role=%s  文字侧=%s"
@@ -105,7 +146,7 @@ def _generate_base(cfg, size_key, side, role, outdir, custom_prompt, skip_qc, fo
     outdir.mkdir(parents=True, exist_ok=True)
     prompt = custom_prompt or CP.build_prompt(cfg, size_key, side=side,
                                               no_text=True, role=role or None)
-    _qc_or_die(prompt, has_role=bool(role), need_text=False, skip_qc=skip_qc)
+    _qc_or_die(prompt, has_role=bool(role), need_text=False, skip_qc=skip_qc, role=role)
     dst = outdir / ("_base_generated_%dx%d.png" % (gw, gh))
     print("叠加层专用无字底图：%dx%d  role=%s（本路线才写「画面无任何文字」）"
           % (gw, gh, role or "纯场景"))
@@ -180,6 +221,10 @@ def main() -> int:
         raise SystemExit("缺配置文件：%s" % cfg_p)
     c = json.loads(cfg_p.read_text(encoding="utf-8"))
     outdir = pathlib.Path(a.outdir) if a.outdir else proj / "封面"
+
+    # 生图路线先过角色参考图数量门（画面几人传几张），再进提示词门
+    if a.gen_cover or a.gen_base:
+        _role_gate(proj, c, a.gen_role, a.skip_qc)
 
     # ---- 路线 A：生图直接带字，出完就结束，绝不叠第二层字 ----
     if a.gen_cover:

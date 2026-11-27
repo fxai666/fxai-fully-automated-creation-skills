@@ -86,7 +86,7 @@ def ssh_cred_from_api(iid, token=None):
 
     用法：
         from xgy_cfg import ssh_cred_from_api
-        cred = ssh_cred_from_api("zrqvtdc4oip7xew9")
+        cred = ssh_cred_from_api("<实例ID>")
     """
     if not iid:
         raise RuntimeError("缺少实例 ID。传 --id <实例ID>，或先用配置绑定：改 ~/.workbuddy/fxai_global.json 的 xgy_instance_id")

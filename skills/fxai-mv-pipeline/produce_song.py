@@ -1618,6 +1618,15 @@ def main():
             print("[error] --mv-only 但未找到足够素材（人物 %s / 场景 %d，需要 %d）" % (
                 char_rels, len(scene_rels), n_total))
             return
+        # ★ 多人物 MV 角色图数量硬门禁：声明几个人就必须有几张角色参考图。
+        # 少一张那位角色在渲染时没有参考，会被自由发挥画错形象（《风过长椅》封面坑同型）。
+        if len(char_defs) > 1 and len(char_rels) < len(char_defs):
+            raise RuntimeError(
+                "角色参考图数量不足：歌曲声明 %d 位人物（%s），实际只找到 %d 张角色图（%s）。\n"
+                "  缺的那位在渲染时没有参考图，会被模型自由发挥、与正片形象对不上。\n"
+                "  补齐 _assets.json 的 char_rels（每人一张，顺序与 characters 一致）后重跑。"
+                % (len(char_defs), "、".join(x[0] for x in char_defs),
+                   len(char_rels), "、".join(char_rels)))
         print("[assets] 人物 %s ｜场景 %d 张：%s" % (", ".join(char_rels), len(scene_rels),
                                                 ", ".join(x.split("/")[-1] for x in scene_rels)))
         results["char_rels"] = char_rels

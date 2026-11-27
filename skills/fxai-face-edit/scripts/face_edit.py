@@ -14,7 +14,7 @@
                 "label": "仙宫云 · FaceFusion",
                 "provider": "xiangongyun",
                 "backend": "facefusion",
-                "instance_id": "rwk8ewpc07nv86ep",
+                "instance_id": "<实例ID>",
                 "instance_name": "凤希AI-人脸替换",
                 "scheme": "https",
                 "cloud_url": "https://<实例ID>-80.container.x-gpu.com",

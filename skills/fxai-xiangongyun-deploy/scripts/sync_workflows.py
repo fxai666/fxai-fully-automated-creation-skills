@@ -20,10 +20,12 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import glob
 import hashlib
 import json
 import os
+import posixpath
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -40,6 +42,25 @@ def swap_banner_bytes(text: bytes, src: str, dst: str) -> bytes:
 
 SECRET_NAME = "xianggongyun.json"
 DEFAULT_REMOTE = "/root/ComfyUI/user/default/workflows"
+# 发布版排除名单：源目录下这个 txt，一行一个文件名，# 开头为注释。
+# 名单里的工作流只在本地保留，不推线上（与 repo_sync.py 共用同一份名单）。
+EXCLUDE_FILE = "发布版排除名单.txt"
+
+
+def load_exclude(src: str) -> set:
+    path = os.path.join(src, EXCLUDE_FILE)
+    if not os.path.exists(path):
+        return set()
+    names = set()
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            s = line.strip()
+            if not s or s.startswith("#"):
+                continue
+            if not s.endswith(".json"):
+                s += ".json"
+            names.add(s)
+    return names
 
 
 def _workflows_cfg() -> dict:
@@ -161,8 +182,8 @@ def comfy_root_of(path):
     return r
 
 
-def upload_release_banner(sftp, remote, src="", cwd=""):
-    """最佳努力把真实品牌图上传到云端 input/（非致命，失败只告警）。"""
+def _banner_bytes(cwd="", src=""):
+    """取真实品牌图的字节：先本地 input/，再本技能包 assets 的 base64。返回 (bytes, 来源描述) 或 (b"", "")。"""
     cands = []
     if cwd:
         cands.append(os.path.join(cwd, "input", REAL))
@@ -170,14 +191,33 @@ def upload_release_banner(sftp, remote, src="", cwd=""):
         cands.append(os.path.join(comfy_root_of(os.path.abspath(src)), "input", REAL))
     cands.append(os.path.join(comfy_root_of(os.path.abspath(cwd or ".")), "input", REAL))
     lp = next((c for c in cands if os.path.isfile(c)), "")
-    if not lp:
-        print("  · 本地未找到 %s，跳过品牌图上传（云端若已有则无碍）" % REAL)
+    if lp:
+        return open(lp, "rb").read(), "本地 input"
+    # 别人只装技能包、本机 input/ 没图时，从技能包自带 base64 解码
+    assets = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
+    bp = os.path.join(assets, REAL + ".b64")
+    if os.path.isfile(bp):
+        try:
+            return base64.b64decode(open(bp, "rb").read()), "技能包 assets base64"
+        except Exception as e:
+            print("  ! 品牌图 base64 解码失败：%s" % e)
+    return b"", ""
+
+
+def upload_release_banner(sftp, remote, src="", cwd=""):
+    """最佳努力把真实品牌图上传到云端 input/（非致命，失败只告警）。"""
+    data, origin = _banner_bytes(cwd, src)
+    if not data:
+        print("  · 未找到 %s（本地 input 与技能包 assets 都没有），跳过品牌图上传" % REAL)
         return
-    rp = os.path.join(comfy_root_of(remote), "input", REAL)
+    # remote 是云端 POSIX 路径，必须用 posixpath 拼；用 os.path 在 Windows 上
+    # 会生成 /root/ComfyUI\input\xxx 这种带反斜杠的怪文件名。
+    rp = posixpath.join(comfy_root_of(remote).replace("\\", "/"), "input", REAL)
     try:
-        sftp.put(lp, rp)
+        with sftp.open(rp, "wb") as f:
+            f.write(data)
         sftp.chmod(rp, 0o644)
-        print("  · 已上传品牌图 %s -> %s" % (REAL, rp))
+        print("  · 已上传品牌图 %s -> %s（来源：%s）" % (REAL, rp, origin))
     except Exception as e:
         print("  ! 品牌图上传失败（非致命，可手动补）：%s" % e)
 
@@ -207,6 +247,12 @@ def main():
     files = sorted(glob.glob(os.path.join(src, "*.json")))
     if not files:
         raise SystemExit("源目录里没有 json: %s" % src)
+
+    excluded = load_exclude(src)
+    skipped = [os.path.basename(p) for p in files if os.path.basename(p) in excluded]
+    files = [p for p in files if os.path.basename(p) not in excluded]
+    if skipped:
+        print("排除名单（只在本地，不推线上）：" + "、".join(skipped))
 
     local = {}
     print("源目录: %s" % src)

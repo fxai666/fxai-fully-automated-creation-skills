@@ -30,6 +30,7 @@ for _dep in ("fxai-workflow", "fxai-common"):
 
 # ---------- 共享客户端：镜像全部公开符号 ----------
 import comfy_client as _C  # noqa: E402
+import relay_plan as _relay  # noqa: E402  （场景续接自动判定，fxai-common）
 
 _g = globals()
 for _n in dir(_C):
@@ -523,12 +524,15 @@ def build_ref2va_prompt(char_descs, scene_desc, audio_label=None, kind="sing",
 
 def build_multiref_lines(char_rels, scene_rels, char_descs=None, scene_descs=None,
                          ref2va_prompts=None, seg_prompts=None, kind="sing",
-                         prop_rels=None):
+                         prop_rels=None, relay_flags=None, auto_relay=True):
     """多参考模式：构建 mv-minimax-multiref.json 的 lines_data（fxai_prompt）JSON 字符串。
 
     ★ 图片顺序：人物图在前、场景图在后 → <Picture 1>~<Picture K> = 人物1~K，
       <Picture K+1> = 场景图；提示词里 <Subject 1>~<Subject K> = 各人物，<Subject K+1> = 场景。
-    - 每行 = [int序号, 该行 Ref2VA 六段式提示词, "人物图1,...,场景图N"]。
+    - 每行 = [int序号, 该行 Ref2VA 六段式提示词, "人物图1,...,场景图N", 场景续接(bool)]。
+    - ★ 第 4 项是「本段要不要续下一段」：相邻两段用**同一张场景图**时自动 True，
+      换场景自动 False（H3 的 K 帧钉整帧，换场景还续会把旧场景带进来）。
+      显式控制传 relay_flags（True/False/None 列表，None = 按自动规则）。
     - seg_prompts 优先（逐段模式：行数 = 音频分段数，第 i 段精确命中第 i 行）；
       否则按场景数生成（服务端按音频分段循环取值）。
     纯函数，不改动任何工作流 dict。
@@ -563,15 +567,21 @@ def build_multiref_lines(char_rels, scene_rels, char_descs=None, scene_descs=Non
         return ",".join(char_rels + ([srel] if srel else []) + (prop_rels or []))
 
     rows = []
+    keys = []   # 每行的场景标识，喂 relay_plan 判同场景
     if seg_prompts:
         n_scene = len(scene_rels)
         for i, prompt in enumerate(seg_prompts):
-            rows.append([10, prompt, _row_imgs(scene_rels[i % n_scene])])
+            srel = scene_rels[i % n_scene]
+            rows.append([10, prompt, _row_imgs(srel)])
+            keys.append(srel or "")
     else:
         for i, (srel, sdesc) in enumerate(zip(scene_rels, scene_descs)):
             prompt = (ref2va_prompts[i] if (ref2va_prompts and i < len(ref2va_prompts))
                       else build_ref2va_prompt(char_descs, sdesc, kind=kind))
             rows.append([10, prompt, _row_imgs(srel)])
+            keys.append(srel or "")
+
+    _relay.apply(rows, keys, explicit=relay_flags, auto=auto_relay)
     return json.dumps(rows, ensure_ascii=False, separators=(",", ":"))
 
 
@@ -752,7 +762,8 @@ def gen_video(mode, aud_rel, char_rel=None, scene_ref=None,
               seg_prompts=None, char_descs=None, subdir=None, prompt_out=None,
               start_index=None, end_index=None, model=None,
               kind="sing", prefix=PREFIX_MV, audio_subdir="audio_input", out_dir=None,
-              multiref_landscape=False, prop_rel=None, allow_no_outfit=False):
+              multiref_landscape=False, prop_rel=None, allow_no_outfit=False,
+              relay_flags=None, auto_relay=True):
     """用一段音频生成一条视频（MiniMax 三模式）。
 
     - mode: "single" 单场景（一张参考图）| "multi" 多场景（一个图片目录，服务端轮换）
@@ -810,7 +821,8 @@ def gen_video(mode, aud_rel, char_rel=None, scene_ref=None,
         prop_rels = prop_rel if isinstance(prop_rel, list) else ([prop_rel] if prop_rel else [])
         lines = build_multiref_lines(char_rels, scene_rels, char_descs=_char_descs,
                                      scene_descs=scene_descs, ref2va_prompts=ref2va_prompts,
-                                     seg_prompts=seg_prompts, kind=kind, prop_rels=prop_rels)
+                                     seg_prompts=seg_prompts, kind=kind, prop_rels=prop_rels,
+                                     relay_flags=relay_flags, auto_relay=auto_relay)
         # 人物图在前：引用角色底图时必写穿搭+发型（char_descs 本就是穿搭描述，正常都会过）
         check_outfit(lines, (char_rels[0] if char_rels else char_rel), allow_no_outfit)
         # 多参考固定标准尺寸：默认竖屏 768×1280，横屏（multiref_landscape）1280×768。

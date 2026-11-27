@@ -2,7 +2,7 @@
 
 本目录集中存放「凤希 AI 全家桶」所有 ComfyUI 工作流 JSON，**跨技能共享**：各技能一律读这一份，重复、版本漂移、命名冲突都不会发生。
 
-> **命名约定**：**只有技能文件夹**加 `fxai-` 前缀（与他人技能命名区分开），**工作流文件本身不加 `fxai-` 前缀**。目录名 `fxai-workflow` 保留前缀，作为这套工作流的整体隔离边界；工作流文件名用 `<类别>-<模型>-<用途>[_api].json` 命名（如 `mv-minimax-single.json` / `img-qwen21-process.json` / `music-yue2.json`），**显式带模型 token**（kling / sdxl / yue3…），换模型不撞名、可区分。工作流**内部占位符仍统一用 `fxai_xxx`**（如 `fxai_prompt`/`fxai_seed`/`fxai_outputdir`），这是节点机制，保持原样。
+> **命名约定**：**只有技能文件夹**加 `fxai-` 前缀（与他人技能命名区分开），**工作流文件本身不加 `fxai-` 前缀**。目录名 `fxai-workflow` 保留前缀，作为这套工作流的整体隔离边界；工作流文件名用 `<类别>-<模型>-<用途>[_api].json` 命名（如 `mv-minimax-single.json` / `img-qwen21-process.json` / `music-yue2-api.json`），**显式带模型 token**（kling / sdxl / yue3…），换模型不撞名、可区分。工作流**内部占位符仍统一用 `fxai_xxx`**（如 `fxai_prompt`/`fxai_seed`/`fxai_outputdir`），这是节点机制，保持原样。
 
 ## 命名规范（硬性）
 
@@ -15,14 +15,15 @@
 - **类别（category）**：用连字符的业务前缀，标明业务域
  - `mv` —— 音乐 MV（单/多/多参考）
  - `img` —— 千问2.1 生图（图片处理/三视图/四视图）
- - `music` —— 音乐生成（Yue2）
+ - `music` —— 音乐生成（SA3 专用配乐 / Yue2 / MiniMax Music 3）
  - `shortdrama` —— 短剧（影视剧场双采版）
  - `narrate` —— 数字人口播（**待接入**）
  - `dance` —— 舞蹈（**待接入**）
 - **模型（model）**：紧跟类别的模型 token，标明该工作流跑哪个模型（换模型不撞名、可区分）
  - `minimax` —— MiniMax Hailuo H3（视频生成，MV/短剧共用）
  - `qwen21` —— 千问2.1（图片生成，视图/场景图）
- - `yue2` —— Yue2（音乐生成）
+ - `yue2` —— Yue2（音乐生成，出歌）
+ - `sa3` —— Stable Audio 3（**专用配乐**：纯器乐垫底、seconds 精确等长，配乐默认走这条）
  - （未来可扩展：`kling` / `sdxl` / `yue3` …）
 - **用途（purpose）**：`single` / `multi` / `multiref` / `process` / `threeview` / `fourview` / `yue2` / `filmdrama` …
 - **`_api` 后缀（可选）**：表示「自包含 API 模板」——内部已写死参数、运行时由代码直接改节点，不依赖 `fxai_xxx` 占位符替换。
@@ -41,11 +42,12 @@
 | `img-qwen21-process.json` | `16.json` | img | 图片处理(场景图) | 占位符版 | fxai-scene-gen（`WF_IMG`） |
 | `img-qwen21-threeview.json` | `17.json` | img | 三视图 | 占位符版 | fxai-fourview-gen（`WF_THREEVIEW`） |
 | `img-qwen21-fourview.json` | `18.json` | img | 四视图 | 占位符版 | fxai-fourview-gen（`WF_FOURVIEW`） |
-| `music-yue2.json` | `19.json` | music | Yue2 音乐生成 | 占位符版 | fxai-mv-pipeline（`WF_MUSIC`） |
+| `music-yue2-api.json` | `19.json`（占位符版） | music | Yue2 音乐生成 | 占位符版（seed/风格/歌词三个占位符，可传参） | fxai-mv-pipeline（`WF_MUSIC`）、fxai-yue2、fxai-slide-video |
+| `music-sa3-api.json` | `音乐配乐SA3.json`（本机 ComfyUI 用户工作流） | music | **专用配乐 BGM** | 占位符版（`fxai_prompt`/`fxai_seed`/`fxai_music_duration`） | fxai-slide-video（`sv_bgm.py`，**配乐默认档**） |
+| `music-minimax3-api.json` | `MiniMax Music 3` 导出 | music | 出歌 / 男女对唱 | 自包含 API 版 | fxai-slide-video（带唱档） |
 | `mv-minimax-single-api.json` | `MiniMax无限时长数字人MV单场景双采版V1API.json` | mv | 单场景 | 自包含 API 版 | 备份/对照 |
 | `mv-minimax-multi-api.json` | `MiniMax无限时长数字人MV多场景双采版V1API.json` | mv | 多场景 | 自包含 API 版 | 备份/对照 |
 | `mv-minimax-multiref-api.json` | `MiniMax无限时长数字人MV多参考V2(双采版)API.json` | mv | 多参考 | 自包含 API 版 | 备份/对照 |
-| `music-yue2-api.json` | `Yue2音乐生成V1API.json` | music | 音乐 | 自包含 API 版 | 备份/对照 |
 | `img-qwen21-process-api.json` | `千问2.1图片处理API.json` | img | 图片处理 | 自包含 API 版 | 备份/对照 |
 | `img-qwen21-threeview-api.json` | `千问2.1三视图V1API.json` | img | 三视图 | 自包含 API 版 | 备份/对照 |
 | `img-qwen21-fourview-api.json` | `千问2.1四视图V1API.json` | img | 四视图 | 自包含 API 版 | 备份/对照 |
@@ -54,7 +56,7 @@
 | `vc-uvr-vocalsep-api.json` | （占位模板） | vc | 人声分离(换模型备用) | 占位模板 | 备用，不参与运行 |
 | `face-restore-lite.json` | `人脸精修轻量链V1API.json` | face | 人脸精修(全脸·分段) | 占位符版 | fxai-face-edit（`resolve_wf("facerestore")`，默认模型 `lite`，入口 `scripts/face_restore.py`） |
 | `h3-char-swap-api.json` | `凤希AI-H3角色替换循环分段V1.json` | face | 角色替换(整片换人换装·分段) | 占位符版 | fxai-face-edit（`resolve_wf("charswap")`，默认模型 `h3`，入口 `scripts/char_swap.py`） |
-| `upscale-fvsr.json` | `视频超分精修V1API.json` | upscale | 视频超分+修脸(分段) | 占位符版 | fxai-video-upscale（`resolve_wf("upscale","fvsr")`，入口 `scripts/video_upscale.py`） |
+| `upscale-relayvsr.json` | `视频超分RelayVSR.json`（UI 版） | upscale | 视频超分(分段·固定2×) | 占位符版 | fxai-video-upscale（`resolve_wf("upscale","relay")`，入口 `scripts/video_upscale.py`） |
 | `img-moss-process-api.json` | `MOSS-Image指令编辑API.json` | img | 图片指令编辑(在原图上改) | 自包含 API 版 | `resolve_wf("imgedit","moss")`，无独立技能入口，调用方直接提交 |
 
 ## 代码如何加载

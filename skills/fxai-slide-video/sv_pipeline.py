@@ -134,7 +134,7 @@ def main():
                     help="--bgm auto 带唱时的歌词文本")
     ap.add_argument("--bgm-lyrics-file", dest="bgm_lyrics_file", default=None,
                     help="--bgm auto 带唱时从 .txt 读歌词")
-    ap.add_argument("--bgm-model", dest="bgm_model", default=None, choices=["minimax3", "yue2"],
+    ap.add_argument("--bgm-model", dest="bgm_model", default=None, choices=["sa3", "minimax3", "yue2"],
                     help="--bgm auto 用哪个音乐模型（默认 minimax3）")
     ap.add_argument("--cover", default=None,
                     help="视频封面 PNG：烧完字幕就铺首帧。铺封面排在 BGM 之前，"

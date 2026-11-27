@@ -199,15 +199,17 @@ os.makedirs(OUT_DIR, exist_ok=True)
 # 模型维度集中登记在下方 WORKFLOWS 注册表；resolve_wf(task, model=None) 负责解析路径。
 # · mv-minimax-single.json = MiniMax Hailuo H3 单场景
 # · img-qwen21-process.json = 千问2.1 场景图
-# · music-yue2.json = Yue2 音乐生成
+# · music-yue2-api.json = Yue2 音乐生成
 # · vc-melband-vocalsep-api.json = Mel-Band RoFormer 人声分离
 
 # ---------- 模型注册表：任务 -> {模型slug: 工作流文件名} ----------
 # slug 约定：minimax = MiniMax Hailuo H3（视频）、qwen21 = 千问2.1（图片）、yue2 = Yue2（音乐）。
 WORKFLOWS = {
-    # 音乐生成：yue2（本地 YuE2，结构标签，无男女声标签）
+    # 音乐生成：sa3（Stable Audio 3 专用配乐——纯器乐垫底、seconds 精确等长，**配乐默认走这条**）
+    #           yue2（本地 YuE2，结构标签，出歌，无男女声标签）
     #           minimax3（MiniMax Music 3，支持男女对唱——人声性别/音色写在 Caption 的 Vocal Details）
-    "music": {"yue2": "music-yue2.json", "minimax3": "music-minimax3-api.json"},
+    "music": {"sa3": "music-sa3-api.json", "yue2": "music-yue2-api.json",
+              "minimax3": "music-minimax3-api.json"},
     "charview4": {"qwen21": "img-qwen21-fourview.json"},
     "charview3": {"qwen21": "img-qwen21-threeview.json"},
     "scene": {"qwen21": "img-qwen21-process.json"},
@@ -232,10 +234,11 @@ WORKFLOWS = {
     # h3 = MiniMax H3 singularity 底座 + turbo8step / character_swap / Motion_Repair 三条 LoRA
     # 调用入口见 fxai-face-edit/scripts/char_swap.py
     "charswap": {"h3": "h3-char-swap-api.json"},
-    # 视频超分（本机 ComfyUI · 分段→FxAiVideoUpscale 自研超分→FxAiFaceRestoreLiteV2 修脸/换脸→合并）
-    # fvsr = 自研超分权重（models/FlashVSR/），任意倍数 1.0~4.0，精修恒在链路里
+    # 视频超分（本机 ComfyUI · 分段→RelayVSR x2 原生节点→合并，纯放大，链上无人脸精修）
+    # relay = ComfyUI 核心原生链（UNETLoader/VAELoader + RelayVSRConditioning + KSampler 1step + VSRDecode），
+    #         权重 relayvsr_x2_lightx2v_int8_convrot + relayvsr_flash_vae_x2_fp32，**固定 2 倍**
     # 调用入口见 fxai-video-upscale/scripts/video_upscale.py
-    "upscale": {"fvsr": "upscale-fvsr.json"},
+    "upscale": {"relay": "upscale-relayvsr.json"},
     # 图片指令编辑（本机 ComfyUI · MOSS-Image 底座 + 编辑 LoRA，喂一张已有的图 + 一句改法，出改后的图）
     # moss = moss_image_sft_bf16 + moss_image_edit_lora_rank_64，CLIP qwen3.5_9b、VAE flux2-vae
     # 与 scene（千问2.1 按提示词重画）的分工：imgedit 是「在原图上改」（保留构图/主体），scene 是「照描述画新的」
@@ -1371,7 +1374,7 @@ def _type_ok(val, spec_type):
 
 
 def _check_multiref_lines(ld):
-    'lines_data 必须是合法 JSON 字符串，或解析后为非空 list，每行 [int, str(提示词), str(图片列表)]。\n占位符注入后 lines_data 已是 list，故同时接受 str/list。'
+    'lines_data 必须是合法 JSON 字符串，或解析后为非空 list，每行 [int, str(提示词), str(图片列表), bool(场景续接) 可选]。\n第 4 项 = 本段要不要续下一段（缺省 False = 断开）；同场景跨分镜由 relay_plan 自动勾。\n占位符注入后 lines_data 已是 list，故同时接受 str/list。'
 
     if isinstance(ld, str):
         try:
@@ -1393,18 +1396,21 @@ def _check_multiref_lines(ld):
             raise ValueError("lines_data 第 %d 行第1列应为非空提示词，实际 %r" % (i, r[1]))
         if not isinstance(r[2], str) or not r[2].strip():
             raise ValueError("lines_data 第 %d 行第2列应为非空图片列表，实际 %r" % (i, r[2]))
+        # 第 4 项可选：本段要不要续下一段（场景续接）。老数据只有 3 项 = 断开。
+        if len(r) >= 4 and not isinstance(r[3], bool):
+            raise ValueError("lines_data 第 %d 行第3列应为 bool(场景续接)，实际 %r" % (i, r[3]))
     return True
 
 
 # 各工作流传值规范（节点 id + 字段 + 期望类型）。kind 与 gen_* 调用时传入的值对应。
 WF_SPECS = {
     "music": {
-        "desc": "音乐生成（两套工作流任选其一：Yue2 / MiniMax Music 3）",
+        "desc": "音乐生成（三套工作流任选：Stable Audio 3 专用配乐 / Yue2 / MiniMax Music 3）",
         # ★ any_of：同一 kind 下有多套模型工作流时，任一变体校验通过即放行。
         #   新增音乐模型只需在此追加一个分支，不动其它任务。
         "any_of": [
             {
-                "desc": "Yue2（music-yue2.json）",
+                "desc": "Yue2（music-yue2-api.json）",
                 "required": [
                     ("42", "style", str), ("42", "lyrics", str), ("42", "mode", str),
                     ("45", "style", str), ("45", "lyrics", str), ("45", "mode", str),
@@ -1418,6 +1424,14 @@ WF_SPECS = {
                 "required": [
                     ("54", "caption", str), ("54", "lyrics", str),
                     ("54", "max_duration", (int, float)),
+                    ("56", "目录", str),
+                ],
+            },
+            {
+                "desc": "Stable Audio 3（music-sa3-api.json，专用配乐：纯器乐、时长精确到秒）",
+                "required": [
+                    ("54", "text", str),
+                    ("48", "seconds", (int, float)),
                     ("56", "目录", str),
                 ],
             },
@@ -1468,11 +1482,11 @@ WF_SPECS = {
         ],
     },
     "upscale": {
-        "desc": "视频超分（自研超分，可选叠加人脸精修）",
+        "desc": "视频超分（RelayVSR x2 原生节点，固定 2 倍）",
         "required": [
             ("108", "视频文件", str),
             ("111", "结束索引", int),   # 传 -1 跑完全部段，0 只跑第一段
-            ("125", "value", str),      # 放大倍数走公式节点，超分与精修共用
+            ("130", "unet_name", str),  # RelayVSR x2 主模型
         ],
     },
 }

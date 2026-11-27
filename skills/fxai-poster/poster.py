@@ -348,6 +348,111 @@ def attach_to_video(png, video, out=None, frames=10, fps=None,
     return out
 
 
+def finish_with_cover(png, video, ass, out=None, frames=10, fps=None,
+                      bed_db=-56.0, bed_hz=25, verify=True):
+    """一次成型出 MV 成片：封面段 + 字幕烧录 + 2000k 交付编码，一次 filter_complex 搞定。
+
+    🔴 为什么要有这个函数（MV 交付最省流程，2026-11-27 立）：
+      旧两步法 = `attach_to_video(贴封面, crf18/8M) → burn_subtitle(烧字幕, 2000k)`。
+      中间落一个高码率片（实测 5932 kbps / 172MB），再全片重编码一次到 2000k ——
+      两次全片重编码、多一个 172MB 中间文件、字幕被压两遍。
+      本函数把「拼封面段 + 烧字幕 + 交付编码」合成一次编码：从干净合并片（最高质量源）
+      一次成型到 ≤2000 kbps，只编码一遍，字幕边缘只被处理一次。
+      规格与判据见 fxai-standard/references/12 §「贴封面交付一次成型」。
+
+    ★ 字幕时间轴：字幕滤镜挂在 concat **之前**的正片分支 [1:v]，用原始「字幕.ass」
+      （**不平移**）。拼上封面段后正片整体后移封面段时长，字幕自动对齐 ——
+      无需另造「字幕_带封面.ass」平移版。若把字幕挂在 concat 之后的 [v] 上，
+      才必须平移，别那么做。
+
+    ★ 音轨：MV 的正片音轨本身就是配乐，封面段用 25Hz 垫音（同 attach_to_video），
+      不需要再混 BGM（「BGM 最后混」那条是短剧/幻灯片场景，MV 不适用）。
+
+    编码出口：码率参数只走 fxai-common/video_encode.py 的 delivery_venc()（2000k 硬上限），
+    本函数不写死 -b:v / -crf；完成后 assert_delivery_bitrate() 验收。
+    """
+    import audio_video as av
+    _common = os.path.join(os.path.dirname(os.path.dirname(SKILL)), "fxai-common")
+    if _common not in sys.path:
+        sys.path.insert(0, _common)
+    import video_encode as venc
+
+    ffmpeg = av.ffmpeg_libass()
+    ffprobe = os.path.join(os.path.dirname(ffmpeg),
+                           "ffprobe.exe" if ffmpeg.endswith(".exe") else "ffprobe")
+    os.makedirs(BURN, exist_ok=True)
+    b_png, b_in, b_ass, b_out = "poster.png", "in.mp4", "sub.ass", "finish.mp4"
+    shutil.copy(png, os.path.join(BURN, b_png))
+    shutil.copy(video, os.path.join(BURN, b_in))
+    shutil.copy(ass, os.path.join(BURN, b_ass))
+
+    def probe(sel, entries):
+        return subprocess.run([ffprobe, "-v", "error", "-select_streams", sel,
+                               "-show_entries", entries, "-of", "csv=s=x:p=0", b_in],
+                              cwd=BURN, capture_output=True, text=True).stdout.strip()
+
+    a = probe("a:0", "stream=sample_rate,channels")
+    rate, ch = ("48000", "2")
+    if "x" in a:
+        r0, c0 = a.split("x")[:2]
+        rate = "48000" if r0 not in ("44100", "48000") else r0
+        ch = c0 or "2"
+    ch = "2" if ch == "2" else "1"
+    layout = "stereo" if ch == "2" else "mono"
+
+    v = probe("v:0", "stream=width,height")
+    pw, ph = (v.split("x")[:2] if "x" in v else ("1080", "1920"))
+    pw, ph = int(pw) // 2 * 2, int(ph) // 2 * 2
+    if not fps:
+        fr = probe("v:0", "stream=r_frame_rate")
+        try:
+            n, d = (fr.split("/") + ["1"])[:2]
+            fps = int(round(float(n) / float(d or 1)))
+        except Exception:
+            fps = 24
+    fps = int(fps) or 24
+    frames = max(1, int(frames))
+    cover_sec = frames / float(fps)
+
+    fit = ("scale=%d:%d:force_original_aspect_ratio=decrease,"
+           "pad=%d:%d:(ow-iw)/2:(oh-ih)/2" % (pw, ph, pw, ph))
+    # 字幕挂在 concat 之前的正片分支 [1:v]：用原始时间轴，拼封面后自动对齐
+    fc = (
+        "[0:v]%s,setsar=1,fps=%d,trim=end_frame=%d,setpts=PTS-STARTPTS,"
+        "format=yuv420p[v0];"
+        "[1:v]%s,setsar=1,fps=%d,format=yuv420p,subtitles=filename=%s[v1];"
+        "[v0][v1]concat=n=2:v=1:a=0[v];"
+        "[2:a]volume=%.1fdB,aformat=sample_fmts=fltp:sample_rates=%s:channel_layouts=%s,"
+        "atrim=end=%.4f,asetpts=PTS-STARTPTS,afade=t=out:st=%.3f:d=0.06[a0];"
+        "[1:a]aformat=sample_fmts=fltp:sample_rates=%s:channel_layouts=%s,"
+        "asetpts=PTS-STARTPTS[a1];"
+        "[a0][a1]concat=n=2:v=0:a=1[a]"
+        % (fit, fps, frames, fit, fps, b_ass,
+           bed_db, rate, layout, cover_sec, max(0.0, cover_sec - 0.06),
+           rate, layout)
+    )
+    cmd = [ffmpeg, "-y", "-hide_banner", "-loglevel", "warning",
+           "-loop", "1", "-framerate", str(fps), "-t", "%.4f" % (cover_sec + 0.2), "-i", b_png,
+           "-i", b_in,
+           "-f", "lavfi", "-t", "%.4f" % (cover_sec + 0.2),
+           "-i", "sine=frequency=%d:sample_rate=%s" % (int(bed_hz), rate),
+           "-filter_complex", fc, "-map", "[v]", "-map", "[a]"]
+    cmd += venc.delivery_venc(audio_copy=False, audio_bps=192000)
+    cmd += ["-r", str(fps), "-g", str(fps * 2), "-profile:v", "high", "-level", "4.1",
+            "-ar", rate, "-ac", ch, b_out]
+    r = subprocess.run(cmd, cwd=BURN, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    if r.returncode != 0:
+        raise SystemExit("! 一次成型失败：%s" % r.stderr[-1600:])
+
+    out = out or video.replace(".mp4", "_成片.mp4")
+    shutil.copy(os.path.join(BURN, b_out), out)
+    if verify:
+        kbps = venc.assert_delivery_bitrate(out, ffprobe)
+        print("[finish_with_cover] 交付码率 %.0f kbps ≤ 2000 ✓" % kbps)
+    return out
+
+
 
 # ---------------------------------------------------------------- CLI
 

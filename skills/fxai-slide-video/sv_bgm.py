@@ -7,10 +7,10 @@
 
 音乐规格：**默认纯器乐**（铺垫不抢口播），也可按内容要带唱——带不带由内容定，不做强制工序。
   默认 `minimax3`（`music-minimax3-api.json`，MiniMax Music 3，输出 32kHz 立体声）。
-  备选 `yue2`（`music-yue2-api.json`）。
+  备选 `yue2`（`music-yue2-api.json` 占位符版，可传风格/歌词/种子）。
 
 两档人声：
-  `--vocal none`（默认）= 纯器乐。Caption 的 Vocal Details 明写「纯器乐、无人声」+ lyrics `[Instrumental]`，
+  `--vocal none`（默认）= 纯器乐。Caption 的 Vocal Details 只写正向的「纯器乐，全部为乐器演奏声」+ lyrics `[Instrumental]`，
      M3 不写这句人声会漂，写了才稳 —— 这是**提示词层面**的保证，无需再靠转写抽检。
   `--vocal "轻柔女声哼唱"` = 带唱。Vocal Details 换成这句描述，须同时给 `--lyrics` / `--lyrics-file`
      （有词的唱才有意义；没给歌词直接报错，不静默退化成器乐）。
@@ -40,7 +40,9 @@ _CAP_GLOBAL = (
     "全程铺底，中频留空不与人声抢位。场景：效率工具、创作工作台、城市通勤。"
     "混音干净，低频收敛，动态不大。\n"
 )
-_CAP_VOCAL_NONE = "Vocal Details: 纯器乐，全程无人声演唱，无和声、无呼吸声、无念白。\n"
+# ★ 白名单写法：只描述「是什么乐器在演」，不列「不要什么」——
+#   否定词会把概念送进模型（写 no humming 反而更容易召来哼唱）。
+_CAP_VOCAL_NONE = "Vocal Details: 纯器乐，全部为乐器演奏声。\n"
 _CAP_ARRANGE = (
     "Arrangement: 钢琴与合成器琶音从第一小节贯穿全曲；轻鼓点与贝斯在主段进入；弦乐长音铺底。"
     "每八小节轻微起伏一次，结尾自然收束不硬切。"
@@ -48,7 +50,22 @@ _CAP_ARRANGE = (
 DEFAULT_CAPTION = _CAP_GLOBAL + _CAP_VOCAL_NONE + _CAP_ARRANGE
 
 DEFAULT_YUE2_STYLE = (
-    "纯器乐，无人声演唱，现代氛围电子，92 BPM，钢琴与合成器琶音铺底，轻鼓点，克制不抢人声"
+    "纯器乐，现代氛围电子，92 BPM，钢琴与合成器琶音铺底，轻鼓点，克制不抢人声"
+)
+
+# SA3（Stable Audio 3）是**专用配乐模型**：英文提示词最准、天然无人声、seconds 精确控时长、
+# 出片严格等长（不用 loop 补）。默认值对应技能 assets/纯器乐配乐caption-耐听.txt 的英文版。
+# ★ 白名单写法（用户 2026-11-27 定）：只列「要什么乐器」，一句否定都不写。
+#   写 "no humming" 等于把 humming 这个词送进模型，反而容易召来人声；
+#   生成模型对否定词基本无感，对正向词敏感。同理不列 strings 持续音（最像人声哼鸣）。
+SA3_DEFAULT_CAPTION = (
+    "Warm bright acoustic instrumental underscore for a brand promo film, BPM 86, "
+    "listening-friendly memorable theme. "
+    "Instrumentation: solo piano carrying the melody, fingerpicked acoustic guitar arpeggios, "
+    "marimba accents, soft glockenspiel sparkle, warm round upright bass. "
+    "Mood: encouraging, calm, gently uplifting. "
+    "Mix: clean and spacious, restrained low end, smooth top end, gentle lift every eight bars, "
+    "natural decay at the end."
 )
 
 INSTRUMENTAL_LYRICS = "[Instrumental]"
@@ -56,7 +73,7 @@ INSTRUMENTAL_LYRICS = "[Instrumental]"
 # 只给了歌词、没写人声描述时的兜底人声（气声轻唱、靠后，最不容易抢口播）
 DEFAULT_VOCAL = "轻柔人声轻唱，气声，人声靠后，不抢正面口播"
 
-MAX_DURATION = {"minimax3": 300}     # 模型上限（yue2 工作流把 max_duration 锁在 360，无需传）
+MAX_DURATION = {"minimax3": 300, "sa3": 1000}   # 模型上限（yue2 工作流把 max_duration 锁在 360，无需传；sa3 为精确秒数 1~1000）
 
 # 带唱配乐默认音量更低：有词会和口播抢注意力，垫底要更靠后
 VOL_INSTRUMENTAL = 0.20
@@ -88,10 +105,15 @@ def _probe(path):
     return round(secs, 2), rate, ch, bits
 
 
-def build_caption(model="minimax3", style=None, vocal=None):
-    """按「纯器乐 / 带唱」两档拼提示词。纯器乐一律显式写无人声（M3 不写会漂出唱）。"""
-    model = (model or "minimax3").strip().lower()
+def build_caption(model="sa3", style=None, vocal=None):
+    """按「纯器乐 / 带唱」两档拼提示词。纯器乐档写正向白名单（纯器乐、乐器演奏），不列否定词。"""
+    model = (model or "sa3").strip().lower()
     vocal_txt = (vocal or "").strip()
+    # SA3 是专用配乐模型：英文提示词、天然无人声、没有歌词通道，不套 M3 的三段式
+    if model == "sa3":
+        if is_vocal(vocal_txt):
+            raise SystemExit("SA3 是专用配乐模型（纯器乐），不支持带唱；要带唱请用 --bgm-model minimax3")
+        return (style or SA3_DEFAULT_CAPTION)
     if is_vocal(vocal_txt):
         base = style or (
             "bpm 88，温暖克制的现代流行 / 城市民谣。情绪松弛、有呼吸感，"
@@ -108,11 +130,11 @@ def build_caption(model="minimax3", style=None, vocal=None):
     if style:
         return ((_CAP_GLOBAL + "风格倾向：" + style + "。\n" + _CAP_VOCAL_NONE + _CAP_ARRANGE)
                 if model == "minimax3"
-                else (style + "；纯器乐，无人声演唱，克制不抢人声"))
+                else (style + "；纯器乐，乐器演奏，克制不抢人声"))
     return DEFAULT_CAPTION if model == "minimax3" else DEFAULT_YUE2_STYLE
 
 
-def gen_bgm(out_dir, duration=60, style=None, model="minimax3", seed=0,
+def gen_bgm(out_dir, duration=60, style=None, model="sa3", seed=0,
             name=None, timeout=5400, vocal=None, lyrics=None):
     """生成一首配乐并下载到 out_dir，返回结果 dict（wav 为绝对路径）。
 
@@ -121,12 +143,18 @@ def gen_bgm(out_dir, duration=60, style=None, model="minimax3", seed=0,
     duration 只是「请求上限」，模型可提前收尾；短于成片由混音端 loop 补足。
     """
     cc = _cc()
-    model = (model or "minimax3").strip().lower()
-    if model not in ("minimax3", "yue2"):
-        raise SystemExit("--bgm-model 只支持 minimax3 / yue2，收到：%s" % model)
+    model = (model or "sa3").strip().lower()
+    # 模型清单以 fxai-workflow 的 WORKFLOWS 为准（单一真相源），本技能不另列一份
+    if model not in cc.WORKFLOWS["music"]:
+        raise SystemExit("--bgm-model 只支持 %s，收到：%s"
+                         % (" / ".join(cc.WORKFLOWS["music"]), model))
 
     vocal_txt = (vocal or "").strip()
     lyrics_txt = (lyrics or "").strip()
+    if model == "sa3" and is_vocal(vocal_txt):
+        raise SystemExit("SA3 是专用配乐模型（纯器乐），不支持带唱；要带唱请用 --bgm-model minimax3")
+    if model == "sa3":
+        lyrics_txt = INSTRUMENTAL_LYRICS
     has_lyrics = bool(lyrics_txt) and lyrics_txt != INSTRUMENTAL_LYRICS
     # 给了人声描述、或给了歌词，都按带唱处理（只给歌词没写人声 → 用默认描述，不静默忽略歌词）
     want_vocal = is_vocal(vocal_txt) or has_lyrics
@@ -144,7 +172,10 @@ def gen_bgm(out_dir, duration=60, style=None, model="minimax3", seed=0,
     out_dir = pathlib.Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     tag = name or ("bgm_%s" % time.strftime("%Y%m%d_%H%M%S"))
-    wf = _WF / ("music-minimax3-api.json" if model == "minimax3" else "music-yue2-api.json")
+    # ★ 工作流文件名统一从 fxai-workflow 的 WORKFLOWS 取（单一真相源），本文件不另存一份。
+    #   判据：带 -api 后缀不等于可调用，要看叶子节点是占位符还是实参快照。
+    #   实参快照（如历史上那份写死《一个人看月亮》的）传参会静默失效，已清出技能包。
+    wf = _WF / cc.WORKFLOWS["music"][model]
     if not wf.is_file():
         raise SystemExit("找不到音乐工作流：%s（fxai-workflow 是否完整分发？）" % wf)
 
@@ -178,7 +209,7 @@ def gen_bgm(out_dir, duration=60, style=None, model="minimax3", seed=0,
             "style": caption[:120]}
 
 
-def ensure(out_dir, duration=60, style=None, model="minimax3", **kw):
+def ensure(out_dir, duration=60, style=None, model="sa3", **kw):
     """给 sv_media / sv_pipeline 用的薄封装：失败时抛 SystemExit 并给中文提示。"""
     try:
         return gen_bgm(out_dir, duration=duration, style=style, model=model, **kw)
@@ -197,12 +228,14 @@ def main():
         description="幻灯片配乐自动生成（默认纯器乐，可按内容改为带唱；走 ComfyUI 接口取产物）")
     ap.add_argument("--out-dir", required=True, help="保存目录（一般 <项目>/配乐）")
     ap.add_argument("--duration", type=int, default=60, help="请求时长秒（上限 300，短了混音端会 loop）")
-    ap.add_argument("--style", help="风格/气质描述（默认内置 caption；纯器乐时自动补「无人声」要求）")
+    ap.add_argument("--style", help="风格/气质描述（默认内置 caption；纯器乐时按白名单补「纯器乐·乐器演奏」）")
     ap.add_argument("--vocal", default="none",
                     help="人声：none（默认，纯器乐）或描述如「轻柔女声哼唱」（须配 --lyrics）")
     ap.add_argument("--lyrics", help="带唱时的歌词文本")
     ap.add_argument("--lyrics-file", dest="lyrics_file", help="带唱时从文件读歌词（.txt，UTF-8）")
-    ap.add_argument("--model", default="minimax3", choices=["minimax3", "yue2"])
+    ap.add_argument("--model", default="sa3", choices=["sa3", "minimax3", "yue2"],
+                    help="默认 sa3（Stable Audio 3 专用配乐模型：纯器乐、时长精确、出片严格等长）；"
+                         "minimax3 / yue2 是通用音乐模型（会漂人声）")
     ap.add_argument("--seed", type=int, default=0, help="0 = 随机")
     ap.add_argument("--name", help="文件名前缀（默认 bgm_时间戳）")
     ap.add_argument("--timeout", type=int, default=5400, help="等待出结果的最长秒数")

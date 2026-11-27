@@ -142,7 +142,7 @@ def main():
                          "copy=只按 --copy-from 找本地成品复制，找不到直接报错（不猜目录、不静默回退下载）")
     ap.add_argument("--copy-from", default="", help='仅 copy/auto 回退时用：本地成品候选根目录，多个用逗号分隔；'
                                                     '也可走环境变量 YUE2_COPY_FROM。★ 填挂载盘上的成品目录，ComfyUI 产出目录由服务端管理')
-    ap.add_argument("--workflow", default="", help="工作流文件名（在 fxai-workflow 内），默认 music-yue2.json")
+    ap.add_argument("--workflow", default="", help="工作流文件名（在 fxai-workflow 内），默认 music-yue2-api.json")
     ap.add_argument("--extra-params", default="", help='额外占位符 JSON，如 \'{"fxai_maxduration":120}\'')
     ap.add_argument("--timeout", type=int, default=3600, help="等待 ComfyUI 出结果的最长时间（秒）")
     ap.add_argument("--no-desc", action="store_true", help="只输出 JSON，不打中文描述")
@@ -164,7 +164,7 @@ def main():
     out_dir = args.out_dir or cc.OUT_DIR
     os.makedirs(out_dir, exist_ok=True)
 
-    wf_path = os.path.join(WF_DIR, args.workflow or "music-yue2.json")
+    wf_path = os.path.join(WF_DIR, args.workflow or "music-yue2-api.json")
     if not os.path.isfile(wf_path):
         ap.error("找不到工作流 %s（可用 --workflow 指定）" % wf_path)
 

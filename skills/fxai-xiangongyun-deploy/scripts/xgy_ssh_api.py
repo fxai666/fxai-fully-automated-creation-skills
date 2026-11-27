@@ -24,9 +24,9 @@ paramiko 依赖：
     ID 省略时取全局配置 xgy_instance_id；再没有则用令牌下唯一那台实例（多台要显式给）。
 
 例子：
-    python xgy_ssh_api.py run  zrqvtdc4oip7xew9 "hostname; uptime"
-    python xgy_ssh_api.py put  zrqvtdc4oip7xew9 ./patch.py /root/xgyscripts/patch.py
-    python xgy_ssh_api.py run  zrqvtdc4oip7xew9 "bash /scripts/start.d/comfyui.sh"
+    python xgy_ssh_api.py run  <实例ID> "hostname; uptime"
+    python xgy_ssh_api.py put  <实例ID> ./patch.py /root/xgyscripts/patch.py
+    python xgy_ssh_api.py run  <实例ID> "bash /scripts/start.d/comfyui.sh"
 """
 from __future__ import annotations
 

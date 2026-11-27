@@ -210,10 +210,24 @@ def build_doc(shots, ep_dir, w1="", board=None, width=1280, height=768, audio_mo
           "规则唯一权威来源：`fxai-h3-video-prompt/references/07-触发词挂载规范.md`。",
           "", "---", ""]
 
+    # 场景续接：与 build_lines_data 同一套判定（相邻两镜同场景 → 前一段勾），此处只用于标注
+    try:
+        _relay_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "fxai-common")
+        if _relay_dir not in sys.path:
+            sys.path.insert(0, _relay_dir)
+        import relay_plan as _relay
+        _relay_flags = _relay.plan([_relay.scene_key(s) for s in shots],
+                                  explicit=[_relay.explicit_flag(s) for s in shots])
+    except Exception:
+        _relay_flags = [False] * len(shots)
+
     for i, s in enumerate(shots, 1):
         nm = names.get(i)
+        _relay_txt = ("续下一镜（本镜末帧钉下一镜首帧）" if _relay_flags[i - 1]
+                      else "断开（本镜首帧自由生成）")
         L += ["## 镜头%d%s（%ds）" % (i, " · " + nm if nm else "", int(s["duration"])), "",
-              "**参考图**：%s" % ref_note(s.get("images") or [], idx_names), ""]
+              "**参考图**：%s" % ref_note(s.get("images") or [], idx_names),
+              "**场景续接**：%s" % _relay_txt, ""]
         for name, body in split_segments(_with_triggers(s)):
             L += ["### %s" % name, "", "```text", _unwrap(body), "```", ""]
         L += ["---", ""]

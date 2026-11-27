@@ -105,7 +105,7 @@ def gen_music(style, lyrics, duration=120, mode="full", tag=None, subdir="音乐
     """生成音乐。model=None → 按全局默认（yue2）；model="minimax3" → MiniMax Music 3。
 
     两套工作流的差异（决定了 style/lyrics 怎么写）：
-    · yue2（music-yue2.json）：style=YuE2 风格串（一句话式），lyrics 用结构标签
+    · yue2（music-yue2-api.json）：style=YuE2 风格串（一句话式），lyrics 用结构标签
       [主歌]/[副歌]/[桥段]/[尾奏]。mode/max_duration(360s)/输出目录锁死在工作流内，
       故 duration/mode 入参仅保留兼容性。
     · minimax3（music-minimax3-api.json）：style=**三段式结构化 Caption**
@@ -133,7 +133,8 @@ def gen_mv(mode, aud_rel, char_rel=None, scene_ref=None,
            size=SIZE["portrait_9x16"], tag=None, timeout=3600,
            char_desc=None, scene_desc=None, ref2va_prompts=None,
            seg_prompts=None, char_descs=None, subdir=None, prompt_out=None,
-           start_index=None, end_index=None, model=None, prop_rel=None):
+           start_index=None, end_index=None, model=None, prop_rel=None,
+           relay_flags=None, auto_relay=True):
     """生成 MV 视频（MiniMax 三模式：single 单场景 / multi 多场景 / multiref 多参考）。
 
     实现见公共件 fxai-audio-video（音频驱动 → 视频，数字人口播共用同一份）。
@@ -147,6 +148,7 @@ def gen_mv(mode, aud_rel, char_rel=None, scene_ref=None,
                      ref2va_prompts=ref2va_prompts, seg_prompts=seg_prompts, char_descs=char_descs,
                      subdir=subdir or ("mv_%s" % mode), prompt_out=prompt_out,
                      start_index=start_index, end_index=end_index, model=model,
+                     relay_flags=relay_flags, auto_relay=auto_relay,
                      kind="sing", prefix="mv",
                      multiref_landscape=(mode == "multiref"
                                          and int(size[0]) > int(size[1])),

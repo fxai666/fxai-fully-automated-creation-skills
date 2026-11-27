@@ -27,7 +27,9 @@ log() { echo "[$(ts)] $*" | tee -a "$REPORT"; }
 err() { echo "[$(ts)] [ERR] $*" | tee -a "$REPORT" >&2; }
 
 # 本机 curl 可能带代理环境变量，强制绕过本地回环
-CURL="curl -s --noproxy * --max-time 20"
+# 用函数 + --noproxy='*'（单引号保护 *）：若写成变量 CURL="... --noproxy * ..."，
+# 在 $CURL 未加引号展开时 * 会被 shell 展开成当前目录文件名，污染 -w '%{http_code}' 断言。
+curl_local() { curl -s --noproxy='*' --max-time 20 "$@"; }
 
 ############################################################
 # 1) 定位 ComfyUI
@@ -61,7 +63,7 @@ log "当前 ComfyUI 版本：${CV:-未知}"
 # 2) 升级前基线：object_info 节点数（升级后不该变少）
 ############################################################
 node_counts() {
-  $CURL http://127.0.0.1:8188/object_info 2>/dev/null \
+  curl_local http://127.0.0.1:8188/object_info 2>/dev/null \
     | python3 -c "import sys,json
 try:
     d=json.load(sys.stdin)
@@ -221,8 +223,8 @@ fi
 # 7) 验收：四服务探活 + 节点数不减少
 ############################################################
 step "验收"
-H=$($CURL -o /dev/null -w '%{http_code}' http://127.0.0.1:8188/fxai/health 2>/dev/null || echo 000)
-S=$($CURL -o /dev/null -w '%{http_code}' http://127.0.0.1:8188/system_stats 2>/dev/null || echo 000)
+H=$(curl_local -o /dev/null -w '%{http_code}' http://127.0.0.1:8188/fxai/health 2>/dev/null || echo 000)
+S=$(curl_local -o /dev/null -w '%{http_code}' http://127.0.0.1:8188/system_stats 2>/dev/null || echo 000)
 say "  /fxai/health = $H   /system_stats = $S"
 read -r AFTER_ALL AFTER_FXAI <<<"$(node_counts)"
 say "  升级后节点数：总 ${AFTER_ALL} / FxAi* ${AFTER_FXAI}（升级前 ${BEFORE_ALL}/${BEFORE_FXAI}）"

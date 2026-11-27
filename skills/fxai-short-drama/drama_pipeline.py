@@ -9,6 +9,7 @@ _VC_ROOT = _os.path.normpath(_os.path.join(
 if _VC_ROOT not in _sys.path:
     _sys.path.insert(0, _VC_ROOT)
 import video_encode as _venc
+import relay_plan as _relay      # 场景续接自动判定（fxai-common）
 # <<< 交付码率统一出口 <<<
 import json
 import os
@@ -999,8 +1000,9 @@ def inject_trigger_words(prompt, words):
     return line + "\n" + prompt
 
 
-def build_lines_data(shots, suppress_subtitles=True, no_humans=False, dynamic_action_check=True, world_constraint=None, auto_triggers=True, allow_audio=False):
-    '\nshots: list of dict\n    duration : int (秒)\n    prompt   : str (六段式提示词，无引用模式下不含 <Audio>)\n    images   : list[str] 相对 fxai/image/ 的路径，逗号分隔拼进第3元素\n返回 JSON 字符串\n\nsuppress_subtitles: 默认 True。在每条提示词末尾追加 negative_constraints 段，\n    把画面字幕/文字排除在生成之外（字幕统一后期烧录）。\nno_humans: 宠物/动物版短剧用 True。在每条提示词末尾追加 NO_HUMANS_BLOCK，\n    画面只保留拟人化动物角色，人类/真人/人群全部排除。\ndynamic_action_check: 默认 True。轻量校验每条镜头的「摘要/详细描述」是否含动态动词\n    （走/跑/敲/搭/烤/追/扔/拍手/蹦跳…）。H3 不会自动给背景动物编动作，缺动态描述时\n    背景动物会像贴图静止——此检查在组装阶段就提醒补上（见 SKILL.md 三之二）。\n'
+def build_lines_data(shots, suppress_subtitles=True, no_humans=False, dynamic_action_check=True, world_constraint=None, auto_triggers=True, allow_audio=False,
+                     auto_relay=True, relay_flags=None):
+    '\nshots: list of dict\n    duration : int (秒)\n    prompt   : str (六段式提示词，无引用模式下不含 <Audio>)\n    images   : list[str] 相对 fxai/image/ 的路径，逗号分隔拼进第3元素\n返回 JSON 字符串\n\nsuppress_subtitles: 默认 True。在每条提示词末尾追加 negative_constraints 段，\n    把画面字幕/文字排除在生成之外（字幕统一后期烧录）。\nno_humans: 宠物/动物版短剧用 True。在每条提示词末尾追加 NO_HUMANS_BLOCK，\n    画面只保留拟人化动物角色，人类/真人/人群全部排除。\ndynamic_action_check: 默认 True。轻量校验每条镜头的「摘要/详细描述」是否含动态动词\n    （走/跑/敲/搭/烤/追/扔/拍手/蹦跳…）。H3 不会自动给背景动物编动作，缺动态描述时\n    背景动物会像贴图静止——此检查在组装阶段就提醒补上（见 SKILL.md 三之二）。\nauto_relay: 默认 True。相邻两镜**同一场景**→ 前一段自动勾「场景续接」（第 4 项 True），\n    下一段拿上一段末帧做第 0 帧硬锚定，站位不跳；换场景自动断开（K 帧钉整帧，换场景续接会把旧场景带进来）。\n    场景标识取 shot 的「场景/场景图/scene」字段，没有则取 images 最后一张（约定人物在前、场景在后）。\nrelay_flags: 逐镜显式覆盖（True/False/None），None = 按 auto_relay 推断；\n    也可在 shot 里写 relay / 场景续接 / 续接 单镜覆盖。最后一段恒不续。\n'
 
 
 
@@ -1021,6 +1023,8 @@ def build_lines_data(shots, suppress_subtitles=True, no_humans=False, dynamic_ac
         # （显式布尔） > 关键词启发式。规则见 fxai-h3-video-prompt/references/07-触发词挂载规范.md。
 
     rows = []
+    _keys = []          # 每镜的场景标识（判「同场景」用）
+    _explicit = []      # 每镜的显式续接开关（shot 里写了 relay/场景续接 才非 None）
     for s in shots:
         dur = int(s["duration"])
         prompt = s["prompt"]
@@ -1077,6 +1081,13 @@ def build_lines_data(shots, suppress_subtitles=True, no_humans=False, dynamic_ac
         if world_constraint:
             prompt = prompt + "\n\nworld_setting:\n" + world_constraint
         rows.append([dur, prompt, ",".join(imgs)])
+        _keys.append(_relay.scene_key(s))
+        _explicit.append(_relay.explicit_flag(s))
+    # 场景续接：相邻两镜同一场景 → 前一段自动勾「续接下一段」；换场景自动断开。
+    # 勾在接缝的前一段（保存节点写 <段号+1>.pt，下一段拿它做第 0 帧硬锚定）。
+    _relay.apply(rows, _keys,
+                 explicit=(relay_flags if relay_flags is not None else _explicit),
+                 auto=auto_relay)
     return json.dumps(rows, ensure_ascii=False)
 
 
