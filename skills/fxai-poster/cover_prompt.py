@@ -18,6 +18,8 @@
 
 用法：
     python cover_prompt.py --project <作品目录> --size vert_9x16 --side right
+    python cover_prompt.py --project <作品目录> --size video_head --video <成片.mp4>
+    python cover_prompt.py --project <作品目录> --size video_head --video-size 1280x768
     python cover_prompt.py --project <作品目录> --size vert_9x16 --no-text  # 叠加层专用
 """
 from __future__ import annotations
@@ -29,6 +31,7 @@ import sys
 
 _HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE))
+import video_size as VS         # noqa: E402
 
 # 取自 `10` 册尺寸表：宽高必须是 32 的整数倍（1080 会被向下取整成 1056）
 GEN_PIXELS = {
@@ -37,6 +40,9 @@ GEN_PIXELS = {
     "square_1x1": (1024, 1024),
     "horiz_16x9": (1536, 864),
     "wechat_235": (1216, 512),
+    # 🔴 片头卡：最终尺寸必须等于成片分辨率，由 --video / --video-size 在运行时覆盖。
+    #    这里是兜底值；生图尺寸按成片宽高向上取 32 倍数，生成后只裁不缩。
+    "video_head": (1280, 768),
 }
 
 RATIO_WORD = {
@@ -45,6 +51,7 @@ RATIO_WORD = {
     "square_1x1": "1:1 方形画幅",
     "horiz_16x9": "16:9 横版画幅",
     "wechat_235": "2.35:1 横向宽幅",
+    "video_head": "1280×768 视频首帧画幅",
 }
 
 
@@ -249,12 +256,22 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="封面版式 → 生图提示词")
     ap.add_argument("--project", required=True, help="作品目录（含 封面.json）")
     ap.add_argument("--size", default="vert_9x16", help="尺寸 key")
+    ap.add_argument("--video", default="", help="成片 MP4；size=video_head 时自动读宽高")
+    ap.add_argument("--video-size", default="", help="显式视频宽高 WxH（优先于 --video）")
     ap.add_argument("--side", default="auto", help="left/right；auto 按配置的 text_side")
     ap.add_argument("--no-text", action="store_true", help="叠加层路线：出无字底图")
     ap.add_argument("--role", default="", help="角色参考图相对路径")
     a = ap.parse_args()
 
     cfg = json.loads((pathlib.Path(a.project) / "封面.json").read_text(encoding="utf-8"))
+    if a.size == "video_head":
+        (vw, vh), source = VS.resolve(video=a.video or None, size_text=a.video_size or None,
+                                      cfg=cfg, default=GEN_PIXELS["video_head"])
+        gw, gh = VS.native_size(vw, vh)
+        GEN_PIXELS["video_head"] = (gw, gh)
+        RATIO_WORD["video_head"] = "%d×%d 视频首帧画幅，画面铺满不留黑边" % (vw, vh)
+        print("[video] 片头卡尺寸 %dx%d（来源：%s），原生生图 %dx%d"
+              % (vw, vh, source, gw, gh), file=sys.stderr)
     side = a.side
     if side == "auto":
         side = cfg.get("text_side", "right")

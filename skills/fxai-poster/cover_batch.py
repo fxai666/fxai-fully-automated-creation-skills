@@ -16,6 +16,10 @@
 用法：
   python cover_batch.py --project <项目>                       # 已有底图 → 多尺寸叠加层出图
   python cover_batch.py --project <项目> --gen-cover           # 首选：生图直接带字，一步成图
+  python cover_batch.py --project <项目> --gen-cover --gen-size video_head \
+      --video <成片.mp4>                                        # 片头卡：尺寸自动跟随成片
+  python cover_batch.py --project <项目> --gen-cover --gen-size video_head \
+      --video-size 1280x768                                     # 或显式传视频宽高
   python cover_batch.py --project <项目> --gen-base            # 叠加路线：生图出无字底图
   python cover_batch.py --project <项目> --only vert_9x16,horiz_16x9
   python cover_batch.py --project <项目> --side right
@@ -34,6 +38,7 @@ sys.path.insert(0, str(_HERE))
 import cover_styles as CS       # noqa: E402
 import cover_side as SIDE       # noqa: E402
 import cover_prompt as CP       # noqa: E402
+import video_size as VS         # noqa: E402
 
 
 def _reg():
@@ -100,17 +105,33 @@ def _role_gate(proj, cfg, role, skip_qc):
     print("[gate] 人物 %d 位 / 参考图 %d 张 —— 数量校验通过" % (n_cast, n_refs))
 
 
-def _fit_to_key(src, dst, w, h):
-    """生图尺寸是 32 倍数（10 册），按 key 尺寸等比缩放后落盘。"""
+def _fit_to_key(src, dst, w, h, native=None, size_key="", anchor="center"):
+    """落盘到目标尺寸。
+
+    🔴 video_head（片头卡）：生图在 32 倍数上，最终必须 == 视频实际尺寸，
+       只按 crop_box 裁切，**绝不 resize**（缩放会把文字边缘抹糊）。
+    其他平台 key：沿用原有「按 key 尺寸缩放落盘」行为。
+    """
     from PIL import Image
     im = Image.open(src).convert("RGB")
-    if im.size != (w, h):
+    if size_key == "video_head":
+        nw, nh = native or im.size
+        if im.size != (nw, nh):
+            raise SystemExit("片头卡生图尺寸异常：期望 %dx%d，实得 %dx%d"
+                             % (nw, nh, im.size[0], im.size[1]))
+        if (w, h) != (nw, nh):
+            box = VS.crop_box((nw, nh), (w, h), anchor=anchor)
+            print("片头卡只裁不缩：生图 %dx%d → 裁 %s → 成片 %dx%d"
+                  % (nw, nh, box, w, h))
+            im = im.crop(box)
+    elif im.size != (w, h):
         im = im.resize((w, h), Image.LANCZOS)
     im.save(dst)
     return dst
 
 
-def _generate_cover(cfg, size_key, side, role, outdir, custom_prompt, skip_qc, force=False):
+def _generate_cover(cfg, size_key, side, role, outdir, custom_prompt, skip_qc,
+                    force=False, native=None, anchor="center"):
     """路线 A：版式排版说明写进提示词 → 生图直接把字画在画面上 → 不叠字。"""
     import poster
     reg = _reg()
@@ -125,6 +146,9 @@ def _generate_cover(cfg, size_key, side, role, outdir, custom_prompt, skip_qc, f
     _qc_or_die(prompt, has_role=bool(role), need_text=True, skip_qc=skip_qc, role=role)
 
     raw = outdir / ("_gen_raw_%dx%d.png" % (gw, gh))
+    if size_key == "video_head":
+        print("🔴 片头卡尺寸跟随成片：最终 %dx%d，原生生图 %dx%d（只裁不缩）"
+              % (tw, th, gw, gh))
     print("生图直接带字：%dx%d → 成品 %dx%d  role=%s  文字侧=%s"
           % (gw, gh, tw, th, role or "纯场景", side))
     poster.gen_image(str(raw), gw, gh, prompt, subdir="cover_gen",
@@ -133,7 +157,7 @@ def _generate_cover(cfg, size_key, side, role, outdir, custom_prompt, skip_qc, f
     if not raw.is_file():
         raise SystemExit("生图未产出文件：%s" % raw)
     out = outdir / ("封面_%s_%dx%d_生图带字.png" % (cfg["title"], tw, th))
-    _fit_to_key(raw, out, tw, th)
+    _fit_to_key(raw, out, tw, th, native=(gw, gh), size_key=size_key, anchor=anchor)
     print("成品（不叠字，文字由生图渲染）：%s" % out)
     print("🔴 逐字核对文案，错字漏字重出，不修补（10 册硬规则）")
     return out
@@ -171,6 +195,15 @@ def main() -> int:
     ap.add_argument("--gen-base", action="store_true",
                     help="【例外】生图出无字底图，供多尺寸叠加层复用")
     ap.add_argument("--gen-size", default="vert_9x16", help="生图尺寸 key，默认 vert_9x16")
+    ap.add_argument("--video", default="",
+                    help="成片 MP4；gen-size=video_head 时用 ffprobe 自动读宽高（首选）")
+    ap.add_argument("--video-size", default="",
+                    help="显式指定视频宽高 WxH（优先级高于 --video；无法读视频时用）")
+    ap.add_argument("--crop-anchor", default="center",
+                    choices=["center", "left", "right", "top", "bottom"],
+                    help="片头卡从 32 倍数原生图裁回视频尺寸时的取景锚点，默认 center")
+    ap.add_argument("--resolve-size", action="store_true",
+                    help="只打印片头卡最终/原生尺寸并退出，不生图（供程序化校验）")
     ap.add_argument("--gen-role", default="", help="角色参考图相对路径；留空=不含参考图")
     ap.add_argument("--gen-prompt", default="", help="自定义提示词全文，覆盖自动拼装")
     ap.add_argument("--skip-qc", action="store_true", help="跳过提示词质检门（不推荐）")
@@ -222,6 +255,39 @@ def main() -> int:
     c = json.loads(cfg_p.read_text(encoding="utf-8"))
     outdir = pathlib.Path(a.outdir) if a.outdir else proj / "封面"
 
+    # ---- 🔴 片头卡尺寸来源：视频实际宽高，不手填 cover_sizes.json ----
+    requested_keys = [x.strip() for x in a.only.split(",") if x.strip()]
+    project_keys = c.get("sizes") or []
+    will_make_head = (a.gen_size == "video_head") or (
+        not a.gen_cover and
+        (("video_head" in requested_keys) if requested_keys else ("video_head" in project_keys)))
+    native = None
+    if will_make_head:
+        fallback = (reg["sizes"]["video_head"]["w"], reg["sizes"]["video_head"]["h"])
+        (vw, vh), source = VS.resolve(video=a.video or None, size_text=a.video_size or None,
+                                      cfg=c, default=fallback)
+        gw, gh = VS.native_size(vw, vh)
+        spec = reg["sizes"]["video_head"]
+        spec["w"], spec["h"] = vw, vh
+        CP.GEN_PIXELS["video_head"] = (gw, gh)
+        CP.RATIO_WORD["video_head"] = "%d×%d 视频首帧画幅，画面铺满不留黑边" % (vw, vh)
+        native = (gw, gh)
+        print("[video] 片头卡最终尺寸 %dx%d（来源：%s）；原生生图 %dx%d → 只裁不缩"
+              % (vw, vh, source, gw, gh))
+        if a.resolve_size:
+            print("RESULT final=%dx%d native=%dx%d source=%s"
+                  % (vw, vh, gw, gh, source))
+            return 0
+        if not a.gen_cover:
+            raise SystemExit("FAIL 片头卡只能走 --gen-cover（文字生在图上、只裁不缩）。"
+                             "叠加层路线会 scale 缩放，禁用；改用 "
+                             "--gen-cover --gen-size video_head --video <成片.mp4>")
+    elif a.resolve_size:
+        raise SystemExit("--resolve-size 需配合 --gen-size video_head 使用")
+    elif (a.video or a.video_size):
+        print("WARN --video/--video-size 只对 gen-size=video_head 生效；"
+              "平台双封面仍按 cover_sizes.json 的 vert_9x16 + horiz_16x9 出图。")
+
     # 生图路线先过角色参考图数量门（画面几人传几张），再进提示词门
     if a.gen_cover or a.gen_base:
         _role_gate(proj, c, a.gen_role, a.skip_qc)
@@ -230,7 +296,8 @@ def main() -> int:
     if a.gen_cover:
         side = _side_for_generation(c, a.side)
         _generate_cover(c, a.gen_size, side, a.gen_role, outdir,
-                        a.gen_prompt, a.skip_qc, a.force)
+                        a.gen_prompt, a.skip_qc, a.force,
+                        native=native, anchor=a.crop_anchor)
         return 0
 
     # ---- 路线 B / 已有底图：叠加层出多尺寸 ----
@@ -274,7 +341,7 @@ def main() -> int:
     params = set(inspect.signature(fn).parameters) if fn else set()
     kw = {k: v for k, v in kw.items() if k in params}
 
-    keys = [x.strip() for x in a.only.split(",") if x.strip()] or c.get("sizes") or None
+    keys = requested_keys or project_keys or None
     name = "封面_%s" % c["title"]
 
     print("作品：%s   样式：%s   底图：%s" % (c["title"], style, pathlib.Path(bg).name))

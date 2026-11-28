@@ -24,11 +24,12 @@ agent_created: true
 | `references/09-质检门禁.md` | **交付前必读**：三道门的判据与返修路径 |
 | `references/10-千问2.1提示词规范.md` | **写提示词必读**：六段骨架、引号规则、人物绑定、尺寸、跨技能调用 |
 | `references/11-封面多尺寸与平台规格.md` | 跨平台封面：尺寸 key / 留白侧 / 生图优先 / 验收 |
-| `references/svg-icons.md`、`references/infographic-template.html` | 23 组内联 SVG 图标；信息图版式实例（只作参考） |
+| `references/svg-icons.md`、`infographic-template.html` | 图标与信息图版式实例 |
 | `poster.py`、`cover_batch.py` | 出图入口；`--gen-cover` 带字 / `--gen-base` 底图 |
 | `cover_styles.py`、`cover_side.py` | 9 种样式（`render` / `render_matrix`）；按留白判文字侧 |
 | `cover_prompt.py` | 版式 → 生图提示词，六段骨架第三段写足排版 |
-| `cover_sizes.json` | 尺寸与站点规格唯一真源 |
+| `cover_sizes.json` | 平台封面尺寸与站点规格唯一真源（片头卡尺寸不写死，运行时取视频） |
+| `video_size.py` / `check_head_size.py` | 视频宽高探测、32 倍数换算、片头卡尺寸门禁 |
 | `qc.py` | 三检 `pre`/`prompt`/`post`/`types` |
 
 **只读对应的那一册，其余一律不读。**
@@ -52,8 +53,7 @@ agent_created: true
 | 步骤 / 盘点 | `list` 清单三条 | 必填 |
 | 短剧 / 剧集截帧 | `still` 剧照压底 | 成片剧照 |
 
-前 4 个是常用档，后 5 个由标题专属词触发（词表见 `05` 册）。`封面.json` 不写 `style` 就自动选，
-全不命中时有底图走 `photo_big`、没底图走 `cream_capsule`；显式指定永远优先。
+前 4 个常用，后 5 个由标题专属词触发（词表见 `05` 册）。不写 `style` 自动选：有底图 `photo_big`、无底图 `cream_capsule`；显式指定优先。
 
 ## 质检门禁（交付前必过，三道门）
 
@@ -72,8 +72,9 @@ python qc.py post --img 封面.png --kind record_cover      # 另外两门：pro
 
 ## 硬规则
 
-1. 🔴 **尺寸随用途，以 `cover_sizes.json` 的 key 为准**：竖版封面 `vert_9x16`
-   （1080×1920）、横版 `horiz_16x9`（1920×1080）；其余按需指定 key，本文件不写像素。
+1. 🔴 **尺寸随用途，以 `cover_sizes.json` 的 key 为准**：竖版 `vert_9x16`、横版 `horiz_16x9`；其余按需指定 key，本文件不写像素。
+   🔴 **片头卡例外**：尺寸 = **成片实际分辨率**，`cover_batch.py --gen-size video_head --video <成片.mp4>`
+   自动取（或 `--video-size WxH`），32 倍数生图后只裁不缩，禁手填、禁缩放。见 `04` 册。
 2. 🔴 截图与 ffmpeg 临时文件落系统临时目录的 `fxai_burn/poster/`（脚本自建、ASCII 路径），产物拷回项目——中文路径会让 `file://` 与 ffmpeg 滤镜解析失败。
 3. 🔴 配色只改 `themes/*.css` 变量，HTML 内不硬写颜色。
 4. 🔴 字体走 `fxai-standard` 06 册白名单；本机缺失时回退系统已装中文字体并在交付清单登记。
@@ -87,14 +88,11 @@ python qc.py post --img 封面.png --kind record_cover      # 另外两门：pro
 11. 🔴 **信息块 ≥3 走信息图版式**（`06` 册）；单张封面只承载一个主张。
 12. 🔴 **可读性门禁**（`07` 册）：对比度正文 ≥4.5:1、大字 ≥3:1，缩略图 200px 主标可读，换画幅不裁切；图标用内联 SVG，色值写死十六进制。
 13. 🔴 **交付前必过三道质检门**（`09` 册）：任一 FAIL 不交付；底图不合格重出。
-14. 🔴 **封面尺寸只认 key，默认出两张**：像素与各站规格只写 `cover_sizes.json`；
-    台账只引 `vert_9x16` / `horiz_16x9`，项目 `封面.json` 的 `sizes` 只列这两个 key，
-    其余 key 用户指定才生成。**平台上传框比例（抖音竖 3:4 / 横 4:3）**
-    是平台裁切框，不构成第三张；竖排文字落 3:4 安全区内。见 `11` 册。
+14. 🔴 **封面尺寸只认 key，默认出两张**：像素与各站规格只写 `cover_sizes.json`；`封面.json` 的 `sizes` 只列 `vert_9x16` / `horiz_16x9`，其余 key 用户指定才生成。平台上传框（抖音竖 3:4 / 横 4:3）是平台裁切框、不构成第三张，竖排文字落 3:4 安全区。见 `11` 册。
 15. 🔴 **封面文字默认由生图渲染**：排版说明经 `cover_prompt.py` 写进提示词第三段
     （`--gen-cover`）；「画面无文字」只用于叠加层路线（`--gen-base`）。见 `11` 册。
 
-16. 🔴 **单一职责**：生图委托 `fxai-scene-gen`，寻址归 `fxai-workflow`；浏览器走 `fxai-slide-video` 的 `gpu.chrome_exe()`，ffmpeg 走 `fxai-audio-video` 的 `av.ffmpeg_libass()`。本技能不配服务地址、不写死可执行路径
+16. 🔴 **单一职责**：生图委托 `fxai-scene-gen`，寻址归 `fxai-workflow`；浏览器用 `fxai-slide-video` 的 `gpu.chrome_exe()`，ffmpeg 用 `fxai-audio-video` 的 `av.ffmpeg_libass()`。本技能不配服务地址、不写死可执行路径
 
 以上 5–8 条写法见 `02-网页模式版式.md`。
 
@@ -118,15 +116,8 @@ web 模式排版参数（`--theme` / `--kicker` / `--sub` / `--keys`）见 `02` 
 
 ## 片头信息贴片
 
-铺首帧要叠「出品 / 剧名 / 集名 / 卖点 / 署名」用 `intro_card.py`；命令、蒙版与裁切见
-`04-接入视频首帧.md`「片头信息贴片」。
+铺首帧叠「出品 / 剧名 / 集名 / 卖点 / 署名」用 `intro_card.py`；命令、蒙版与裁切见 `04-接入视频首帧.md`。
 
-## 项目清单（页面按它显示进度）
+## 项目清单
 
-产物目录建好即建档、每完成一段更新；结构见 fxai-standard 01 册。
-
-```bash
-P=~/.workbuddy/skills/fxai-standard/scripts/fxai_project.py
-python "$P" init  "<项目>" --title <名称> --category image --skill fxai-poster
-python "$P" stage "<项目>" --script 2 --image 1 --audio 0 --video 0
-```
+产物目录建好即建档、每段更新：`fxai_project.py init "<项目>" --title <名称> --category image --skill fxai-poster`；结构见 fxai-standard 01 册。

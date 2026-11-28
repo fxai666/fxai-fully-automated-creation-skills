@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-"""H3 六段式提示词格式门禁（短剧 / 漫剧 / 多参考 Ref2VA）——**白名单式**。
+"""H3 六段式提示词格式门禁（短剧 / 漫剧 / 多参考 Ref2VA）——**句式范式式**。
 
-判定方式：每一段都有一份模板结构（正则 / 枚举白名单），**只有整段、整行匹配模板才放行**；
-只认模板命中，不做反向词表穷举。模板即规范，见
-`fxai-short-drama/references/01-提示词规范.md` 的「六段白名单模板」。
+判定方式：先把每段抽象成「句子骨架 + 槽位约束」的范式（见 PARADIGMS），
+再按范式校验句子落位、主体打头、动作拍 / 台词拍这几种真正能写的结构；
+不再靠零散词表正反穷举。范式即规范，见
+`fxai-short-drama/references/01-提示词规范.md` 的「句式范式」。
 
 六段逐段校验：
 
@@ -60,6 +61,24 @@ SEG_ALIAS = {
     "non_diegetic_music": "非叙事音乐",
 }
 
+# ================================================================ 句式范式（2026-11-28 用户定）
+# 摘要 / 详细描述不再靠零散词表拦人，而是先抽象出「句子骨架 + 槽位约束」：
+# 范式只规定结构（谁 + 做什么 + 对谁、句子落位），不枚举具体形容词与动作词。
+# 所有专项检查都从这里取正则，规则表 = 门禁事实源，改范式只改这一处。
+PARADIGMS = {
+    "摘要": {
+        "formula": "[任务前缀] → 站位句（谁在哪、隔多远） → 目标视频句（谁在场景里做什么）",
+        "goal": re.compile("目标视频(?:是|展示|采用).+"),
+        "scene_gaze": re.compile("(看向|转向|望向|盯着|注视|看着)\\s*<Subject\\s*(\\d+)\\s*>"),
+    },
+    "详细描述": {
+        "formula": "风格句 → [Shot 1] 建场句（机位句带出场景） → 动作拍 / 台词拍逐拍（主体打头）",
+        "action_beat": re.compile(r"^(?:At \d{2}:\d{2}\.\d{3},\s*)?(?:画外\s*)?<Subject\s*\d+\s*>"),
+        "dialogue_beat": re.compile(r"^At \d{2}:\d{2}\.\d{3},\s*<Subject\s*\d+\s*>\s*\(S\d+\).*说[：:]\s*<d>"),
+        "modifier_before_subject": re.compile(r"([\u4e00-\u9fa5]{2,12}的)\s*<Subject\s*\d+\s*>"),
+    },
+}
+
 # ---------------------------------------------------------------- 段① 主体定义
 
 _IDENT_WHITELIST = (
@@ -113,7 +132,9 @@ _PIC_LIST = "<Picture \\d+>(?:、<Picture \\d+>)*"
 
 _SUMMARY_REQUIRED = (
     ("任务类型标签", re.compile("^\\[reference generation[^\\]]*\\]")),
-    ("目标视频句", re.compile("目标视频(?:是|展示|采用).+?收在")),
+    # 官方 §3 只要求一段带任务前缀的简短总结，不强制「收在…」。
+    # 「收在」只在真有终点动作时才写；普通对话一句「目标视频是 A 与 B 在场景中对谈」即可。
+    ("目标视频句", PARADIGMS["摘要"]["goal"]),
 )
 _SUMMARY_PIC_ROLE_OPT = re.compile("%s\\s*作为[^。；]*参考" % _PIC_LIST)
 _STATION_MIN_CHARS = 8
@@ -146,11 +167,6 @@ _PRESERVED_AUDIO = re.compile("^<Audio (\\d+)>: (fully_copy|reference|partially_
 #   只允许 ① `(Sx)` 说话人别名；② 空白后直接接正文（汉字 / 字母 / 数字）；③ 行尾。
 #   逗号 / 顿号等任何标点一律拦：`看着 <Subject 2>，说：` → `看着 <Subject 2>说：`。
 _SUBJ_TAIL_WHITELIST = re.compile(r"^(?:\s*\(S\d+\)|\s*[\u4e00-\u9fa5A-Za-z0-9]|\s*$)")
-
-# 🔴 动作拍主体打头（2026-11-28 用户定）：修饰语不许前置到 `<Subject N>` 之前。
-#   正例：`<Subject 1> 手指点了点桌面，眉眼带笑的看着 <Subject 2>`
-#   反例：`眉眼带笑的 <Subject 1> 看着 <Subject 2> 时手指点了点桌面`
-_PRE_SUBJ_MODIFIER_RE = re.compile(r"([\u4e00-\u9fa5]{2,12}的)\s*<Subject\s*\d+\s*>")
 
 _AT_RE = re.compile("At \\d{2}:\\d{2}\\.\\d{3}")
 _D_TAG_RE = re.compile("<d>")
@@ -202,6 +218,18 @@ _BODY_RE = re.compile(
 # 目的：H3 会把 `</d>` 后没隔断的文字继续当台词念出来（镜11「磕了三个头」、镜15「讲着讲着睡着了」被配音）。
 # 官方画外音格式允许 `</d> while his lips remain completely closed.`（闭唇句紧跟台词块）。
 _D_CLOSE_OK_RE = re.compile("</d>\\s*[。.]|</d>\\s*while\\b|</d>\\s*$")
+
+# 🔴 元描述 / 否定式强调（2026-11-28 用户定）：H3 没有负向字段，
+# 否定式定格强调、全称量词 + 「都在动」这类句子会被当画面内容执行，还会被念进对白
+# （《带问题来》第 1/6/7/9/10 镜结尾胡言乱语实证）。背景动作只写正向、逐类给具体动作。
+_META_NEG_RE = re.compile(
+    r"(?:根本|绝对|绝非|并非|完全)?不是.{0,10}(?:定格|木头人|木偶|静止|不动|雕像)"
+    r"|(?:定格|木头人|木偶|静止|不动).{0,8}(?:根本不是|绝不是|绝非|并非|绝对不是)"
+    r"|(?:每一个|每个人|所有人|人人|各自|各个).{0,8}(?:都在动|全在动|都在动起来)"
+)
+# 台词 `</d>。` 后同一行还有文字 → 必须另起 `At MM:SS.mmm, 紧接着，<Subject N> …` 行。
+_D_TAIL_ACTION_RE = re.compile("</d>。\\s*(?=\\S)")
+
 _SPEECH_INTENT_RE = re.compile("(默念|念叨|念出|念那句|说|画外说|开口|低声|画外|内心|画面外传来|心声)")
 # 说话引导词统一用「说」字（2026-11-25 用户定）：所有发声说话处一律「说」，不用「道」。
 _BAD_DAO_RE = re.compile("道[：:]\\s*<d>|笑道[：:]|低声道[：:]|冷声道[：:]|大声道[：:]|说道[：:]|道[：:]")
@@ -228,6 +256,7 @@ _VOICEOVER_OFFICIAL_RE = re.compile(
 # 但落点是物件 / 手心 / 地面等非主体时用「落在」H3 会理解偏（第5集镜17「两眼落在自己空空的手心上」
 # 却把目光绑到了旁边的娘）。落点非 <Subject> 时应写「两眼看着 / 盯着 X」。
 _GAZE_FALL_RE = re.compile("(?:两眼|目光|视线|眼神)\\s*落在\\s*([^，。；、,;]{1,24})")
+
 _ONOMATOPOEIA_RE = re.compile(
     "(吱呀|磨牙|咯吱|咔嚓|哗啦|噼啪|窸窣|呜咽|嗡嗡|滴答|突突|沙沙|咕噜|哐当|砰|啪嗒|簌簌|飒飒)"
 )
@@ -388,6 +417,24 @@ def _check_anthropomorphic(i, text, where, ctx):
 # ================================================================ 段② 摘要
 
 
+def _bad_gaze_to_nonvocal(i, text, ctx, where):
+    """场景 / 道具不是视线对象：拦「看向 / 转向 <Subject N>（场景）」这类人用动作。"""
+    bad = []
+    kinds = (ctx or {}).get("subject_kind") or {}
+    for m in PARADIGMS["摘要"]["scene_gaze"].finditer(text or ""):
+        n = int(m.group(2))
+        if kinds.get(n) not in _NON_VOCAL_KINDS:
+            continue
+        before = text[max(0, m.start() - 6):m.start()]
+        if re.search("镜头|画面|相机|摄像机", before):   # 镜头转向场景是合法运镜
+            continue
+        bad.append("镜%d 「%s」把场景 / 道具当成了观看对象（「%s <Subject %d>」）——"
+                   "场景是环境，只写人在场景里对话，视线只落在本镜的人物主体上；"
+                   "场景由机位句带出来，不写「看向 / 转向场景」"
+                   % (i, where, m.group(1), n))
+    return bad
+
+
 def _audit_summary(i, body, ctx):
     """段② 白名单：任务类型标签 + 站位句 + 目标视频句；不带 Picture、不带 (Sx)。"""
     if not body:
@@ -416,6 +463,7 @@ def _audit_summary(i, body, ctx):
         bad.append("镜%d 「摘要」出现 (S%s)——`(Sx)` 是说话人编号，只在详细描述里主体开口处出现，摘要里一律不写"
                    % (i, al.group(1)))
     bad.extend(_check_anthropomorphic(i, flat, "摘要", ctx))
+    bad.extend(_bad_gaze_to_nonvocal(i, flat, ctx, "摘要"))
     return bad
 
 
@@ -658,7 +706,7 @@ def _audit_detail(i, body, ctx):
     # 🔴 通用范式槽位⑤「收尾拍」（2026-11-26 定，所有镜头通用）：
     # 台词行后面不许紧跟以 `<Subject N>` 起头的裸动作行——即使独立成行、`</d>。` 收得干净，
     # H3 仍会把它接着当台词念出来（whisper 词级时间轴实证）。
-    # 合法写法：并进台词行的引导句，或让这一行以「紧接着 / 这时 / 香灰」这类场景副词起头。
+    # 合法写法：并进台词行的引导句，或让这一行以场景副词起头。
     _lines = [l.strip() for l in body_text.split("\n") if l.strip()]
     for _j, _l in enumerate(_lines):
         if "<d>" not in _l:
@@ -667,8 +715,29 @@ def _audit_detail(i, body, ctx):
         if re.match("At \\d{2}:\\d{2}\\.\\d{3},\\s*<Subject \\d+>", _nx) and "<d>" not in _nx:
             bad.append("镜%d 「详细描述」台词行后面紧跟了一条以 `<Subject N>` 起头的裸动作行"
                        "（%s…）——违反通用范式槽位⑤「收尾拍」：H3 会把它当台词接着念出来。"
-                       "把这个动作并进台词行的引导句，或让这一行以"
-                       "「紧接着 / 这时 / 香灰」这类场景副词起头" % (i, _nx[:26]))
+                       "把这个动作并进台词行的引导句，或让这一行以场景副词起头"
+                       % (i, _nx[:26]))
+
+    # 🔴 元描述 / 否定式强调（2026-11-28 用户定）：H3 无负向字段，
+    # 否定式定格强调、全称量词 + 「都在动」会被当画面内容执行、还会被念进对白。
+    # 只查叙述正文，台词 `<d>…</d>` 里的「不是」放行。
+    _body_no_d = _strip_d_tags(body_text)
+    for _m in _META_NEG_RE.finditer(_body_no_d):
+        bad.append("镜%d 「详细描述」含元描述 / 否定式强调「%s」——H3 无负向字段，"
+                   "这类句子会被当画面内容或被念进对白；背景动作只写正向、逐类给具体动作"
+                   % (i, _m.group(0)))
+
+    # 🔴 台词行 `</d>。` 后同一行不得再接动作（2026-11-28 用户定，《带问题来》镜2 实测）。
+    # 句号是台词硬边界，后续动作必须另起 `At MM:SS.mmm, 紧接着，<Subject N> …` 行。
+    for _l in _lines:
+        if "<d>" not in _l:
+            continue
+        _m = _D_TAIL_ACTION_RE.search(_l)
+        if _m:
+            _tail = _l[_m.end():].strip()
+            bad.append("镜%d 「详细描述」台词行 `</d>。` 后同一行还接着写动作「%s…」——"
+                       "必须另起一行 `At MM:SS.mmm, 紧接着，<Subject N> ……` 并给新时刻"
+                       % (i, _tail[:24]))
 
     # 🔴 通用范式槽位④「台词拍」（2026-11-26 定，所有镜头通用）：
     # 一句台词一行、行首 `At MM:SS.mmm,`、一行只放一句。
@@ -701,6 +770,25 @@ def _audit_detail(i, body, ctx):
                        "逗号、顿号等任何标点都不许加；"
                        "改成「看着 <Subject %s>说：」，不要写「看着 <Subject %s>，说：」"
                        % (i, _m.group(1), _next, _m.group(1), _m.group(1)))
+
+    # 🔴 详细描述整段按范式校验（2026-11-28 用户定）：
+    # 风格句 → [Shot 1] 建场句 → 之后的每一拍只能落到「动作拍 / 台词拍」两种句式上。
+    # 视线句、场景副词收尾拍、画外声音、镜头运镜句交给各自专项规则，不在这里重复拦。
+    _shot_at = next((_k for _k, _l in enumerate(_lines) if _l.startswith("[Shot")), None)
+    if _shot_at is not None:
+        _beat_intro = re.compile(
+            r"^(?:At \d{2}:\d{2}\.\d{3},\s*)?(?:两眼|目光|视线|眼神|紧接着|这时|随后|接着|然后|同时|画外|画面外|镜头|画面|相机|摄像机|香灰)")
+        for _l in _lines[_shot_at + 1:]:
+            if not _l.strip():
+                continue
+            if (PARADIGMS["详细描述"]["dialogue_beat"].match(_l)
+                    or PARADIGMS["详细描述"]["action_beat"].match(_l)
+                    or _beat_intro.match(_l)):
+                continue
+            bad.append("镜%d 「详细描述」这一拍不符合范式「%s」——"
+                       "每拍只能是「主体 + 做什么 + 对谁」的动作拍，或「At + 主体 (Sx) + 说：<d>」的台词拍；"
+                       "当前这拍是「%s…」"
+                       % (i, PARADIGMS["详细描述"]["formula"], _l[:24]))
 
     # 🔴 通用范式槽位①「取景」+ 原则③「能拍出来才算」（2026-11-26 定，所有镜头通用）：
     # 动作落在手 / 膝 / 脚上（递、接过、放进、攥、捧、手心、跪、磕头），
@@ -771,7 +859,7 @@ def _audit_detail(i, body, ctx):
 
     # 🔴 动作拍主体打头（2026-11-28 用户定，短剧 / 多参考共用）：
     # 先有主体，再写动作 / 对谁做什么；表情、语气等修饰语放在主体之后，不许前置到标签前。
-    for _m in _PRE_SUBJ_MODIFIER_RE.finditer(_nd):
+    for _m in PARADIGMS["详细描述"]["modifier_before_subject"].finditer(_nd):
         bad.append("镜%d 「详细描述」把修饰语「%s」写在主体标签前——"
                    "每拍要主体打头：`<Subject N> + 动作 + 对谁`，修饰语放主体之后；"
                    "改成「<Subject 1> 手指点了点桌面，眉眼带笑的看着 <Subject 2>」"
@@ -804,6 +892,7 @@ def _audit_detail(i, body, ctx):
                        % (i, target, target, target))
 
     bad.extend(_check_anthropomorphic(i, body_text, "详细描述", ctx))
+    bad.extend(_bad_gaze_to_nonvocal(i, body_text, ctx, "详细描述"))
 
     if ref2va:
         if not _EXPR_RE.search(body_text):

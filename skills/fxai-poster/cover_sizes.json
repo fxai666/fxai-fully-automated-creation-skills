@@ -1,7 +1,7 @@
 {
   "note": "封面尺寸唯一真源。站点台账只引用 key，绝不各自写像素。改尺寸只改这一个文件，全部站点自动跟随。",
-  "version": 4,
-  "updated_at": "2026-11-09",
+  "version": 5,
+  "updated_at": "2026-11-28",
 
   "policy": {
     "principle": "能统一就统一，不统一才分裂。同一个竖屏尺寸能过就不许再出一张。",
@@ -44,6 +44,10 @@
     "horiz_16x9": {
       "w": 1920, "h": 1080, "ratio": "16:9", "layout": "landscape", "anchor": "center",
       "note": "横版统一尺寸。模糊底铺满 + 主体居中不裁人，所有视频封面位都用它。"
+    },
+    "video_head": {
+      "w": 1280, "h": 768, "ratio": "跟随成片", "layout": "landscape", "anchor": "center",
+      "note": "🔴 视频首帧片头卡专用，不是交付平台的封面（平台双封面仍是 vert_9x16 + horiz_16x9 两张）。这里的 w/h 只是兜底默认：运行时必须用 cover_batch.py --video <成片.mp4>（ffprobe 自动读宽高）或 --video-size WxH 覆盖，最终 PNG 必须严格等于成片分辨率。千问2.1 只能原生出 32 倍数，因此按成片宽高向上取 32 倍数生图，再只裁不缩回到成片尺寸；全程禁止 scale。拿平台横封面缩放塞进视频会发虚。"
     },
     "wechat_235": {
       "w": 900, "h": 383, "ratio": "2.35:1", "layout": "landscape", "anchor": "center",
