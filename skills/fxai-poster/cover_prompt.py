@@ -231,10 +231,15 @@ def build_prompt(cfg, size_key, side="right", no_text=False, role=None):
     return "\n".join(parts)
 
 
-def prompt_tag(prompt, title, kind="cover"):
-    """🔴 tag 必须带提示词指纹：scene-gen 按 tag 缓存，改了提示词不换 tag 会复用旧图。"""
+def prompt_tag(prompt, title, kind="cover", size_key=""):
+    """🔴 tag 必须带提示词+尺寸指纹：同文案不同尺寸不能共用缓存。
+
+    实测坑：横版封面（1536×864）与片头卡（1280×768）提示词相同，
+    只按提示词做 tag 会复用横版缓存图，落盘尺寸不符。
+    """
     import hashlib
-    fp = hashlib.md5(prompt.encode("utf-8")).hexdigest()[:8]
+    src = prompt + ("|" + size_key if size_key else "")
+    fp = hashlib.md5(src.encode("utf-8")).hexdigest()[:8]
     return "%s_%s_%s" % (title, kind, fp)
 
 
@@ -269,7 +274,9 @@ def main() -> int:
                                       cfg=cfg, default=GEN_PIXELS["video_head"])
         gw, gh = VS.native_size(vw, vh)
         GEN_PIXELS["video_head"] = (gw, gh)
-        RATIO_WORD["video_head"] = "%d×%d 视频首帧画幅，画面铺满不留黑边" % (vw, vh)
+        # 沿用同向平台封面的画幅说法；只生成像素尺寸按视频变，版式口径不动。
+        base_key = "horiz_16x9" if vw >= vh else "vert_9x16"
+        RATIO_WORD["video_head"] = RATIO_WORD[base_key]
         print("[video] 片头卡尺寸 %dx%d（来源：%s），原生生图 %dx%d"
               % (vw, vh, source, gw, gh), file=sys.stderr)
     side = a.side

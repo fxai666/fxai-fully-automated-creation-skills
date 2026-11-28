@@ -52,8 +52,10 @@ ALLOW_MARKS = ("<!-- std:allow -->", "# std:allow")
 ASSET_SKIP = ("更新日志.md",)
 
 # 垃圾文件 / 目录（--junk 时检查）
-JUNK_DIRS = {"__pycache__", ".ipynb_checkpoints"}
+# 备份一律不留：本地归档、`_backup/`、带日期戳的 .bak / .orig / .rej / .old 副本都算垃圾。
+JUNK_DIRS = {"__pycache__", ".ipynb_checkpoints", "_backup"}
 JUNK_FILES = (".pyc", ".pyo", ".bak", ".DS_Store", "Thumbs.db")
+JUNK_FILE_RE = re.compile(r"\.(bak|orig|rej|old)([_-].*)?$", re.I)
 
 # 路由三要素
 ROUTE_TABLE_KEYS = ("文件", "什么时候读")
@@ -461,7 +463,7 @@ def check_junk(root, errors, warns):
             if name in JUNK_DIRS:
                 warns.append("垃圾目录：%s" % os.path.relpath(os.path.join(dirpath, name), root))
         for name in filenames:
-            if name.endswith(JUNK_FILES):
+            if name.endswith(JUNK_FILES) or JUNK_FILE_RE.search(name):
                 warns.append("垃圾文件：%s" % os.path.relpath(os.path.join(dirpath, name), root))
 
 

@@ -152,7 +152,7 @@ def _generate_cover(cfg, size_key, side, role, outdir, custom_prompt, skip_qc,
     print("生图直接带字：%dx%d → 成品 %dx%d  role=%s  文字侧=%s"
           % (gw, gh, tw, th, role or "纯场景", side))
     poster.gen_image(str(raw), gw, gh, prompt, subdir="cover_gen",
-                     tag=CP.prompt_tag(prompt, cfg["title"], "gen_cover"),
+                     tag=CP.prompt_tag(prompt, cfg["title"], "gen_cover", size_key),
                      role=role or None, force=force)
     if not raw.is_file():
         raise SystemExit("生图未产出文件：%s" % raw)
@@ -175,7 +175,7 @@ def _generate_base(cfg, size_key, side, role, outdir, custom_prompt, skip_qc, fo
     print("叠加层专用无字底图：%dx%d  role=%s（本路线才写「画面无任何文字」）"
           % (gw, gh, role or "纯场景"))
     poster.gen_image(str(dst), gw, gh, prompt, subdir="cover_base",
-                     tag=CP.prompt_tag(prompt, cfg["title"], "base"),
+                     tag=CP.prompt_tag(prompt, cfg["title"], "base", size_key),
                      role=role or None, force=force)
     if not dst.is_file():
         raise SystemExit("生图未产出文件：%s" % dst)
@@ -270,7 +270,11 @@ def main() -> int:
         spec = reg["sizes"]["video_head"]
         spec["w"], spec["h"] = vw, vh
         CP.GEN_PIXELS["video_head"] = (gw, gh)
-        CP.RATIO_WORD["video_head"] = "%d×%d 视频首帧画幅，画面铺满不留黑边" % (vw, vh)
+        # 🔴 沿用同向平台封面的画幅说法，只改生成像素尺寸。
+        #    实测把「16:9 横版画幅」换成「1280×768 视频首帧画幅」会让模型
+        #    把原本贴右的竖排标题挪到画面中间——版式口径一个字都不能动。
+        base_key = "horiz_16x9" if vw >= vh else "vert_9x16"
+        CP.RATIO_WORD["video_head"] = CP.RATIO_WORD[base_key]
         native = (gw, gh)
         print("[video] 片头卡最终尺寸 %dx%d（来源：%s）；原生生图 %dx%d → 只裁不缩"
               % (vw, vh, source, gw, gh))
